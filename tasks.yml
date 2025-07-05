@@ -1,0 +1,50 @@
+- phase: "Phase 1: SDBench Framework and Environment Setup"
+  tasks:
+    - id: 1
+      desc: "Collect 304 consecutive NEJM CPC cases"
+    - id: 2
+      desc: "Convert each case into an interactive simulation format"
+    - id: 3
+      desc: "Write a brief summary for each case"
+    - id: 4
+      desc: "Hold out 56 recent cases (2024-2025) as hidden test set"
+    - id: 5
+      desc: "Develop LM-based lookup to translate test requests into CPT codes"
+    - id: 6
+      desc: "Match CPT codes to a pricing table and achieve >98% coverage"
+    - id: 7
+      desc: "Estimate prices with a language model for unmatched tests"
+    - id: 8
+      desc: "Apply fixed $300 cost for each physician visit"
+    - id: 9
+      desc: "Implement Gatekeeper with controlled disclosure of case findings"
+    - id: 10
+      desc: "Gatekeeper must refuse vague queries and diagnostic impressions"
+    - id: 11
+      desc: "Generate synthetic results for off-path questions and tests"
+    - id: 12
+      desc: "Implement Judge agent with 5-point rubric"
+    - id: 13
+      desc: "Define score >=4 as correct diagnosis"
+- phase: "Phase 2: MAI-DxO Agent Implementation and Execution"
+  tasks:
+    - id: 14
+      desc: "Define XML-based protocol: <question>, <test>, <diagnosis>"
+    - id: 15
+      desc: "Enforce rule that questions and tests cannot mix in one turn"
+    - id: 16
+      desc: "Create virtual panel with Dr. Hypothesis, Test-Chooser, Challenger, Stewardship, Checklist"
+    - id: 17
+      desc: "Implement Chain of Debate workflow to decide next action"
+    - id: 18
+      desc: "Run MAI-DxO in Unconstrained Budget mode"
+    - id: 19
+      desc: "Run Budgeted variant with cost tracker"
+    - id: 20
+      desc: "Run Question Only and Instant Answer variants"
+    - id: 21
+      desc: "Run Ensemble variant combining multiple runs"
+    - id: 22
+      desc: "Evaluate final diagnosis with Judge and compute total cost"
+    - id: 23
+      desc: "Plot accuracy vs cost for Pareto frontier"
