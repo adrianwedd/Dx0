@@ -48,3 +48,4 @@
       desc: "Evaluate final diagnosis with Judge and compute total cost"
     - id: 23
       desc: "Plot accuracy vs cost for Pareto frontier"
+
