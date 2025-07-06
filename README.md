@@ -66,3 +66,12 @@ a scatter plot:
 python -c "from sdb.plotting import load_results, plot_accuracy_vs_cost;\
 plot_accuracy_vs_cost(load_results('example_results.csv'))"
 ```
+
+## Development
+
+Install development dependencies and run the test suite:
+
+```bash
+pip install -r requirements-dev.txt
+pytest -q
+```
