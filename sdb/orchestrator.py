@@ -13,6 +13,22 @@ class Orchestrator:
         budget: float | None = None,
         question_only: bool = False,
     ):
+        """Coordinate panel actions and track test spending.
+
+        Parameters
+        ----------
+        panel:
+            :class:`VirtualPanel` generating actions.
+        gatekeeper:
+            Interface used to obtain answers from the case.
+        cost_estimator:
+            Optional :class:`CostEstimator` for test pricing.
+        budget:
+            Optional maximum spend allowed for tests.
+        question_only:
+            If ``True``, convert test requests into questions.
+        """
+
         self.panel = panel
         self.gatekeeper = gatekeeper
         self.cost_estimator = cost_estimator

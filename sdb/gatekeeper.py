@@ -31,6 +31,16 @@ class Gatekeeper:
     """Information oracle mediating access to the case."""
 
     def __init__(self, db: CaseDatabase, case_id: str):
+        """Bind the gatekeeper to a case and set up test cache.
+
+        Parameters
+        ----------
+        db:
+            Database from which to retrieve the case.
+        case_id:
+            Identifier of the case the gatekeeper will manage.
+        """
+
         self.case = db.get_case(case_id)
         self.known_tests: Dict[str, str] = {}
 

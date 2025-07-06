@@ -16,6 +16,14 @@ class CostEstimator:
     """Map tests to CPT codes and prices."""
 
     def __init__(self, cost_table: Dict[str, CptCost]):
+        """Initialize estimator with a pricing table.
+
+        Parameters
+        ----------
+        cost_table:
+            Mapping of test names to :class:`CptCost` records.
+        """
+
         self.cost_table = {k.lower(): v for k, v in cost_table.items()}
         self.aliases: Dict[str, str] = {}
 
