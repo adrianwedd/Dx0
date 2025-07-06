@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict, Any
 import re
+import xml.etree.ElementTree as ET
 
 from .protocol import ActionType
 
@@ -35,13 +36,14 @@ class Gatekeeper:
     def answer_question(self, query: str) -> QueryResult:
         """Return relevant snippet from case or synthetic result."""
 
-        # Very small XML parser for <question>, <test>, <diagnosis>
-        m = re.match(r"<(?P<tag>\w+)>(?P<text>.*)</\w+>", query.strip(), re.S)
-        if not m:
+        # Tiny XML parser for <question>, <test> or <diagnosis>
+        try:
+            root = ET.fromstring(query.strip())
+        except ET.ParseError:
             return QueryResult("Invalid query", synthetic=True)
 
-        tag = m.group("tag")
-        text = m.group("text").strip()
+        tag = root.tag
+        text = (root.text or "").strip()
 
         if tag == ActionType.DIAGNOSIS.value:
             # We never reveal the diagnosis
@@ -52,11 +54,15 @@ class Gatekeeper:
             if any(word in text.lower() for word in ["diagnosis", "differential", "what is wrong"]):
                 return QueryResult("I can only answer explicit questions about findings.", synthetic=True)
 
-            # Search summary and full text for the answer (naive search)
+            # Search summary and full text for the answer using
+            # case-insensitive matching
+            pattern = re.compile(re.escape(text), re.IGNORECASE | re.DOTALL)
             for section in [self.case.summary, self.case.full_text]:
-                idx = section.lower().find(text.lower())
-                if idx != -1:
-                    snippet = section[max(0, idx-40): idx+40]
+                m = pattern.search(section)
+                if m:
+                    start = max(0, m.start() - 40)
+                    end = min(len(section), m.end() + 40)
+                    snippet = section[start:end]
                     return QueryResult(content=snippet, synthetic=False)
             return QueryResult("No information available", synthetic=True)
 
