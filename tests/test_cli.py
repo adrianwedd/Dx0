@@ -88,6 +88,8 @@ def test_cli_flag_parsing(tmp_path):
         str(cost_file),
         "--panel-engine",
         "llm",
+        "--llm-provider",
+        "openai",
         "--llm-model",
         "turbo",
         "--quiet",

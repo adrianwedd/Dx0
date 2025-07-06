@@ -12,6 +12,8 @@ from sdb import (
     VirtualPanel,
     RuleEngine,
     LLMEngine,
+    OpenAIClient,
+    OllamaClient,
     Orchestrator,
     Judge,
     Evaluator,
@@ -79,8 +81,13 @@ def main() -> None:
         help="Decision engine to use for the panel",
     )
     parser.add_argument(
+        "--llm-provider",
+        choices=["openai", "ollama"],
+        default="openai",
+        help="LLM provider for LLM engine",
+    )
+    parser.add_argument(
         "--llm-model",
-        choices=["gpt-4", "turbo"],
         default="gpt-4",
         help="Model name for LLM engine",
     )
@@ -200,7 +207,11 @@ def main() -> None:
     if args.panel_engine == "rule":
         engine = RuleEngine()
     else:
-        engine = LLMEngine(model=args.llm_model)
+        if args.llm_provider == "ollama":
+            client = OllamaClient()
+        else:
+            client = OpenAIClient()
+        engine = LLMEngine(model=args.llm_model, client=client)
 
     panel = VirtualPanel(decision_engine=engine)
 

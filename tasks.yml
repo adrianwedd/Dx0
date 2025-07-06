@@ -314,6 +314,7 @@ phases:
           - "Implement an `OllamaClient` that conforms to the interface and communicates with a local Ollama server endpoint."
           - "Update the `LLMEngine` to accept a configured client (OpenAI or Ollama) during initialization."
           - "Extend the main CLI with `--llm-provider` (choices: openai, ollama) and `--llm-model` flags to allow runtime selection of the desired model."
+        done: true
 
       - id: "T28"
         title: "Production-Grade Logging and Monitoring"
