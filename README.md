@@ -6,3 +6,12 @@ database, cost estimator, gatekeeper and judge agents, as well as the virtual
 panel used for the "Chain of Debate" workflow.
 
 The project roadmap is tracked in `tasks.yml`.
+
+## Running the demo
+
+The `cli.py` script runs a short interactive session. Provide a JSON file or a
+directory containing case data and specify the desired case identifier:
+
+```bash
+python cli.py --db cases.json --case 1
+```
