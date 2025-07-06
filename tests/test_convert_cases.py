@@ -18,6 +18,8 @@ def test_convert_directory(tmp_path):
         assert data["id"] == f"case_{idx:03d}"
         assert len(data["steps"]) == 2
         assert data["summary"]
+        summary_file = out_dir / f"case_{idx:03d}_summary.txt"
+        assert summary_file.exists()
 
 
 def test_cli_convert(tmp_path):
@@ -37,3 +39,4 @@ def test_cli_convert(tmp_path):
     result = subprocess.run(cmd, capture_output=True, text=True)
     assert result.returncode == 0
     assert (out_dir / "case_001.json").exists()
+    assert (out_dir / "case_001_summary.txt").exists()

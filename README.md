@@ -85,6 +85,8 @@ the dataset or fetch updates, run:
 python scripts/collect_cases.py --dest data/raw_cases
 python sdb/ingest/convert.py data/raw_cases data/json_cases
 ```
+This command also writes `case_###_summary.txt` files alongside the JSON
+for quick reference.
 
 ### Python API Example
 

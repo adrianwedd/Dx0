@@ -5,7 +5,12 @@ from __future__ import annotations
 import json
 import os
 import re
-from typing import List, Dict
+from typing import Dict, List, Optional
+
+try:  # Optional dependency
+    import openai  # type: ignore
+except Exception:  # pragma: no cover - openai not required for tests
+    openai = None
 
 
 def split_steps(text: str) -> List[str]:
@@ -27,6 +32,55 @@ def split_steps(text: str) -> List[str]:
     return paragraphs
 
 
+def _extract_abstract(text: str) -> Optional[str]:
+    """Return the abstract section if present in ``text``."""
+
+    match = re.search(r"(?im)^abstract[:\s]*\n(.+?)(?:\n\s*\n|$)", text)
+    if match:
+        abstract = re.sub(r"\s+", " ", match.group(1)).strip()
+        if abstract:
+            return abstract
+    return None
+
+
+def _llm_summarize(text: str) -> Optional[str]:
+    """Summarize ``text`` using an LLM if credentials are configured."""
+
+    if openai is None:
+        return None
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return None
+    openai.api_key = api_key
+    try:
+        resp = openai.ChatCompletion.create(
+            model=os.getenv("OPENAI_MODEL", "gpt-3.5-turbo"),
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Summarize the medical case in 1-2 sentences.",
+                },
+                {"role": "user", "content": text[:4000]},
+            ],
+            max_tokens=100,
+        )
+        return resp.choices[0].message["content"].strip()
+    except Exception:  # pragma: no cover - network issues
+        return None
+
+
+def summarize(text: str) -> str:
+    """Produce a short summary for a case."""
+
+    summary = _extract_abstract(text)
+    if not summary:
+        summary = _llm_summarize(text)
+    if not summary:
+        steps = split_steps(text)
+        summary = " ".join(steps[:2]) if steps else ""
+    return summary.strip()
+
+
 def convert_text(text: str, case_id: int) -> Dict[str, object]:
     """Convert raw case text to SDBench JSON structure.
 
@@ -44,7 +98,7 @@ def convert_text(text: str, case_id: int) -> Dict[str, object]:
     """
 
     steps = split_steps(text)
-    summary = steps[0] if steps else ""
+    summary = summarize(text)
     data = {
         "id": f"case_{case_id:03d}",
         "summary": summary,
@@ -88,6 +142,10 @@ def convert_directory(src_dir: str, dest_dir: str) -> List[str]:
         out_path = os.path.join(dest_dir, f"case_{case_num:03d}.json")
         with open(out_path, "w", encoding="utf-8") as fh:
             json.dump(data, fh, indent=2)
+        summary_file = f"case_{case_num:03d}_summary.txt"
+        summary_path = os.path.join(dest_dir, summary_file)
+        with open(summary_path, "w", encoding="utf-8") as sf:
+            sf.write(data["summary"])
         written.append(out_path)
     return written
 
