@@ -4,10 +4,15 @@ from dataclasses import dataclass
 from typing import List, Set
 from abc import ABC, abstractmethod
 
+import json
+import logging
+
 from .actions import PanelAction, parse_panel_action
 from .protocol import ActionType
 from .prompt_loader import load_prompt
 from .llm_client import LLMClient, OpenAIClient
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -92,4 +97,13 @@ class LLMEngine(DecisionEngine):
         action = parse_panel_action(messages[-1]["content"])
         if action is None:
             return self.fallback.decide(context)
+        logger.info(
+            json.dumps(
+                {
+                    "event": "llm_decision",
+                    "turn": context.turn,
+                    "type": action.action_type.value,
+                }
+            )
+        )
         return action
