@@ -78,6 +78,7 @@ def test_semantic_retrieval_enabled():
     q = build_action(ActionType.QUESTION, "cough")
     res = gk.answer_question(q)
     assert "cough" in res.content.lower()
+    assert "context:" in res.content.lower()
     assert res.synthetic is False
 
 

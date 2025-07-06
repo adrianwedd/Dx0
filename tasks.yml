@@ -274,6 +274,7 @@ phases:
           - "Modify the `Gatekeeper.answer_question` method to first query the vector index to retrieve relevant text chunks."
           - "Implement a RAG prompt that combines the user's question with the retrieved chunks to generate a precise answer using an LLM."
           - "Establish a fallback mechanism to use the old regex search if the semantic search fails to return relevant results."
+        done: true
 
       - id: "T25"
         title: "Build Interactive Physician UI for SDBench"

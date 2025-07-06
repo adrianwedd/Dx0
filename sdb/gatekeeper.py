@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 from .protocol import ActionType
 
 from .case_database import CaseDatabase
-from .retrieval import SimpleEmbeddingIndex
+from .retrieval import SentenceTransformerIndex
 
 
 @dataclass
@@ -53,9 +53,12 @@ class Gatekeeper:
         self.index = None
         if self.use_semantic_retrieval:
             docs = []
-            for text in [self.case.summary, self.case.full_text]:
-                docs.extend([p.strip() for p in text.split("\n") if p.strip()])
-            self.index = SimpleEmbeddingIndex(docs)
+            for case in db.cases.values():
+                for text in [case.summary, case.full_text]:
+                    docs.extend(
+                        [p.strip() for p in text.split("\n") if p.strip()]
+                    )
+            self.index = SentenceTransformerIndex(docs)
 
     def load_results_from_json(self, path: str) -> None:
         """Load test result fixtures from a JSON file."""
@@ -115,9 +118,11 @@ class Gatekeeper:
                 )
 
             if self.use_semantic_retrieval and self.index is not None:
-                results = self.index.query(text, top_k=1)
+                results = self.index.query(text, top_k=2)
                 if results:
-                    return QueryResult(content=results[0][0], synthetic=False)
+                    context = " \n".join(r[0] for r in results)
+                    prompt = f"Context: {context}\n\nQuestion: {text}"
+                    return QueryResult(content=prompt, synthetic=False)
 
             # Search summary and full text for the answer using
             # case-insensitive matching
