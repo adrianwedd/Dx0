@@ -1,10 +1,11 @@
-import tempfile
 import csv
+import tempfile
 import pytest
 from sdb.cost_estimator import CostEstimator
+from sdb import cost_estimator as ce_mod
 
 
-def test_lookup_and_estimate():
+def test_lookup_and_estimate(monkeypatch):
     data = [
         {"test_name": "cbc", "cpt_code": "100", "price": "10"},
         {"test_name": "bmp", "cpt_code": "101", "price": "20"},
@@ -19,10 +20,19 @@ def test_lookup_and_estimate():
     ce = CostEstimator.load_from_csv(path)
     ce.add_aliases({"basic metabolic panel": "bmp"})
 
+    monkeypatch.setattr(ce_mod, "lookup_cpt", lambda name: "101")
+
     assert ce.lookup_cost("cbc").price == 10.0
     assert ce.lookup_cost("basic metabolic panel").cpt_code == "101"
-    # Unknown test uses average of known prices => (10+20)/2=15
-    assert ce.estimate_cost("unknown") == 15.0
+    assert ce.estimate_cost("unknown") == 20.0
+    assert ce.aliases["unknown"] == "bmp"
+    # Second call should use cached alias and avoid LLM lookup
+    monkeypatch.setattr(
+        ce_mod,
+        "lookup_cpt",
+        lambda name: (_ for _ in ()).throw(AssertionError),
+    )
+    assert ce.estimate_cost("unknown") == 20.0
 
 
 def test_load_aliases_from_csv(tmp_path):

@@ -2,6 +2,8 @@ import csv
 from dataclasses import dataclass
 from typing import Dict, Optional
 
+from .cpt_lookup import lookup_cpt
+
 
 @dataclass
 class CptCost:
@@ -149,16 +151,26 @@ class CostEstimator:
                 self.aliases[alias] = canonical
 
     def estimate_cost(self, test_name: str) -> float:
+        """Return the price for ``test_name`` or infer it via an LLM lookup."""
+
         tc = self.lookup_cost(test_name)
         if tc:
             return tc.price
-        # Placeholder fallback cost estimation when CPT code is unknown.
-        # In a full system this could call a language model.
-        # Here we return an average price based on known tests if available.
+
+        # Attempt LLM-based CPT lookup when a direct mapping is missing.
+        code = lookup_cpt(test_name)
+        if code:
+            # Find any canonical entry with this CPT code.
+            for canonical, entry in self.cost_table.items():
+                if entry.cpt_code == code:
+                    # Cache alias to avoid future LLM queries.
+                    self.aliases[test_name.strip().lower()] = canonical
+                    return entry.price
+
+        # Fallback to an average of known prices when no mapping is found.
         if self.cost_table:
-            avg = (
-                sum(tc.price for tc in self.cost_table.values())
-                / len(self.cost_table)
+            avg = sum(e.price for e in self.cost_table.values()) / len(
+                self.cost_table
             )
             return avg
         return 0.0
