@@ -28,3 +28,14 @@ db = CaseDatabase.load_from_csv("cases.csv")
 ```
 
 The CSV must contain `id`, `summary` and `full_text` columns.
+
+## Accuracy vs cost plot
+
+The repository includes a small CSV example `example_results.csv` with
+`cost` and `accuracy` columns. Use the helper in `sdb.plotting` to produce
+a scatter plot:
+
+```bash
+python -c "from sdb.plotting import load_results, plot_accuracy_vs_cost;\
+plot_accuracy_vs_cost(load_results('example_results.csv'))"
+```

@@ -6,7 +6,11 @@ from sdb.protocol import build_action, ActionType
 
 
 def setup_gatekeeper():
-    case = Case(id="1", summary="Patient complains of cough", full_text="History: patient has had a cough for 3 days.")
+    case = Case(
+        id="1",
+        summary="Patient complains of cough",
+        full_text="History: patient has had a cough for 3 days.",
+    )
     db = CaseDatabase([case])
     gk = Gatekeeper(db, "1")
     gk.register_test_result("complete blood count", "normal")
@@ -72,4 +76,11 @@ def test_case_insensitive_search():
 def test_invalid_xml():
     gk = setup_gatekeeper()
     res = gk.answer_question("<question>missing</question")
+    assert res.synthetic is True
+
+
+def test_mixed_question_and_test_refused():
+    gk = setup_gatekeeper()
+    query = "<wrapper><question>a</question><test>b</test></wrapper>"
+    res = gk.answer_question(query)
     assert res.synthetic is True

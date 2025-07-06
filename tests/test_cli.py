@@ -16,9 +16,17 @@ def test_cli_outputs_final_results(tmp_path):
 
     cost_file = tmp_path / "costs.csv"
     with open(cost_file, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["test_name", "cpt_code", "price"])
+        writer = csv.DictWriter(
+            f, fieldnames=["test_name", "cpt_code", "price"]
+        )
         writer.writeheader()
-        writer.writerow({"test_name": "complete blood count", "cpt_code": "100", "price": "10"})
+        writer.writerow(
+            {
+                "test_name": "complete blood count",
+                "cpt_code": "100",
+                "price": "10",
+            }
+        )
 
     cmd = [
         sys.executable,
@@ -55,9 +63,17 @@ def test_cli_flag_parsing(tmp_path):
 
     cost_file = tmp_path / "c.csv"
     with open(cost_file, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["test_name", "cpt_code", "price"])
+        writer = csv.DictWriter(
+            f, fieldnames=["test_name", "cpt_code", "price"]
+        )
         writer.writeheader()
-        writer.writerow({"test_name": "complete blood count", "cpt_code": "1", "price": "1"})
+        writer.writerow(
+            {
+                "test_name": "complete blood count",
+                "cpt_code": "1",
+                "price": "1",
+            }
+        )
 
     cmd = [
         sys.executable,

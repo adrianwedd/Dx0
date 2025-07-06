@@ -37,6 +37,7 @@
       done: true
     - id: 15
       desc: "Enforce rule that questions and tests cannot mix in one turn"
+      done: true
     - id: 16
       desc: "Create virtual panel with Dr. Hypothesis, Test-Chooser, Challenger, Stewardship, Checklist"
       done: true
@@ -45,12 +46,16 @@
       done: true
     - id: 18
       desc: "Run MAI-DxO in Unconstrained Budget mode"
+      done: true
     - id: 19
       desc: "Run Budgeted variant with cost tracker"
+      done: true
     - id: 20
       desc: "Run Question Only and Instant Answer variants"
+      done: true
     - id: 21
       desc: "Run Ensemble variant combining multiple runs"
+      done: true
     - id: 22
       desc: "Evaluate final diagnosis with Judge and compute total cost"
       done: true

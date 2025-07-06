@@ -36,4 +36,3 @@ def test_evaluator_zero_tests_cost():
     result = ev.evaluate("x", "x", [])
     assert result.score == 5
     assert result.total_cost == 0.0
-
