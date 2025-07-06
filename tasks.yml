@@ -262,7 +262,7 @@ phases:
           - "Develop the cost-aware prompt for the **Dr. Stewardship** agent to analyze the cost-benefit of proposed tests."
           - "Implement a final prompt for the **Dr. Checklist** agent to ensure completeness and consistency before an action is taken."
           - "Create robust parsing logic to handle the LLM's output and convert it into a structured `PanelAction`."
-
+        done: true
       - id: "T24"
         title: "Integrate Semantic Search into Gatekeeper"
         description: >
