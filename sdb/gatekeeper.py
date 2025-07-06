@@ -49,8 +49,11 @@ class Gatekeeper:
 
         if not os.path.exists(path):
             return
-        with open(path, "r", encoding="utf-8") as fh:
-            data = json.load(fh)
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                data = json.load(fh)
+        except json.JSONDecodeError:
+            return
         for name, result in data.items():
             self.register_test_result(name, str(result))
 

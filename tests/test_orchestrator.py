@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+import pytest
+
 from sdb.orchestrator import Orchestrator
 from sdb.panel import VirtualPanel
 from sdb.actions import PanelAction
@@ -82,3 +84,27 @@ def test_orchestrator_budget_stops_session():
     orch.run_turn("2")
     assert orch.finished is True
     assert orch.final_diagnosis is None
+
+
+class TimeoutPanel:
+    def deliberate(self, case_info: str) -> PanelAction:
+        raise TimeoutError("panel timeout")
+
+
+class TimeoutGatekeeper:
+    def answer_question(self, xml: str) -> DummyResult:
+        raise TimeoutError("gatekeeper timeout")
+
+
+def test_panel_timeout_propagates():
+    orch = Orchestrator(TimeoutPanel(), DummyGatekeeper())
+    with pytest.raises(TimeoutError):
+        orch.run_turn("info")
+
+
+def test_gatekeeper_timeout_propagates():
+    actions = [PanelAction(ActionType.QUESTION, "q1")]
+    panel = StubPanel(actions)
+    orch = Orchestrator(panel, TimeoutGatekeeper())
+    with pytest.raises(TimeoutError):
+        orch.run_turn("info")
