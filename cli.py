@@ -14,6 +14,7 @@ from sdb import (
     Orchestrator,
     Judge,
     Evaluator,
+    convert_directory,
 )
 
 
@@ -25,18 +26,15 @@ def main() -> None:
     )
     parser.add_argument(
         "--db",
-        required=True,
         help="Path to case JSON, CSV or directory",
     )
-    parser.add_argument("--case", required=True, help="Case identifier")
+    parser.add_argument("--case", help="Case identifier")
     parser.add_argument(
         "--rubric",
-        required=True,
         help="Path to scoring rubric JSON",
     )
     parser.add_argument(
         "--costs",
-        required=True,
         help="Path to test cost table CSV",
     )
     parser.add_argument(
@@ -62,6 +60,19 @@ def main() -> None:
         help="Reduce logging noise",
     )
     parser.add_argument(
+        "--convert", action="store_true", help="Convert raw cases to JSON"
+    )
+    parser.add_argument(
+        "--raw-dir",
+        default="data/raw_cases",
+        help="Directory with raw text cases for conversion",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default="data/sdbench/cases",
+        help="Destination for converted JSON cases",
+    )
+    parser.add_argument(
 
         "--budget",
         type=float,
@@ -81,6 +92,16 @@ def main() -> None:
         help="Run mode",
     )
     args = parser.parse_args()
+
+    if args.convert:
+        convert_directory(args.raw_dir, args.output_dir)
+        return
+
+    required = [args.db, args.case, args.rubric, args.costs]
+    if any(item is None for item in required):
+        parser.error(
+            "--db, --case, --rubric and --costs are required for a session"
+        )
 
     level = logging.INFO
     if args.verbose:
