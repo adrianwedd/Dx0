@@ -242,3 +242,97 @@ phases:
         title: "Plot accuracy vs cost"
         description: "Visualize trade-offs by plotting the Pareto frontier."
         done: true
+
+  - name: "Phase 3: Production Readiness & Advanced Features"
+    tasks:
+      - id: "T23"
+        title: "Fully Implement and Tune LLM-Based Decision Engine"
+        description: >
+          Replace the placeholder LLMEngine with a fully functional, prompt-driven engine. This involves creating and validating the persona-specific prompts required for the "Chain of Debate" and ensuring the model's output can be reliably parsed.
+        labels: [feature, ai, backend, prompt-engineering]
+        subtasks:
+          - "Develop and test the system prompt for the **Dr. Hypothesis** agent to generate a differential diagnosis based on initial case findings."
+          - "Implement and validate the prompt for the **Dr. Test-Chooser** agent to select the most discriminative tests or questions."
+          - "Create and refine the adversarial prompt for the **Dr. Challenger** agent to identify biases and propose alternative paths."
+          - "Develop the cost-aware prompt for the **Dr. Stewardship** agent to analyze the cost-benefit of proposed tests."
+          - "Implement a final prompt for the **Dr. Checklist** agent to ensure completeness and consistency before an action is taken."
+          - "Create robust parsing logic to handle the LLM's output and convert it into a structured `PanelAction`."
+
+      - id: "T24"
+        title: "Integrate Semantic Search into Gatekeeper"
+        description: >
+          Upgrade the Gatekeeper's question-answering capability from keyword search to a modern retrieval-augmented generation (RAG) pipeline for more accurate and context-aware responses.
+        labels: [enhancement, backend, ml]
+        subtasks:
+          - "Select an appropriate sentence-transformer model for creating high-quality embeddings of medical text."
+          - "Build a script to pre-process and create a vector index (e.g., using FAISS or a similar library) for all 304 NEJM case documents."
+          - "Modify the `Gatekeeper.answer_question` method to first query the vector index to retrieve relevant text chunks."
+          - "Implement a RAG prompt that combines the user's question with the retrieved chunks to generate a precise answer using an LLM."
+          - "Establish a fallback mechanism to use the old regex search if the semantic search fails to return relevant results."
+
+      - id: "T25"
+        title: "Build Interactive Physician UI for SDBench"
+        description: >
+          Develop a web-based user interface that allows human physicians to participate in SDBench challenges, providing a benchmark for human performance and a tool for data collection.
+        labels: [feature, frontend, ux]
+        subtasks:
+          - "Design a clean, synchronous chat interface using a modern web framework (e.g., React, Vue, or Svelte)."
+          - "Create a backend API (e.g., using Flask or FastAPI) to connect the frontend to the `Orchestrator`."
+          - "Implement WebSocket support for real-time, turn-by-turn interaction between the physician and the `Gatekeeper`."
+          - "Add a user authentication system to manage physician accounts and track their performance over time."
+          - "Display the cumulative cost from the `CostEstimator` in the UI, updating it in real-time as tests are ordered."
+          - "Ensure the interface is intuitive and requires minimal training for physicians to use effectively."
+
+      - id: "T26"
+        title: "Enhance Orchestrator for Advanced Ensemble Strategies"
+        description: >
+          Improve the `Ensemble` mode by implementing more sophisticated aggregation and meta-panel strategies to boost diagnostic accuracy beyond simple majority voting.
+        labels: [enhancement, agent-architecture, ml]
+        subtasks:
+          - "Implement a weighted voting mechanism based on the confidence scores or internal consistency of each parallel panel."
+          - "Develop a 'Meta-Panel' agent that reviews the diagnoses and reasoning chains from all parallel runs to produce a final, synthesized diagnosis."
+          - "Explore cost-adjusted utility functions to select a final diagnosis that optimizes for both accuracy and cost-effectiveness."
+
+  - name: "Phase 4: LLM Integration and Production Hardening"
+    tasks:
+      - id: "T27"
+        title: "Implement Multi-Provider LLM Engine for Panel"
+        description: >
+          Refactor the LLMEngine to be provider-agnostic, with initial support for the OpenAI API and local Ollama models. This is critical for flexibility and cost management in production.
+        labels: [feature, ai, backend, refactor]
+        subtasks:
+          - "Design a generic `LLMClient` interface that standardizes methods for chat completions and managing API credentials."
+          - "Implement an `OpenAIClient` that conforms to the interface and handles communication with the OpenAI API, including API key management."
+          - "Implement an `OllamaClient` that conforms to the interface and communicates with a local Ollama server endpoint."
+          - "Update the `LLMEngine` to accept a configured client (OpenAI or Ollama) during initialization."
+          - "Extend the main CLI with `--llm-provider` (choices: openai, ollama) and `--llm-model` flags to allow runtime selection of the desired model."
+
+      - id: "T28"
+        title: "Production-Grade Logging and Monitoring"
+        description: >
+          Enhance the existing logging and metrics system to provide the visibility needed to operate, debug, and optimize the system in a production environment.
+        labels: [enhancement, observability, backend]
+        subtasks:
+          - "Implement structured (JSON-formatted) logging across all major components to enable easier parsing and analysis by log aggregation platforms."
+          - "Add detailed performance metrics, including LLM query latency, token usage per turn, and estimated cost per query (for OpenAI)."
+          - "Create a comprehensive Grafana dashboard configuration for visualizing key operational metrics, such as case processing time, agent accuracy, and token consumption."
+
+      - id: "T29"
+        title: "Finalize Documentation and Packaging for Release"
+        description: >
+          Prepare the project for its first official public release by improving documentation, creating a distributable package, and ensuring legal compliance.
+        labels: [documentation, release, devops]
+        subtasks:
+          - "Write comprehensive user documentation detailing how to set up the environment for both OpenAI and local Ollama usage."
+          - "Create a `pyproject.toml` file and ensure the project can be cleanly packaged into a wheel (`.whl`) and source distribution (`.tar.gz`)."
+          - "Perform a final review of the README, CONTRIBUTING, and LICENSE files to ensure they are clear and complete."
+
+      - id: "T30"
+        title: "Refactor Judge Agent for Robustness"
+        description: >
+          Improve the Judge agent by moving beyond simple string similarity to a more robust, LLM-based evaluation to better handle clinical nuance and synonyms.
+        labels: [enhancement, ai, evaluation]
+        subtasks:
+          - "Replace the `difflib.SequenceMatcher` in the `Judge` class with a call to a configured LLM."
+          - "Develop a precise prompt for the Judge LLM that instructs it to compare the candidate and ground-truth diagnoses based on clinical substance, not just lexical similarity, using the 5-point rubric."
+          - "Add unit tests to `test_judge.py` to validate the new LLM-based evaluation logic with a variety of clinically similar but lexically different diagnostic pairs."
