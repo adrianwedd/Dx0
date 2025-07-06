@@ -104,6 +104,19 @@ metrics = bench.run()
 print(metrics)
 ```
 
+### Statistical Significance Testing
+
+After running evaluations you can test whether a variant's scores differ
+significantly from a baseline using a permutation test:
+
+```bash
+python cli.py stats results/baseline.csv results/variant.csv --column accuracy
+```
+
+The command prints a p-value. Values below 0.05 indicate the observed
+difference in the selected column is unlikely under the null hypothesis of no
+effect.
+
 ---
 
 ## Repository Structure

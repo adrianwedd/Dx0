@@ -95,3 +95,29 @@ def test_cli_flag_parsing(tmp_path):
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     assert result.returncode == 0
+
+
+def test_cli_stats_command(tmp_path):
+    a = tmp_path / "a.csv"
+    b = tmp_path / "b.csv"
+    for path, v1, v2 in [(a, 1, 0), (b, 0, 0)]:
+        with open(path, "w", newline="", encoding="utf-8") as fh:
+            writer = csv.DictWriter(fh, fieldnames=["score"])
+            writer.writeheader()
+            writer.writerow({"score": str(v1)})
+            writer.writerow({"score": str(v2)})
+
+    cmd = [
+        sys.executable,
+        "cli.py",
+        "stats",
+        str(a),
+        str(b),
+        "--column",
+        "score",
+        "--rounds",
+        "100",
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0
+    assert "p-value" in result.stdout
