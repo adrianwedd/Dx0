@@ -16,6 +16,12 @@ from .cpt_lookup import lookup_cpt
 from .metrics import start_metrics_server
 from .retrieval import SimpleEmbeddingIndex, SentenceTransformerIndex
 from .statistics import load_scores, permutation_test
+from .ensemble import (
+    DiagnosisResult,
+    WeightedVoter,
+    MetaPanel,
+    cost_adjusted_selection,
+)
 
 __all__ = [
     "Case",
@@ -43,4 +49,8 @@ __all__ = [
     "SentenceTransformerIndex",
     "load_scores",
     "permutation_test",
+    "DiagnosisResult",
+    "WeightedVoter",
+    "MetaPanel",
+    "cost_adjusted_selection",
 ]
