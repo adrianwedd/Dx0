@@ -37,7 +37,7 @@ class Evaluator:
         self.cost_estimator = cost_estimator
 
     def evaluate(
-        self, diagnosis: str, truth: str, tests: list
+        self, diagnosis: str, truth: str, tests: list[str]
     ) -> SessionResult:
         judgement = self.judge.evaluate(diagnosis, truth)
         total_cost = sum(
