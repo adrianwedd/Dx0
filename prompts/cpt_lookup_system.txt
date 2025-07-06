@@ -1,0 +1,1 @@
+Return only the CPT code that matches the diagnostic test name.

@@ -58,6 +58,7 @@ phases:
           Move all agent prompts into the prompts/ directory for easier
           versioning and A/B testing.
         labels: [enhancement, prompt-engineering, backend]
+        done: true
       - id: "T9"
         title: "CI/CD Pipeline & Dockerization"
         description: >

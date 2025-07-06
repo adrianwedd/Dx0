@@ -7,6 +7,8 @@ import os
 import time
 from typing import Dict, Optional
 
+from .prompt_loader import load_prompt
+
 try:
     import openai  # type: ignore
 except Exception:  # pragma: no cover - openai not required for tests
@@ -14,6 +16,9 @@ except Exception:  # pragma: no cover - openai not required for tests
 
 
 DEFAULT_CACHE = os.path.join("data", "cpt_lookup.csv")
+
+# Load the system prompt used for LLM CPT lookups
+CPT_LOOKUP_PROMPT = load_prompt("cpt_lookup_system")
 
 
 def _load_cache(path: str) -> Dict[str, str]:
@@ -51,13 +56,7 @@ def _query_llm(test_name: str, retries: int = 3) -> Optional[str]:
     openai.api_key = api_key
     model = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
     messages = [
-        {
-            "role": "system",
-            "content": (
-                "Return only the CPT code that matches "
-                "the diagnostic test name."
-            ),
-        },
+        {"role": "system", "content": CPT_LOOKUP_PROMPT},
         {"role": "user", "content": test_name},
     ]
     for _ in range(retries):
@@ -74,7 +73,8 @@ def _query_llm(test_name: str, retries: int = 3) -> Optional[str]:
 
 
 def lookup_cpt(
-    test_name: str, cache_path: str = DEFAULT_CACHE
+    test_name: str,
+    cache_path: str = DEFAULT_CACHE,
 ) -> Optional[str]:
     """Return the CPT code for ``test_name`` using cache or LLM lookup."""
 
