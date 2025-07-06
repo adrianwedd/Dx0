@@ -46,7 +46,6 @@ def test_cli_outputs_final_results(tmp_path):
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
 
-    
     assert "Final diagnosis" in result.stdout
     assert "Total cost" in result.stdout
     assert "Session score" in result.stdout

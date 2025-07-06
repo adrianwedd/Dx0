@@ -10,10 +10,37 @@ The project roadmap is tracked in `tasks.yml`.
 ## Running the demo
 
 The `cli.py` script runs a short interactive session. Provide a JSON file or a
-directory containing case data and specify the desired case identifier:
+directory containing case data and specify the desired case identifier. In
+addition to the required `--rubric` and `--costs` paths, the script accepts a
+number of flags that control how the panel behaves:
+
+- `--panel-engine` – choose the decision engine (`rule` or `llm`)
+- `--llm-model` – model for the LLM engine (`gpt-4` or `turbo`)
+- `--verbose` / `--quiet` – adjust logging level
+- `--budget` – spending limit when running in budgeted mode
+- `--mode` – execution mode (`unconstrained`, `budgeted`, `question-only`,
+  `instant`, `ensemble`)
+
+Basic usage:
 
 ```bash
-python cli.py --db cases.json --case 1
+python cli.py --db cases.json --case 1 --rubric rubric.json --costs costs.csv
+```
+
+Run the panel with the LLM engine and debug logging enabled:
+
+```bash
+python cli.py --db cases.json --case 1 \
+  --rubric rubric.json --costs costs.csv \
+  --panel-engine llm --llm-model turbo --verbose
+```
+
+Budgeted mode with a $100 limit and minimal output:
+
+```bash
+python cli.py --db cases.json --case 1 \
+  --rubric rubric.json --costs costs.csv \
+  --mode budgeted --budget 100 --quiet
 ```
 
 ## Case database
