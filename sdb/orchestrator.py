@@ -10,7 +10,9 @@ class Orchestrator:
         self.ordered_tests = []
 
     def run_turn(self, case_info: str) -> str:
-        action = self.panel.deliberate(case_info)
+        """Process a single interaction turn with the panel."""
+
+        action = self.panel.deliberate(case_info=case_info)
         xml = build_action(action.action_type, action.content)
         result = self.gatekeeper.answer_question(xml)
 

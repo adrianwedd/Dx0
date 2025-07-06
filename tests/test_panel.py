@@ -4,5 +4,16 @@ from sdb.protocol import ActionType
 
 def test_panel_sequence():
     panel = VirtualPanel()
-    actions = [panel.deliberate("").action_type for _ in range(4)]
-    assert actions == [ActionType.QUESTION, ActionType.TEST, ActionType.QUESTION, ActionType.DIAGNOSIS]
+    infos = ["info1", "info2", "info3", "info4"]
+    actions = []
+
+    for info in infos:
+        actions.append(panel.deliberate(info).action_type)
+        assert panel.last_case_info == info
+
+    assert actions == [
+        ActionType.QUESTION,
+        ActionType.TEST,
+        ActionType.QUESTION,
+        ActionType.DIAGNOSIS,
+    ]
