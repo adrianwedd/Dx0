@@ -56,6 +56,20 @@ def main() -> None:
         default="gpt-4",
         help="Model name for LLM engine",
     )
+    semantic = parser.add_mutually_exclusive_group()
+    semantic.add_argument(
+        "--semantic-retrieval",
+        dest="semantic",
+        action="store_true",
+        help="Enable semantic retrieval for Gatekeeper",
+    )
+    semantic.add_argument(
+        "--no-semantic-retrieval",
+        dest="semantic",
+        action="store_false",
+        help="Disable semantic retrieval for Gatekeeper",
+    )
+    parser.set_defaults(semantic=False)
     parser.add_argument(
         "--verbose",
         action="store_true",
@@ -136,7 +150,11 @@ def main() -> None:
     else:
         db = CaseDatabase.load_from_json(args.db)
 
-    gatekeeper = Gatekeeper(db, args.case)
+    gatekeeper = Gatekeeper(
+        db,
+        args.case,
+        use_semantic_retrieval=args.semantic,
+    )
     gatekeeper.register_test_result("complete blood count", "normal")
 
     cost_estimator = CostEstimator.load_from_csv(args.costs)

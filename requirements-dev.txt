@@ -7,4 +7,5 @@ isort
 mypy
 pre-commit
 prometheus_client
+numpy>=1.26.4
 
