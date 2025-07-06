@@ -1,6 +1,6 @@
 import argparse
 from sdb import Case, CaseDatabase, Gatekeeper, CostEstimator, VirtualPanel, Orchestrator
-from sdb.cost_estimator import TestCost
+from sdb.cost_estimator import CptCost
 
 
 def main():
@@ -14,7 +14,7 @@ def main():
     gatekeeper = Gatekeeper(db, args.case)
     gatekeeper.register_test_result("complete blood count", "normal")
 
-    cost_estimator = CostEstimator({"complete blood count": TestCost("100", 10.0)})
+    cost_estimator = CostEstimator({"complete blood count": CptCost("100", 10.0)})
     panel = VirtualPanel()
     orchestrator = Orchestrator(panel, gatekeeper)
 
