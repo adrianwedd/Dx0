@@ -8,6 +8,7 @@ from .protocol import ActionType, build_action
 from .actions import PanelAction, parse_panel_action
 from .panel import VirtualPanel
 from .decision import DecisionEngine, RuleEngine, LLMEngine
+from .llm_client import LLMClient, OpenAIClient, OllamaClient
 from .orchestrator import Orchestrator
 from .evaluation import Evaluator
 from .ingest.convert import convert_directory
@@ -37,6 +38,9 @@ __all__ = [
     "DecisionEngine",
     "RuleEngine",
     "LLMEngine",
+    "LLMClient",
+    "OpenAIClient",
+    "OllamaClient",
     "VirtualPanel",
     "Orchestrator",
     "Evaluator",

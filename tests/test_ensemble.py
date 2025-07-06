@@ -1,4 +1,9 @@
-from sdb.ensemble import DiagnosisResult, WeightedVoter, MetaPanel, cost_adjusted_selection
+from sdb.ensemble import (
+    DiagnosisResult,
+    WeightedVoter,
+    MetaPanel,
+    cost_adjusted_selection,
+)
 
 
 def test_weighted_voter_selects_highest_score():
