@@ -21,7 +21,7 @@ def test_run_turn_passes_case_info():
     orch.run_turn("snippet")
     assert panel.last_case_info == "snippet"
 
-from sdb.panel import PanelAction
+from sdb.actions import PanelAction
 from sdb.protocol import ActionType
 
 
