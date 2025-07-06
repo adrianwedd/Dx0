@@ -62,6 +62,7 @@ def main() -> None:
         help="Reduce logging noise",
     )
     parser.add_argument(
+
         "--budget",
         type=float,
         default=None,
@@ -112,6 +113,7 @@ def main() -> None:
         engine = LLMEngine(model=args.llm_model)
 
     panel = VirtualPanel(decision_engine=engine)
+
     orch_kwargs = {}
     if args.mode == "budgeted":
         orch_kwargs["cost_estimator"] = cost_estimator

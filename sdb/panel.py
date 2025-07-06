@@ -12,6 +12,7 @@ class VirtualPanel:
     """Simulate collaborative panel of doctors using pluggable engines."""
 
     def __init__(self, decision_engine: DecisionEngine | None = None):
+
         self.turn = 0
         self.last_case_info = ""
         self.past_infos: List[str] = []
