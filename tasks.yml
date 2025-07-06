@@ -65,6 +65,7 @@ phases:
           Add GitHub Actions workflows for tests and releases and create a
           Dockerfile for deployment.
         labels: [ci, docker, devops]
+        done: true
       - id: "T10"
         title: "Update tasks.yml with Engineering Backlog"
         description: >
