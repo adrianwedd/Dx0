@@ -342,3 +342,12 @@ phases:
           - "Develop a precise prompt for the Judge LLM that instructs it to compare the candidate and ground-truth diagnoses based on clinical substance, not just lexical similarity, using the 5-point rubric."
           - "Add unit tests to `test_judge.py` to validate the new LLM-based evaluation logic with a variety of clinically similar but lexically different diagnostic pairs."
 
+      - id: "T31"
+        title: "Automate Case Updates"
+        description: >
+          Schedule a weekly workflow that fetches newly released NEJM CPC cases
+          and appends them to the dataset. The script skips already ingested
+          PMIDs to avoid duplicates.
+        labels: [automation, data]
+        done: true
+
