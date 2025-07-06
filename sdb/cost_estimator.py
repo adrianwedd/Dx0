@@ -3,14 +3,14 @@ from dataclasses import dataclass
 from typing import Dict, Optional
 
 @dataclass
-class TestCost:
+class CptCost:
     cpt_code: str
     price: float
 
 class CostEstimator:
     """Map tests to CPT codes and prices."""
 
-    def __init__(self, cost_table: Dict[str, TestCost]):
+    def __init__(self, cost_table: Dict[str, CptCost]):
         self.cost_table = {k.lower(): v for k, v in cost_table.items()}
         self.aliases: Dict[str, str] = {}
 
@@ -21,7 +21,7 @@ class CostEstimator:
         The CSV file is expected to contain ``test_name``, ``cpt_code`` and
         ``price`` columns. Rows that are missing data are skipped.
         """
-        table: Dict[str, TestCost] = {}
+        table: Dict[str, CptCost] = {}
         with open(path, newline="", encoding="utf-8") as fh:
             reader = csv.DictReader(fh)
             for row in reader:
@@ -31,10 +31,10 @@ class CostEstimator:
                     price = float(row["price"])
                 except Exception:
                     continue
-                table[name] = TestCost(cpt_code=cpt, price=price)
+                table[name] = CptCost(cpt_code=cpt, price=price)
         return CostEstimator(table)
 
-    def lookup_cost(self, test_name: str) -> Optional[TestCost]:
+    def lookup_cost(self, test_name: str) -> Optional[CptCost]:
         key = test_name.strip().lower()
         if key in self.aliases:
             key = self.aliases[key]

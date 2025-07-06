@@ -1,6 +1,6 @@
 import tempfile
 import csv
-from sdb.cost_estimator import CostEstimator, TestCost
+from sdb.cost_estimator import CostEstimator, CptCost
 
 
 def test_lookup_and_estimate():
