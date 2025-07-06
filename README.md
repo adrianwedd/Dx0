@@ -85,6 +85,12 @@ refresh the dataset or fetch updates, run the ingestion pipeline:
 python -m sdb.ingest.pipeline
 ```
 
+To append newly released cases without re-downloading the entire corpus, run:
+
+```bash
+python scripts/update_cases.py
+```
+
 
 ### Physician UI
 
