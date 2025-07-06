@@ -86,6 +86,18 @@ python -m sdb.ingest.pipeline
 ```
 
 
+### Physician UI
+
+Start the demo web interface to chat with the Gatekeeper and view
+running cost estimates:
+
+```bash
+uvicorn sdb.ui.app:app --reload
+```
+
+Then open `http://localhost:8000` in your browser.
+
+
 ### Python API Example
 
 ```python

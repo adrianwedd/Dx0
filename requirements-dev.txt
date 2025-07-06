@@ -8,4 +8,6 @@ mypy
 pre-commit
 prometheus_client
 numpy>=1.26.4
+fastapi
+uvicorn
 
