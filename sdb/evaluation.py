@@ -13,16 +13,25 @@ class SessionResult:
         Sum of test costs incurred during the session.
     score:
         Judgement score for the final diagnosis.
+    correct:
+        Whether the diagnosis is considered correct.
     """
 
     total_cost: float
     score: int
+    correct: bool
 
 
 class Evaluator:
     """Score diagnoses and tally the cost of ordered tests."""
 
-    def __init__(self, judge: Judge, cost_estimator: CostEstimator):
+    def __init__(
+        self,
+        judge: Judge,
+        cost_estimator: CostEstimator,
+        *,
+        correct_threshold: int = 4,
+    ) -> None:
         """Create an evaluator with a judge and cost estimator.
 
         Parameters
@@ -31,10 +40,13 @@ class Evaluator:
             :class:`Judge` instance used to grade diagnoses.
         cost_estimator:
             :class:`CostEstimator` used to compute the price of tests.
+        correct_threshold:
+            Minimum score that constitutes a correct diagnosis.
         """
 
         self.judge = judge
         self.cost_estimator = cost_estimator
+        self.correct_threshold = int(correct_threshold)
 
     VISIT_FEE = 300.0
 
@@ -59,4 +71,9 @@ class Evaluator:
         total_cost = visits * self.VISIT_FEE + sum(
             self.cost_estimator.estimate_cost(t) for t in tests
         )
-        return SessionResult(total_cost=total_cost, score=judgement.score)
+        correct = judgement.score >= self.correct_threshold
+        return SessionResult(
+            total_cost=total_cost,
+            score=judgement.score,
+            correct=correct,
+        )
