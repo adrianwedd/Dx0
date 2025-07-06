@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict
+import json
+import os
 import re
 import xml.etree.ElementTree as ET
 
@@ -31,6 +33,16 @@ class Gatekeeper:
     def __init__(self, db: CaseDatabase, case_id: str):
         self.case = db.get_case(case_id)
         self.known_tests: Dict[str, str] = {}
+
+    def load_results_from_json(self, path: str) -> None:
+        """Load test result fixtures from a JSON file."""
+
+        if not os.path.exists(path):
+            return
+        with open(path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        for name, result in data.items():
+            self.register_test_result(name, str(result))
 
     def register_test_result(self, test_name: str, result: str):
         """Add known test result for the current case."""

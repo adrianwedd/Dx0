@@ -62,3 +62,26 @@
     - id: 23
       desc: "Plot accuracy vs cost for Pareto frontier"
 
+
+- phase: "Phase 0: Engineering Foundation"
+  tasks:
+    - id: T1
+      desc: "Refactor VirtualPanel for pluggable decision engines"
+    - id: T2
+      desc: "Integrate semantic retrieval in Gatekeeper"
+    - id: T3
+      desc: "Add dynamic test result handling"
+    - id: T4
+      desc: "Implement detailed logging & metrics"
+    - id: T5
+      desc: "Expand unit tests for error & edge cases"
+    - id: T6
+      desc: "Enforce code style & static analysis"
+    - id: T7
+      desc: "Enhance CLI with model & config flags"
+    - id: T8
+      desc: "Modularize prompt templates & system prompts"
+    - id: T9
+      desc: "CI/CD pipeline & Dockerization"
+    - id: T10
+      desc: "Update tasks.yml with Engineering Backlog"

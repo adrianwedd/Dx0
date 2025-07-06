@@ -1,4 +1,5 @@
 from sdb.panel import VirtualPanel
+from sdb.decision import LLMEngine
 from sdb.protocol import ActionType
 
 
@@ -28,3 +29,15 @@ def test_keyword_triggers_chest_xray():
     assert panel.last_case_info == "additional info"
     assert second.action_type == ActionType.TEST
     assert second.content == "chest x-ray"
+
+
+def test_llm_engine_behaves_like_rule_engine():
+    panel = VirtualPanel(decision_engine=LLMEngine())
+    infos = ["info1", "info2", "info3", "info4"]
+    actions = [panel.deliberate(info).action_type for info in infos]
+    assert actions == [
+        ActionType.QUESTION,
+        ActionType.TEST,
+        ActionType.QUESTION,
+        ActionType.DIAGNOSIS,
+    ]

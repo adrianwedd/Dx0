@@ -2,12 +2,15 @@
 
 import argparse
 import json
+import logging
 import os
 from sdb import (
     CaseDatabase,
     Gatekeeper,
     CostEstimator,
     VirtualPanel,
+    RuleEngine,
+    LLMEngine,
     Orchestrator,
     Judge,
     Evaluator,
@@ -37,6 +40,29 @@ def main() -> None:
         help="Path to test cost table CSV",
     )
     parser.add_argument(
+        "--panel-engine",
+        choices=["rule", "llm"],
+        default="rule",
+        help="Decision engine to use for the panel",
+    )
+    parser.add_argument(
+        "--llm-model",
+        choices=["gpt-4", "turbo"],
+        default="gpt-4",
+        help="Model name for LLM engine",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Enable debug logging",
+    )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Reduce logging noise",
+    )
+    parser.add_argument(
+
         "--budget",
         type=float,
         default=None,
@@ -56,6 +82,13 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    level = logging.INFO
+    if args.verbose:
+        level = logging.DEBUG
+    elif args.quiet:
+        level = logging.WARNING
+    logging.basicConfig(level=level, format="%(message)s")
+
     if os.path.isdir(args.db):
         db = CaseDatabase.load_from_directory(args.db)
     elif args.db.endswith(".csv"):
@@ -74,7 +107,13 @@ def main() -> None:
     judge = Judge(rubric)
     evaluator = Evaluator(judge, cost_estimator)
 
-    panel = VirtualPanel()
+    if args.panel_engine == "rule":
+        engine = RuleEngine()
+    else:
+        engine = LLMEngine(model=args.llm_model)
+
+    panel = VirtualPanel(decision_engine=engine)
+
     orch_kwargs = {}
     if args.mode == "budgeted":
         orch_kwargs["cost_estimator"] = cost_estimator
@@ -101,5 +140,5 @@ def main() -> None:
     print(f"Session score: {result.score}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

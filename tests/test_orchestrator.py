@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 
 from sdb.orchestrator import Orchestrator
-from sdb.panel import VirtualPanel, PanelAction
+from sdb.panel import VirtualPanel
+from sdb.actions import PanelAction
 from sdb.protocol import ActionType
 
 
