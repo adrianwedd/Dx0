@@ -18,24 +18,31 @@
       desc: "Apply fixed $300 cost for each physician visit"
     - id: 9
       desc: "Implement Gatekeeper with controlled disclosure of case findings"
+      done: true
     - id: 10
       desc: "Gatekeeper must refuse vague queries and diagnostic impressions"
+      done: true
     - id: 11
       desc: "Generate synthetic results for off-path questions and tests"
+      done: true
     - id: 12
       desc: "Implement Judge agent with 5-point rubric"
+      done: true
     - id: 13
       desc: "Define score >=4 as correct diagnosis"
 - phase: "Phase 2: MAI-DxO Agent Implementation and Execution"
   tasks:
     - id: 14
       desc: "Define XML-based protocol: <question>, <test>, <diagnosis>"
+      done: true
     - id: 15
       desc: "Enforce rule that questions and tests cannot mix in one turn"
     - id: 16
       desc: "Create virtual panel with Dr. Hypothesis, Test-Chooser, Challenger, Stewardship, Checklist"
+      done: true
     - id: 17
       desc: "Implement Chain of Debate workflow to decide next action"
+      done: true
     - id: 18
       desc: "Run MAI-DxO in Unconstrained Budget mode"
     - id: 19
@@ -46,6 +53,7 @@
       desc: "Run Ensemble variant combining multiple runs"
     - id: 22
       desc: "Evaluate final diagnosis with Judge and compute total cost"
+      done: true
     - id: 23
       desc: "Plot accuracy vs cost for Pareto frontier"
 
