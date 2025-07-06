@@ -1,0 +1,22 @@
+{
+  "id": "case_123",
+  "summary": "1. N Engl J Med. 2013 Oct 24;369(17):1639-47. doi: 10.1056/NEJMcpc1215968.",
+  "steps": [
+    {
+      "id": 1,
+      "text": "1. N Engl J Med. 2013 Oct 24;369(17):1639-47. doi: 10.1056/NEJMcpc1215968."
+    },
+    {
+      "id": 2,
+      "text": "Case records of the Massachusetts General Hospital. Case 33-2013. A 40-year-old \nwoman with abdominal pain, weight loss, and anxiety about cancer."
+    },
+    {
+      "id": 3,
+      "text": "Marouf F, Giallourakis CC, Baer L, Hanau MS, Holbert BC."
+    },
+    {
+      "id": 4,
+      "text": "DOI: 10.1056/NEJMcpc1215968\nPMID: 24152264 [Indexed for MEDLINE]"
+    }
+  ]
+}

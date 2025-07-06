@@ -1,0 +1,20 @@
+1. N Engl J Med. 2016 Jul 28;375(4):370-8. doi: 10.1056/NEJMcpc1601840.
+
+CASE RECORDS of the MASSACHUSETTS GENERAL HOSPITAL. Case 23-2016. A 46-Year-Old 
+Man with Somnolence after Orthopedic Surgery.
+
+Chiappa V(1), Gonzalez RG(1), Manian FA(1), Deshpande V(1).
+
+Author information:
+(1)From the Departments of Medicine (V.C., F.A.M.), Radiology (R.G.G.), and 
+Pathology (V.D.), Massachusetts General Hospital, and the Departments of 
+Medicine (V.C., F.A.M.), Radiology (R.G.G.), and Pathology (V.D.), Harvard 
+Medical School - both in Boston.
+
+Comment in
+    N Engl J Med. 2016 Nov 3;375(18):1805-1806. doi: 10.1056/NEJMc1610827.
+    N Engl J Med. 2016 Nov 3;375(18):1805. doi: 10.1056/NEJMc1610827.
+    N Engl J Med. ;375(18):1805. doi: 10.1056/NEJMc1610827.
+
+DOI: 10.1056/NEJMcpc1601840
+PMID: 27464205 [Indexed for MEDLINE]

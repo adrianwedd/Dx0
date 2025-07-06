@@ -1,0 +1,51 @@
+1. Injury. 2015 Jan;46(1):150-5. doi: 10.1016/j.injury.2014.08.048. Epub 2014 Sep
+ 18.
+
+Do trauma systems work? A comparison of major trauma outcomes between Aberdeen 
+Royal Infirmary and Massachusetts General Hospital.
+
+Morrissey BE(1), Delaney RA(2), Johnstone AJ(3), Petrovick L(4), Smith RM(2).
+
+Author information:
+(1)University of Aberdeen, School of Medicine and Dentistry, Foresterhill, 
+Aberdeen, Scotland AB25 2ZD, United Kingdom. Electronic address: 
+brianmorrissey@nhs.net.
+(2)Trauma Service, Department of Orthopaedic Surgery, Massachusetts General 
+Hospital, 55 Fruit Street, Boston, MA 02114, United States.
+(3)Trauma Orthopaedic Unit, Aberdeen Royal Infirmary, Foresterhill, Aberdeen, 
+Scotland AB25 2ZD, United Kingdom.
+(4)Division of Trauma, Emergency Surgery, & Surgical Critical Care, 
+Massachusetts General Hospital, 55 Fruit Street, Boston, MA 02114, United 
+States.
+
+Trauma is an important matter of public health and a major cause of mortality. 
+Since the late 1980s trauma care provision in the United Kingdom is lacking when 
+compared to the USA. This has been attributed to a lack of organisation of 
+trauma care leading to the formation of trauma networks and Major Trauma Centres 
+in England and Wales. The need for similar centres in Scotland is argued 
+currently. We assessed the activity of two quite different trauma systems by 
+obtaining access to comparative data from two hospitals, one in the USA and the 
+other in Scotland. Aggregate data on 5604 patients at Aberdeen Royal Infirmary 
+(ARI) from 1993 to 2002 was obtained from the Scottish Trauma Audit Group. A 
+comparable data set of 16,178 patients from Massachusetts General Hospital 
+(MGH). Direct comparison of patient demographics; injury type, mechanism and 
+Injury Severity Score (ISS); mode of arrival; length of stay and mortality were 
+made. Statistical analysis was carried out using Chi-squared and 
+Cochran-Mantel-Haenszel. There were significant differences in the data sets. 
+There was a higher proportion of penetrating injuries at MGH, (8.6% vs 2.6%) and 
+more severely injured patients at MGH, patients with an ISS>16 accounted for 
+nearly 22.1% of MGH patients compared to 14.0% at ARI. ISS 8-15 made up 54.6% of 
+ARI trauma with 29.6% at MGH. Falls accounted for 50.1% at ARI and 37.9% at MGH. 
+Despite the higher proportion of severe injuries at MGH and crude mortality 
+rates showing no difference (4.9% ARI vs 5.2% MGH), pooled odds ratio of 
+mortality was 1.4 (95% confidence interval 1.2-1.6) showing worse mortality 
+outcomes at ARI compared to MGH. In conclusion, there were some differences in 
+case mix between both data sets making direct comparison of the outcomes 
+difficult, but the effect of consolidating major trauma on the proportion and 
+number of severely injured patients treated in the American Level 1 centre was 
+clear with a significant improvement in mortality in all injury severity groups.
+
+Copyright © 2014 Elsevier Ltd. All rights reserved.
+
+DOI: 10.1016/j.injury.2014.08.048
+PMID: 25270693 [Indexed for MEDLINE]
