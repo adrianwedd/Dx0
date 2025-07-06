@@ -17,3 +17,14 @@ def test_panel_sequence():
         ActionType.QUESTION,
         ActionType.DIAGNOSIS,
     ]
+
+
+def test_keyword_triggers_chest_xray():
+    panel = VirtualPanel()
+    first = panel.deliberate("Patient complains of cough")
+    assert first.action_type == ActionType.QUESTION
+
+    second = panel.deliberate("additional info")
+    assert panel.last_case_info == "additional info"
+    assert second.action_type == ActionType.TEST
+    assert second.content == "chest x-ray"
