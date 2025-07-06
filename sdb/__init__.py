@@ -15,6 +15,7 @@ from .ingest.pipeline import run_pipeline
 from .cpt_lookup import lookup_cpt
 from .metrics import start_metrics_server
 from .retrieval import SimpleEmbeddingIndex
+from .statistics import load_scores, permutation_test
 
 __all__ = [
     "Case",
@@ -37,4 +38,6 @@ __all__ = [
     "run_pipeline",
     "start_metrics_server",
     "SimpleEmbeddingIndex",
+    "load_scores",
+    "permutation_test",
 ]

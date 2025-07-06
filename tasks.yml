@@ -133,6 +133,7 @@ phases:
           Provide permutation tests for evaluating accuracy improvements and
           expose a CLI entry point.
         labels: [feature, statistics, backend]
+        done: true
       - id: "T20"
         title: "Document & Package SDBench for Release"
         description: >

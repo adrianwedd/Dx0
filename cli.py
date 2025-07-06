@@ -4,6 +4,7 @@ import argparse
 import json
 import logging
 import os
+import sys
 from sdb import (
     CaseDatabase,
     Gatekeeper,
@@ -16,7 +17,34 @@ from sdb import (
     Evaluator,
     run_pipeline,
     start_metrics_server,
+    load_scores,
+    permutation_test,
 )
+
+
+def stats_main(argv: list[str]) -> None:
+    """Run a permutation test on two result CSV files."""
+
+    parser = argparse.ArgumentParser(description="Run significance test")
+    parser.add_argument("baseline", help="CSV file for baseline results")
+    parser.add_argument("variant", help="CSV file for variant results")
+    parser.add_argument(
+        "--column",
+        default="score",
+        help="CSV column containing numeric scores",
+    )
+    parser.add_argument(
+        "--rounds",
+        type=int,
+        default=1000,
+        help="Number of permutations",
+    )
+    args = parser.parse_args(argv)
+
+    a = load_scores(args.baseline, args.column)
+    b = load_scores(args.variant, args.column)
+    p = permutation_test(a, b, num_rounds=args.rounds)
+    print(f"p-value: {p:.4f}")
 
 
 def main() -> None:
@@ -207,4 +235,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] == "stats":
+        stats_main(sys.argv[2:])
+    else:
+        main()
