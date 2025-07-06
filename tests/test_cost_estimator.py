@@ -22,3 +22,30 @@ def test_lookup_and_estimate():
     assert ce.lookup_cost("basic metabolic panel").cpt_code == "101"
     # Unknown test uses average of known prices => (10+20)/2=15
     assert ce.estimate_cost("unknown") == 15.0
+
+
+def test_load_aliases_from_csv(tmp_path):
+    cost_rows = [
+        {"test_name": "bmp", "cpt_code": "101", "price": "20"},
+    ]
+    cost_path = tmp_path / "cost.csv"
+    with open(cost_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f, fieldnames=["test_name", "cpt_code", "price"]
+        )
+        writer.writeheader()
+        writer.writerows(cost_rows)
+
+    alias_rows = [
+        {"alias": "basic metabolic panel", "canonical": "bmp"},
+    ]
+    alias_path = tmp_path / "aliases.csv"
+    with open(alias_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["alias", "canonical"])
+        writer.writeheader()
+        writer.writerows(alias_rows)
+
+    ce = CostEstimator.load_from_csv(str(cost_path))
+    ce.load_aliases_from_csv(str(alias_path))
+
+    assert ce.lookup_cost("basic metabolic panel").cpt_code == "101"

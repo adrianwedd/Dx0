@@ -58,6 +58,24 @@ class CostEstimator:
         for k, v in mapping.items():
             self.aliases[k.lower()] = v.lower()
 
+    def load_aliases_from_csv(self, path: str) -> None:
+        """Load alias mapping from CSV file.
+
+        The CSV should provide ``alias`` and ``canonical`` columns. Rows
+        missing these fields are skipped.
+        """
+        with open(path, newline="", encoding="utf-8") as fh:
+            reader = csv.DictReader(fh)
+            for row in reader:
+                try:
+                    alias = row["alias"].strip().lower()
+                    canonical = row["canonical"].strip().lower()
+                except Exception:
+                    continue
+                if not alias or not canonical:
+                    continue
+                self.aliases[alias] = canonical
+
     def estimate_cost(self, test_name: str) -> float:
         tc = self.lookup_cost(test_name)
         if tc:
