@@ -10,6 +10,7 @@ from .panel import VirtualPanel
 from .decision import DecisionEngine, RuleEngine, LLMEngine
 from .orchestrator import Orchestrator
 from .evaluation import Evaluator
+from .ingest.convert import convert_directory
 
 __all__ = [
     "Case",
@@ -27,4 +28,5 @@ __all__ = [
     "VirtualPanel",
     "Orchestrator",
     "Evaluator",
+    "convert_directory",
 ]
