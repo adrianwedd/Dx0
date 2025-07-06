@@ -1,7 +1,8 @@
+import csv
 import json
 import os
 from dataclasses import dataclass
-from typing import List, Dict, Iterable
+from typing import Iterable
 
 @dataclass
 class Case:
@@ -30,6 +31,28 @@ class CaseDatabase:
         with open(path, "r", encoding="utf-8") as fh:
             data = json.load(fh)
         cases = [Case(**item) for item in data]
+        return CaseDatabase(cases)
+
+    @staticmethod
+    def load_from_csv(path: str) -> "CaseDatabase":
+        """Load cases from a CSV file.
+
+        The CSV file should contain ``id``, ``summary`` and ``full_text``
+        columns. Rows missing these fields are skipped.
+        """
+        cases = []
+        with open(path, newline="", encoding="utf-8") as fh:
+            reader = csv.DictReader(fh)
+            for row in reader:
+                try:
+                    case_id = row["id"].strip()
+                    summary = row["summary"].strip()
+                    full_text = row["full_text"].strip()
+                except Exception:
+                    continue
+                if not case_id:
+                    continue
+                cases.append(Case(id=case_id, summary=summary, full_text=full_text))
         return CaseDatabase(cases)
 
     @staticmethod

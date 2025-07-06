@@ -15,3 +15,16 @@ directory containing case data and specify the desired case identifier:
 ```bash
 python cli.py --db cases.json --case 1
 ```
+
+## Case database
+
+`CaseDatabase` can load cases from JSON, directories of text files or from
+CSV files. Loading from CSV is convenient when case data is stored in a single
+table:
+
+```python
+from sdb.case_database import CaseDatabase
+db = CaseDatabase.load_from_csv("cases.csv")
+```
+
+The CSV must contain `id`, `summary` and `full_text` columns.
