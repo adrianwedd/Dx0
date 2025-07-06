@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import os
 import time
+import json
+import logging
 from abc import ABC, abstractmethod
 from typing import List
 
@@ -13,15 +15,47 @@ except Exception:  # pragma: no cover - optional dependency
     openai = None
 
 import requests
+from .metrics import LLM_LATENCY, LLM_TOKENS
+
+logger = logging.getLogger(__name__)
 
 
 class LLMClient(ABC):
-    """Generic interface for chat-based language models."""
+    """Generic interface for chat-based language models with metrics."""
+
+    def chat(self, messages: List[dict], model: str) -> str | None:
+        """Return the assistant reply for the given messages and record metrics."""
+
+        start = time.perf_counter()
+        reply = self._chat(messages, model)
+        duration = time.perf_counter() - start
+        LLM_LATENCY.observe(duration)
+        tokens = self._count_tokens(messages)
+        if reply is not None:
+            tokens += self._count_tokens([{"role": "assistant", "content": reply}])
+        LLM_TOKENS.inc(tokens)
+        logger.info(
+            json.dumps(
+                {
+                    "event": "llm_chat",
+                    "model": model,
+                    "latency": duration,
+                    "tokens": tokens,
+                }
+            )
+        )
+        return reply
 
     @abstractmethod
-    def chat(self, messages: List[dict], model: str) -> str | None:
-        """Return the assistant reply for the given messages."""
+    def _chat(self, messages: List[dict], model: str) -> str | None:
+        """Implement provider-specific chat call."""
         raise NotImplementedError
+
+    @staticmethod
+    def _count_tokens(messages: List[dict]) -> int:
+        """Approximate the number of tokens in a list of messages."""
+
+        return sum(len(m.get("content", "").split()) for m in messages)
 
 
 class OpenAIClient(LLMClient):
@@ -30,7 +64,7 @@ class OpenAIClient(LLMClient):
     def __init__(self, api_key: str | None = None) -> None:
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
 
-    def chat(self, messages: List[dict], model: str) -> str | None:
+    def _chat(self, messages: List[dict], model: str) -> str | None:
         if openai is None or not self.api_key:
             return None
 
@@ -54,7 +88,7 @@ class OllamaClient(LLMClient):
     def __init__(self, base_url: str = "http://localhost:11434") -> None:
         self.base_url = base_url.rstrip("/")
 
-    def chat(self, messages: List[dict], model: str) -> str | None:
+    def _chat(self, messages: List[dict], model: str) -> str | None:
         url = f"{self.base_url}/api/chat"
         payload = {"model": model, "messages": messages}
         try:

@@ -325,6 +325,7 @@ phases:
           - "Implement structured (JSON-formatted) logging across all major components to enable easier parsing and analysis by log aggregation platforms."
           - "Add detailed performance metrics, including LLM query latency, token usage per turn, and estimated cost per query (for OpenAI)."
           - "Create a comprehensive Grafana dashboard configuration for visualizing key operational metrics, such as case processing time, agent accuracy, and token consumption."
+        done: true
 
       - id: "T29"
         title: "Finalize Documentation and Packaging for Release"

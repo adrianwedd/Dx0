@@ -15,6 +15,20 @@
         "targets": [
           {"expr": "orchestrator_turns_total"}
         ]
+      },
+      {
+        "type": "timeseries",
+        "title": "LLM Request Latency",
+        "targets": [
+          {"expr": "rate(llm_request_seconds_sum[5m]) / rate(llm_request_seconds_count[5m])"}
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "LLM Tokens",
+        "targets": [
+          {"expr": "llm_tokens_total"}
+        ]
       }
     ]
   }
