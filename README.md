@@ -1,77 +1,138 @@
-# Dx0
+# Dx0 & SDBench: Diagnostic Orchestrator and Sequential Diagnosis Benchmark
 
-This repository contains a skeleton implementation of the **SDBench** framework and the
-**MAI-DxO** diagnostic agent. The code outlines core components such as the case
-database, cost estimator, gatekeeper and judge agents, as well as the virtual
-panel used for the "Chain of Debate" workflow.
+This repository contains two integrated projects for advancing sequential clinical diagnosis with AI:
 
-The project roadmap is tracked in `tasks.yml`.
+1. **Dx0**: A model-agnostic, multi-agent diagnostic orchestrator that simulates a panel of five physician personas—Hypothesis, Test-Chooser, Challenger, Stewardship, and Checklist—to generate diagnoses through iterative debate. Dx0 orders high-value questions or tests, tracks cumulative costs via CPT/CMS mapping, and balances cost-efficiency against diagnostic accuracy using configurable modes (Instant Answer, Question-Only, Budgeted, Unconstrained, Ensemble).
 
-## Running the demo
+2. **SDBench**: A benchmark suite that ingests 304 NEJM Clinical Pathological Conference (CPC) cases, exposing them as interactive, stepwise diagnostic tasks. SDBench measures agent performance on test-selection strategies, cost-accuracy trade-offs, and clinical reasoning quality, offering an evaluation pipeline with statistical significance testing and Pareto frontier analysis.
 
-The `cli.py` script runs a short interactive session. Provide a JSON file or a
-directory containing case data and specify the desired case identifier. In
-addition to the required `--rubric` and `--costs` paths, the script accepts a
-number of flags that control how the panel behaves:
+---
 
-- `--panel-engine` – choose the decision engine (`rule` or `llm`)
-- `--llm-model` – model for the LLM engine (`gpt-4` or `turbo`)
-- `--verbose` / `--quiet` – adjust logging level
-- `--budget` – spending limit when running in budgeted mode
-- `--mode` – execution mode (`unconstrained`, `budgeted`, `question-only`,
-  `instant`, `ensemble`)
+## Dx0: Diagnostic Decision Orchestrator
 
-Basic usage:
+### Core Functionality
+
+* **Orchestrator Engine**: Coordinates debate rounds among persona agents, enforcing turn limits and consensus logic.
+* **Virtual Panel**: Five specialized agents:
+
+  * *Hypothesis*: Generates initial differential diagnoses.
+  * *Test-Chooser*: Selects questions or diagnostic tests to refine hypotheses.
+  * *Challenger*: Critiques assumptions and explores alternatives.
+  * *Stewardship*: Monitors and enforces cost budgets.
+  * *Checklist*: Ensures reasoning completeness before final verdict.
+* **Gatekeeper Interface**: Information oracle that reveals only requested findings, synthesizes plausible results for unqueried tests.
+* **Cost Estimator**: Maps tests to CPT codes and CMS prices, maintaining cumulative cost tracking.
+* **Evaluation Modes**: Modes for exploring different cost-accuracy scenarios: Instant Answer, Question-Only, Budgeted, Unconstrained Budget, and Ensemble.
+
+---
+
+## SDBench: Sequential Diagnosis Benchmark
+
+### Core Functionality
+
+* **Case Ingestion**: Parses 304 NEJM CPC cases into JSON vignettes, findings, and ground-truth diagnoses.
+* **Interactive Sessions**: Exposes each case as a turn-based Q&A and testing task, mediated by Dx0 or human clinicians via a synchronous chat UI.
+* **Metrics & Reporting**: Computes diagnostic accuracy (5-point Likert rubric), cumulative cost, and efficiency metrics; supports permutation testing for significance.
+* **Visualization**: Generates Pareto curves, cost-accuracy plots, and summary reports for ensemble and variant evaluations.
+
+---
+
+## Installation
 
 ```bash
-python cli.py --db cases.json --case 1 --rubric rubric.json --costs costs.csv
+git clone https://github.com/adrianwedd/Dx0.git
+cd clinical-ai-suite
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-Run the panel with the LLM engine and debug logging enabled:
+*(Optional)* Docker build:
 
 ```bash
-python cli.py --db cases.json --case 1 \
-  --rubric rubric.json --costs costs.csv \
-  --panel-engine llm --llm-model turbo --verbose
+docker build -t clinical-ai-suite .
 ```
 
-Budgeted mode with a $100 limit and minimal output:
+---
+
+## Quickstart
+
+### Dx0 CLI
 
 ```bash
-python cli.py --db cases.json --case 1 \
-  --rubric rubric.json --costs costs.csv \
-  --mode budgeted --budget 100 --quiet
+python -m dx0.cli \
+  --mode budgeted \
+  --case-file data/sdbench/cases/case_001.json \
+  --budget 1000 \
+  --output results/dx0_case_001.json
 ```
 
-## Case database
+### SDBench CLI
 
-`CaseDatabase` can load cases from JSON, directories of text files or from
-CSV files. Loading from CSV is convenient when case data is stored in a single
-table:
+```bash
+python -m sdbench.cli \
+  --mode ensemble \
+  --cases data/sdbench/cases/ \
+  --output results/sdbench_summary.csv
+```
+
+### Python API Example
 
 ```python
-from sdb.case_database import CaseDatabase
-db = CaseDatabase.load_from_csv("cases.csv")
+from dx0 import DxOrchestrator
+from sdbench import Benchmark, Settings
+
+# Dx0 run
+dx_settings = Settings(mode="unconstrained", model="gpt-4")
+orc = DxOrchestrator(dx_settings)
+res = orc.run(case_path="data/sdbench/cases/case_001.json")
+print(res.diagnosis, res.total_cost)
+
+# SDBench evaluation
+bench = Benchmark(data_dir="data/sdbench/cases/", settings=dx_settings)
+metrics = bench.run()
+print(metrics)
 ```
 
-The CSV must contain `id`, `summary` and `full_text` columns.
+---
 
-## Accuracy vs cost plot
+## Repository Structure
 
-The repository includes a small CSV example `example_results.csv` with
-`cost` and `accuracy` columns. Use the helper in `sdb.plotting` to produce
-a scatter plot:
-
-```bash
-python -c "from sdb.plotting import load_results, plot_accuracy_vs_cost;\
-plot_accuracy_vs_cost(load_results('example_results.csv'))"
+```
+clinical-ai-suite/
+├── dx0/                   # Dx0 orchestrator, agents, and interfaces
+├── sdbench/               # SDBench ingestion, evaluation pipeline, and UI
+├── data/                  # NEJM CPC JSON cases and CMS pricing data
+├── prompts/               # Persona and system prompt templates
+├── results/               # Output logs, metrics, and plots
+├── tests/                 # Unit and integration tests for both modules
+├── Dockerfile             # Containerization setup
+├── requirements.txt       # Python dependencies
+├── README.md              # This file
+├── CONTRIBUTING.md        # Contribution guidelines
+├── CODE_OF_CONDUCT.md     # Community standards
+├── LICENSE                # MIT License file
+└── setup.py               # Package metadata
 ```
 
-## Development
+---
 
-Install development dependencies and run the test suite:
+## Documentation & Contribution
 
-```bash
-pip install -r requirements-dev.txt
-pytest -q
-```
+* **README**: Overview and quickstart.
+* **CONTRIBUTING.md**: Issue reporting, pull request process, coding standards.
+* **PULL_REQUEST_TEMPLATE.md**, **ISSUE_TEMPLATE/**: Guidance for contributors.
+* **CODE_OF_CONDUCT.md**: Community norms and reporting procedures.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+
+---
+
+## References
+
+* Nori *et al.* (2025). "Sequential Diagnosis with Language Models." *arXiv preprint* arXiv:2506.22405v2. Available at [https://arxiv.org/abs/2506.22405](https://arxiv.org/abs/2506.22405)
+* Microsoft AI Blog (2024). "The Path to Medical Superintelligence." Retrieved from [https://microsoft.ai/new/the-path-to-medical-superintelligence/](https://microsoft.ai/new/the-path-to-medical-superintelligence/)
