@@ -4,6 +4,8 @@ from typing import Dict, Optional
 
 @dataclass
 class CptCost:
+    """Mapping between a CPT code and its price."""
+
     cpt_code: str
     price: float
 

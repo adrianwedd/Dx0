@@ -8,6 +8,16 @@ from .case_database import CaseDatabase, Case
 
 @dataclass
 class QueryResult:
+    """Response content from the gatekeeper.
+
+    Attributes
+    ----------
+    content:
+        Text snippet answering the query.
+    synthetic:
+        Whether the response is generated rather than from the case.
+    """
+
     content: str
     synthetic: bool = False
 
