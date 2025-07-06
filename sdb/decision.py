@@ -4,8 +4,17 @@ from dataclasses import dataclass
 from typing import List, Set
 from abc import ABC, abstractmethod
 
-from .actions import PanelAction
+import os
+import time
+
+from .actions import PanelAction, parse_panel_action
 from .protocol import ActionType
+from .prompt_loader import load_prompt
+
+try:
+    import openai  # type: ignore
+except Exception:  # pragma: no cover - openai optional
+    openai = None
 
 
 @dataclass
@@ -54,13 +63,55 @@ class RuleEngine(DecisionEngine):
 
 
 class LLMEngine(DecisionEngine):
-    """Placeholder LLM-based engine using the rule engine for now."""
+    """LLM-driven decision engine following the Chain of Debate."""
+
+    PERSONAS = [
+        "hypothesis_system",
+        "test_chooser_system",
+        "challenger_system",
+        "stewardship_system",
+        "checklist_system",
+    ]
 
     def __init__(self, model: str = "gpt-4"):
         self.model = model
         self.fallback = RuleEngine()
+        self.prompts = {name: load_prompt(name) for name in self.PERSONAS}
+        for name, text in self.prompts.items():
+            if not text.strip():
+                raise ValueError(f"Prompt {name} is empty")
+
+    def _chat(self, messages: list[dict]) -> str | None:
+        if openai is None:
+            return None
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            return None
+        openai.api_key = api_key
+        for _ in range(3):
+            try:
+                resp = openai.ChatCompletion.create(
+                    model=self.model,
+                    messages=messages,
+                    max_tokens=64,
+                )
+                return resp.choices[0].message["content"]
+            except Exception:  # pragma: no cover - network issues
+                time.sleep(1)
+        return None
 
     def decide(self, context: Context) -> PanelAction:
-        # In this demo we do not integrate an actual LLM API.
-        # The fallback rule engine is used instead.
-        return self.fallback.decide(context)
+        conversation = "\n".join(context.past_infos)
+        messages = []
+        for name in self.PERSONAS:
+            system = {"role": "system", "content": self.prompts[name]}
+            user = {"role": "user", "content": conversation}
+            messages.extend([system, user])
+            reply = self._chat(messages)
+            if reply is None:
+                return self.fallback.decide(context)
+            messages.append({"role": "assistant", "content": reply})
+        action = parse_panel_action(messages[-1]["content"])
+        if action is None:
+            return self.fallback.decide(context)
+        return action

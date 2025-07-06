@@ -5,7 +5,7 @@ from .cost_estimator import CostEstimator, CptCost
 from .gatekeeper import Gatekeeper
 from .judge import Judge
 from .protocol import ActionType, build_action
-from .actions import PanelAction
+from .actions import PanelAction, parse_panel_action
 from .panel import VirtualPanel
 from .decision import DecisionEngine, RuleEngine, LLMEngine
 from .orchestrator import Orchestrator
@@ -27,6 +27,7 @@ __all__ = [
     "ActionType",
     "build_action",
     "PanelAction",
+    "parse_panel_action",
     "DecisionEngine",
     "RuleEngine",
     "LLMEngine",
