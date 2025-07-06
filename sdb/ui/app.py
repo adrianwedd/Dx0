@@ -1,17 +1,23 @@
 """FastAPI server for chatting with the Gatekeeper."""
+# flake8: noqa
 
 from __future__ import annotations
 
 import asyncio
 
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, HTTPException
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
 from starlette.websockets import WebSocketDisconnect
+from pathlib import Path
+from uuid import uuid4
 
 from sdb.case_database import Case, CaseDatabase
 from sdb.cost_estimator import CostEstimator, CptCost
 from sdb.gatekeeper import Gatekeeper
-from sdb.protocol import ActionType, build_action
+from sdb.orchestrator import Orchestrator
+from sdb.panel import PanelAction
+from sdb.protocol import ActionType
 
 app = FastAPI(title="SDBench Physician UI")
 
@@ -35,87 +41,93 @@ cost_table = {
 }
 
 cost_estimator = CostEstimator(cost_table)
-spent: float = 0.0
 
-HTML = """
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset='utf-8'/>
-<title>SDBench Physician UI</title>
-</head>
-<body>
-<h2>SDBench Physician Chat</h2>
-<div id='log'></div>
-<input id='msg' size='80'/>
-<button onclick='send()'>Send</button>
-<script>
-const log = document.getElementById('log');
-const ws = new WebSocket(`ws://${location.host}/ws`);
-ws.onmessage = (e) => {
-  const data = JSON.parse(e.data);
-  log.innerHTML += '<div><b>Gatekeeper:</b> ' +
-    data.reply + ' (Total cost: $' + data.total_spent.toFixed(2) + ')</div>';
-};
-function send() {
-  const v = document.getElementById('msg').value;
-  log.innerHTML += `<div><b>You:</b> ${v}</div>`;
-  let action = 'question';
-  let content = v;
-  if (v.toLowerCase().startsWith('test:')) {
-    action = 'test';
-    content = v.slice(5).trim();
-  }
-  ws.send(JSON.stringify({action: action, content: content}));
-  document.getElementById('msg').value = '';
-}
-</script>
-</body>
-</html>
-"""
+
+class LoginRequest(BaseModel):
+    """Request body for user login."""
+
+    username: str
+    password: str
+
+
+class UserPanel:
+    """Panel that feeds user actions into the orchestrator."""
+
+    def __init__(self) -> None:
+        self.actions: asyncio.Queue[PanelAction] = asyncio.Queue()
+        self.turn = 0
+
+    def add_action(self, action: PanelAction) -> None:
+        """Queue an action from the user."""
+
+        self.actions.put_nowait(action)
+
+    def deliberate(self, case_info: str) -> PanelAction:
+        """Return the next queued action."""
+
+        self.turn += 1
+        return self.actions.get_nowait()
+
+
+USERS = {"physician": "secret"}
+TOKENS: dict[str, str] = {}
+
+HTML_PATH = Path(__file__).with_name("templates").joinpath("index.html")
+HTML = HTML_PATH.read_text(encoding="utf-8")
 
 
 @app.get("/", response_class=HTMLResponse)
 async def index() -> HTMLResponse:
-    """Return simple chat page."""
+    """Return the React chat application."""
+
     return HTMLResponse(HTML)
+
+
+@app.post("/login")
+async def login(req: LoginRequest) -> dict[str, str]:
+    """Authenticate a user and return a session token."""
+
+    if USERS.get(req.username) != req.password:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    token = uuid4().hex
+    TOKENS[token] = req.username
+    return {"token": token}
 
 
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket) -> None:
-    """Handle websocket interactions with the physician."""
+    """Handle authenticated websocket chat with the Gatekeeper."""
+
+    token = ws.query_params.get("token")
+    if token not in TOKENS:
+        await ws.close(code=1008)
+        return
 
     await ws.accept()
-    global spent
+    panel = UserPanel()
+    orchestrator = Orchestrator(panel, gatekeeper, cost_estimator=cost_estimator)
     try:
         while True:
             data = await ws.receive_json()
             action = data.get("action", "question").lower()
             content = data.get("content", "")
             if action == "test":
-                xml = build_action(ActionType.TEST, content)
-                result = gatekeeper.answer_question(xml)
-                cost = cost_estimator.estimate_cost(content)
-                spent += cost
-                await ws.send_json(
-                    {
-                        "reply": result.content,
-                        "synthetic": result.synthetic,
-                        "cost": cost,
-                        "total_spent": spent,
-                    }
-                )
+                panel.add_action(PanelAction(ActionType.TEST, content))
+            elif action == "diagnosis":
+                panel.add_action(PanelAction(ActionType.DIAGNOSIS, content))
             else:
-                xml = build_action(ActionType.QUESTION, content)
-                result = gatekeeper.answer_question(xml)
-                await ws.send_json(
-                    {
-                        "reply": result.content,
-                        "synthetic": result.synthetic,
-                        "cost": 0.0,
-                        "total_spent": spent,
-                    }
-                )
+                panel.add_action(PanelAction(ActionType.QUESTION, content))
+
+            prev_spent = orchestrator.spent
+            reply = orchestrator.run_turn(content)
+            step_cost = orchestrator.spent - prev_spent
+            await ws.send_json(
+                {
+                    "reply": reply,
+                    "cost": step_cost,
+                    "total_spent": orchestrator.spent,
+                }
+            )
             await asyncio.sleep(0)
     except WebSocketDisconnect:
         return

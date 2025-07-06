@@ -5,7 +5,12 @@ from sdb.ui.app import app
 
 def test_websocket_chat():
     client = TestClient(app)
-    with client.websocket_connect("/ws") as ws:
+    res = client.post(
+        "/login",
+        json={"username": "physician", "password": "secret"},
+    )
+    token = res.json()["token"]
+    with client.websocket_connect(f"/ws?token={token}") as ws:
         ws.send_json({"action": "question", "content": "cough"})
         data = ws.receive_json()
         assert "reply" in data
