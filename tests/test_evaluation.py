@@ -26,6 +26,7 @@ def test_evaluator_aggregates_score_and_cost():
     ev = Evaluator(judge, coster)
     result = ev.evaluate("flu", "flu", ["cbc", "bmp"], visits=2)
     assert result.score == 4
+    assert result.correct
     assert result.total_cost == 630.0
 
 
@@ -35,4 +36,29 @@ def test_evaluator_zero_tests_cost():
     ev = Evaluator(judge, coster)
     result = ev.evaluate("x", "x", [], visits=3)
     assert result.score == 5
+    assert result.correct
     assert result.total_cost == 900.0
+
+
+def test_evaluator_correctness_threshold_default():
+    judge = DummyJudge(score=3)
+    coster = DummyCostEstimator({})
+    ev = Evaluator(judge, coster)
+    result = ev.evaluate("x", "x", [])
+    assert not result.correct
+    judge2 = DummyJudge(score=4)
+    ev2 = Evaluator(judge2, coster)
+    result2 = ev2.evaluate("x", "x", [])
+    assert result2.correct
+
+
+def test_evaluator_correctness_threshold_custom():
+    judge = DummyJudge(score=3)
+    coster = DummyCostEstimator({})
+    ev = Evaluator(judge, coster, correct_threshold=3)
+    result = ev.evaluate("x", "x", [])
+    assert result.correct
+    judge2 = DummyJudge(score=2)
+    ev2 = Evaluator(judge2, coster, correct_threshold=3)
+    result2 = ev2.evaluate("x", "x", [])
+    assert not result2.correct

@@ -38,6 +38,12 @@ def main() -> None:
         help="Path to test cost table CSV",
     )
     parser.add_argument(
+        "--correct-threshold",
+        type=int,
+        default=4,
+        help="Judge score required for a correct diagnosis",
+    )
+    parser.add_argument(
         "--panel-engine",
         choices=["rule", "llm"],
         default="rule",
@@ -131,7 +137,11 @@ def main() -> None:
         rubric = json.load(fh)
 
     judge = Judge(rubric)
-    evaluator = Evaluator(judge, cost_estimator)
+    evaluator = Evaluator(
+        judge,
+        cost_estimator,
+        correct_threshold=args.correct_threshold,
+    )
 
     if args.panel_engine == "rule":
         engine = RuleEngine()
@@ -167,6 +177,7 @@ def main() -> None:
     print(f"Final diagnosis: {orchestrator.final_diagnosis}")
     print(f"Total cost: ${result.total_cost:.2f}")
     print(f"Session score: {result.score}")
+    print(f"Correct diagnosis: {result.correct}")
 
 
 if __name__ == "__main__":
