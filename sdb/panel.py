@@ -8,11 +8,21 @@ class PanelAction:
 
 class VirtualPanel:
     """Simulate collaborative panel of doctors."""
+
     def __init__(self):
         self.turn = 0
+        self.last_case_info = ""
 
     def deliberate(self, case_info: str) -> PanelAction:
-        """Very small demo implementation of the Chain of Debate."""
+        """Very small demo implementation of the Chain of Debate.
+
+        Parameters
+        ----------
+        case_info:
+            Latest information snippet from the gatekeeper.
+        """
+
+        self.last_case_info = case_info
         self.turn += 1
 
         if self.turn == 1:
