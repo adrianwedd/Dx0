@@ -57,4 +57,5 @@ def test_orchestrator_collects_tests_and_finishes():
     orch.run_turn("step3")
     assert orch.finished is True
     assert orch.ordered_tests == ["cbc", "bmp"]
+    assert orch.final_diagnosis == "flu"
 

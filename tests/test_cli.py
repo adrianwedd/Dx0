@@ -1,0 +1,28 @@
+import json
+import csv
+import subprocess
+import sys
+
+
+def test_cli_outputs_final_results(tmp_path):
+    cases = [{"id": "1", "summary": "viral infection", "full_text": "cough"}]
+    case_file = tmp_path / "cases.json"
+    with open(case_file, "w", encoding="utf-8") as f:
+        json.dump(cases, f)
+
+    rubric_file = tmp_path / "rubric.json"
+    with open(rubric_file, "w", encoding="utf-8") as f:
+        json.dump({}, f)
+
+    cost_file = tmp_path / "costs.csv"
+    with open(cost_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["test_name", "cpt_code", "price"])
+        writer.writeheader()
+        writer.writerow({"test_name": "complete blood count", "cpt_code": "100", "price": "10"})
+
+    cmd = [sys.executable, "cli.py", "--db", str(case_file), "--case", "1", "--rubric", str(rubric_file), "--costs", str(cost_file)]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    assert "Final diagnosis" in result.stdout
+    assert "Total cost" in result.stdout
+    assert "Session score" in result.stdout
