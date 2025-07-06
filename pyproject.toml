@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sdb"
+version = "0.1.0"
+description = "Sequential diagnosis benchmark and demo orchestrator"
+authors = [{name = "MAI"}]
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "prometheus_client",
+    "numpy>=1.26.4",
+    "sentence-transformers",
+]
+
+[project.optional-dependencies]
+cli = ["httpx"]
+
+[project.scripts]
+sdb-cli = "cli:main"
+
+[tool.setuptools]
+packages = ["sdb"]
+py-modules = ["cli"]
