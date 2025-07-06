@@ -173,6 +173,7 @@ phases:
       - id: 6
         title: "Match codes to pricing table"
         description: "Achieve >98% coverage when mapping CPT codes to the pricing table."
+        done: true
       - id: 7
         title: "Estimate costs for unmatched tests"
         description: "Use a language model to estimate prices when the table lacks an entry."

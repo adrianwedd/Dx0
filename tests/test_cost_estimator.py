@@ -1,5 +1,6 @@
 import tempfile
 import csv
+import pytest
 from sdb.cost_estimator import CostEstimator
 
 
@@ -49,3 +50,33 @@ def test_load_aliases_from_csv(tmp_path):
     ce.load_aliases_from_csv(str(alias_path))
 
     assert ce.lookup_cost("basic metabolic panel").cpt_code == "101"
+
+
+def test_coverage_check(tmp_path):
+    cost_rows = [
+        {"test_name": "cbc", "cpt_code": "100", "price": "1"},
+    ]
+    cost_path = tmp_path / "cost.csv"
+    with open(cost_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f, fieldnames=["test_name", "cpt_code", "price"]
+        )
+        writer.writeheader()
+        writer.writerows(cost_rows)
+
+    cms_rows = [
+        {"cpt_code": "100"},
+        {"cpt_code": "101"},
+    ]
+    cms_path = tmp_path / "cms.csv"
+    with open(cms_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["cpt_code"])
+        writer.writeheader()
+        writer.writerows(cms_rows)
+
+    with pytest.raises(ValueError):
+        CostEstimator.load_from_csv(
+            str(cost_path),
+            cms_pricing_path=str(cms_path),
+            coverage_threshold=0.98,
+        )
