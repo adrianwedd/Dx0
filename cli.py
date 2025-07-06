@@ -1,16 +1,24 @@
+"""Command line interface for running a demo diagnostic session."""
+
 import argparse
-from sdb import Case, CaseDatabase, Gatekeeper, CostEstimator, VirtualPanel, Orchestrator
+import os
+from sdb import CaseDatabase, Gatekeeper, CostEstimator, VirtualPanel, Orchestrator
 from sdb.cost_estimator import CptCost
 
 
-def main():
+def main() -> None:
+    """Run a demo diagnostic session using the virtual panel."""
+
     parser = argparse.ArgumentParser(description="Run a simple diagnostic session")
-    parser.add_argument('--case', default='1')
+    parser.add_argument("--db", required=True, help="Path to case JSON or directory")
+    parser.add_argument("--case", required=True, help="Case identifier")
     args = parser.parse_args()
 
-    # Sample case
-    case = Case(id="1", summary="Patient complains of cough", full_text="History: patient has had a cough for 3 days.")
-    db = CaseDatabase([case])
+    if os.path.isdir(args.db):
+        db = CaseDatabase.load_from_directory(args.db)
+    else:
+        db = CaseDatabase.load_from_json(args.db)
+
     gatekeeper = Gatekeeper(db, args.case)
     gatekeeper.register_test_result("complete blood count", "normal")
 
