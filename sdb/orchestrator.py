@@ -8,6 +8,7 @@ class Orchestrator:
         self.gatekeeper = gatekeeper
         self.finished = False
         self.ordered_tests = []
+        self.final_diagnosis: str | None = None
 
     def run_turn(self, case_info: str) -> str:
         """Process a single interaction turn with the panel."""
@@ -20,5 +21,6 @@ class Orchestrator:
             self.ordered_tests.append(action.content)
         if action.action_type == ActionType.DIAGNOSIS:
             self.finished = True
+            self.final_diagnosis = action.content
 
         return result.content
