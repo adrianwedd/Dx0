@@ -92,3 +92,26 @@ def test_unknown_xml_tag():
     res = gk.answer_question("<foo>bar</foo>")
     assert res.synthetic is True
     assert res.content == "Unknown action"
+
+
+def test_load_results_from_invalid_json(tmp_path):
+    """Malformed JSON fixtures should be ignored without crashing."""
+    case = Case(id="1", summary="s", full_text="f")
+    db = CaseDatabase([case])
+    gk = Gatekeeper(db, "1")
+
+    path = tmp_path / "bad.json"
+    path.write_text("{invalid}", encoding="utf-8")
+
+    gk.load_results_from_json(str(path))
+    res = gk.answer_question(build_action(ActionType.TEST, "cbc"))
+    assert res.synthetic is True
+
+
+def test_unexpected_nested_xml():
+    """Nested tags mixing actions should be rejected."""
+    gk = setup_gatekeeper()
+    query = "<question>info<test>cbc</test></question>"
+    res = gk.answer_question(query)
+    assert res.synthetic is True
+    assert "Cannot mix" in res.content
