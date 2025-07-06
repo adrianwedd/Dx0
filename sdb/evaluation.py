@@ -36,11 +36,27 @@ class Evaluator:
         self.judge = judge
         self.cost_estimator = cost_estimator
 
+    VISIT_FEE = 300.0
+
     def evaluate(
-        self, diagnosis: str, truth: str, tests: list[str]
+        self, diagnosis: str, truth: str, tests: list[str], visits: int = 1
     ) -> SessionResult:
+        """Evaluate a diagnosis and compute total session cost.
+
+        Parameters
+        ----------
+        diagnosis:
+            Final diagnosis proposed by the panel.
+        truth:
+            Ground truth summary used by the judge.
+        tests:
+            List of ordered test names.
+        visits:
+            Number of physician visits that occurred during the session.
+        """
+
         judgement = self.judge.evaluate(diagnosis, truth)
-        total_cost = sum(
+        total_cost = visits * self.VISIT_FEE + sum(
             self.cost_estimator.estimate_cost(t) for t in tests
         )
         return SessionResult(total_cost=total_cost, score=judgement.score)

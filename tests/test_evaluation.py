@@ -24,15 +24,15 @@ def test_evaluator_aggregates_score_and_cost():
     judge = DummyJudge(score=4)
     coster = DummyCostEstimator({"cbc": 10.0, "bmp": 20.0})
     ev = Evaluator(judge, coster)
-    result = ev.evaluate("flu", "flu", ["cbc", "bmp"])
+    result = ev.evaluate("flu", "flu", ["cbc", "bmp"], visits=2)
     assert result.score == 4
-    assert result.total_cost == 30.0
+    assert result.total_cost == 630.0
 
 
 def test_evaluator_zero_tests_cost():
     judge = DummyJudge(score=5)
     coster = DummyCostEstimator({})
     ev = Evaluator(judge, coster)
-    result = ev.evaluate("x", "x", [])
+    result = ev.evaluate("x", "x", [], visits=3)
     assert result.score == 5
-    assert result.total_cost == 0.0
+    assert result.total_cost == 900.0
