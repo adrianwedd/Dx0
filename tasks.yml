@@ -32,6 +32,7 @@ phases:
           expose a metrics endpoint for Prometheus. Provide example Grafana
           dashboard configuration.
         labels: [enhancement, observability, backend]
+        done: true
       - id: "T5"
         title: "Expand Unit Tests for Error & Edge Cases"
         description: >
@@ -336,3 +337,4 @@ phases:
           - "Replace the `difflib.SequenceMatcher` in the `Judge` class with a call to a configured LLM."
           - "Develop a precise prompt for the Judge LLM that instructs it to compare the candidate and ground-truth diagnoses based on clinical substance, not just lexical similarity, using the 5-point rubric."
           - "Add unit tests to `test_judge.py` to validate the new LLM-based evaluation logic with a variety of clinically similar but lexically different diagnostic pairs."
+

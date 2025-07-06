@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import json
+import logging
 from typing import List, Set
 
 from .actions import PanelAction
 from .decision import Context, DecisionEngine, RuleEngine
+from .metrics import PANEL_ACTIONS
+
+logger = logging.getLogger(__name__)
 
 
 class VirtualPanel:
@@ -42,4 +47,16 @@ class VirtualPanel:
             past_infos=self.past_infos,
             triggered_keywords=self.triggered_keywords,
         )
-        return self.engine.decide(ctx)
+        action = self.engine.decide(ctx)
+        PANEL_ACTIONS.labels(action.action_type.value).inc()
+        logger.info(
+            json.dumps(
+                {
+                    "event": "deliberate",
+                    "turn": self.turn,
+                    "type": action.action_type.value,
+                    "content": action.content,
+                }
+            )
+        )
+        return action

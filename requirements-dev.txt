@@ -6,3 +6,5 @@ black
 isort
 mypy
 pre-commit
+prometheus_client
+
