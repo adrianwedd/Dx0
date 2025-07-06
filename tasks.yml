@@ -1,87 +1,227 @@
-- phase: "Phase 1: SDBench Framework and Environment Setup"
-  tasks:
-    - id: 1
-      desc: "Collect 304 consecutive NEJM CPC cases"
-    - id: 2
-      desc: "Convert each case into an interactive simulation format"
-    - id: 3
-      desc: "Write a brief summary for each case"
-    - id: 4
-      desc: "Hold out 56 recent cases (2024-2025) as hidden test set"
-    - id: 5
-      desc: "Develop LM-based lookup to translate test requests into CPT codes"
-    - id: 6
-      desc: "Match CPT codes to a pricing table and achieve >98% coverage"
-    - id: 7
-      desc: "Estimate prices with a language model for unmatched tests"
-    - id: 8
-      desc: "Apply fixed $300 cost for each physician visit"
-    - id: 9
-      desc: "Implement Gatekeeper with controlled disclosure of case findings"
-      done: true
-    - id: 10
-      desc: "Gatekeeper must refuse vague queries and diagnostic impressions"
-      done: true
-    - id: 11
-      desc: "Generate synthetic results for off-path questions and tests"
-      done: true
-    - id: 12
-      desc: "Implement Judge agent with 5-point rubric"
-      done: true
-    - id: 13
-      desc: "Define score >=4 as correct diagnosis"
-- phase: "Phase 2: MAI-DxO Agent Implementation and Execution"
-  tasks:
-    - id: 14
-      desc: "Define XML-based protocol: <question>, <test>, <diagnosis>"
-      done: true
-    - id: 15
-      desc: "Enforce rule that questions and tests cannot mix in one turn"
-      done: true
-    - id: 16
-      desc: "Create virtual panel with Dr. Hypothesis, Test-Chooser, Challenger, Stewardship, Checklist"
-      done: true
-    - id: 17
-      desc: "Implement Chain of Debate workflow to decide next action"
-      done: true
-    - id: 18
-      desc: "Run MAI-DxO in Unconstrained Budget mode"
-      done: true
-    - id: 19
-      desc: "Run Budgeted variant with cost tracker"
-      done: true
-    - id: 20
-      desc: "Run Question Only and Instant Answer variants"
-      done: true
-    - id: 21
-      desc: "Run Ensemble variant combining multiple runs"
-      done: true
-    - id: 22
-      desc: "Evaluate final diagnosis with Judge and compute total cost"
-      done: true
-    - id: 23
-      desc: "Plot accuracy vs cost for Pareto frontier"
+phases:
+  - name: "Phase 0: Engineering Foundation"
+    tasks:
+      - id: "T1"
+        title: "Refactor VirtualPanel for Pluggable Decision Engines"
+        description: >
+          Replace the hard-coded keyword\u2192action mappings with a
+          DecisionEngine interface. Provide both rule-based and LLM-based
+          implementations and update VirtualPanel to accept an engine via
+          configuration.
+        labels: [enhancement, refactor, backend]
+      - id: "T2"
+        title: "Integrate Semantic Retrieval in Gatekeeper"
+        description: >
+          Use an embedding index (FAISS or similar) and retrieval-augmented
+          generation for question answering. Fall back to regex search if the
+          embedding step fails.
+        labels: [enhancement, backend, ml]
+      - id: "T3"
+        title: "Add Dynamic Test Result Handling"
+        description: >
+          Fetch realistic lab values from JSON fixtures instead of returning
+          default results. Define the schema, implement a loader, and handle
+          missing fixture errors.
+        labels: [feature, backend, data]
+      - id: "T4"
+        title: "Implement Detailed Logging & Metrics"
+        description: >
+          Add structured logging to the Orchestrator and Panel modules and
+          expose a metrics endpoint for Prometheus. Provide example Grafana
+          dashboard configuration.
+        labels: [enhancement, observability, backend]
+      - id: "T5"
+        title: "Expand Unit Tests for Error & Edge Cases"
+        description: >
+          Cover parsing errors, unknown inputs, and timeouts across core
+          modules with comprehensive tests.
+        labels: [test, quality, backend]
+      - id: "T6"
+        title: "Enforce Code Style & Static Analysis"
+        description: >
+          Add Black, isort, flake8, and mypy checks via pre-commit and CI.
+          Document installation steps for contributors.
+        labels: [ci, quality, tooling]
+      - id: "T7"
+        title: "Enhance CLI with Model & Config Flags"
+        description: >
+          Extend cli.py with flags for selecting the panel engine, LLM model,
+          and logging verbosity.
+        labels: [feature, cli, backend]
+      - id: "T8"
+        title: "Modularize Prompt Templates & System Prompts"
+        description: >
+          Move all agent prompts into the prompts/ directory for easier
+          versioning and A/B testing.
+        labels: [enhancement, prompt-engineering, backend]
+      - id: "T9"
+        title: "CI/CD Pipeline & Dockerization"
+        description: >
+          Add GitHub Actions workflows for tests and releases and create a
+          Dockerfile for deployment.
+        labels: [ci, docker, devops]
+      - id: "T10"
+        title: "Update tasks.yml with Engineering Backlog"
+        description: >
+          Track the initial engineering tasks in this file.
+        labels: [project-management, documentation]
+      - id: "T11"
+        title: "Ingest & Convert NEJM CPC Cases for SDBench"
+        description: >
+          Build a pipeline to parse the 304 NEJM CPC articles and output
+          SDBench-formatted JSON with summary, full text, and diagnosis.
+        labels: [feature, data, backend]
+      - id: "T12"
+        title: "Implement Gatekeeper with Synthetic Findings"
+        description: >
+          Create the Gatekeeper agent that mediates information requests and
+          synthesizes plausible findings for unmentioned tests.
+        labels: [feature, ai, backend]
+      - id: "T13"
+        title: "Develop Judge Agent with Likert Rubric"
+        description: >
+          Implement the Judge agent using an LLM prompted with a 5-point
+          clinical accuracy rubric to score diagnoses.
+        labels: [feature, ai, evaluation]
+      - id: "T14"
+        title: "Build Cost Estimator & CPT Mapper"
+        description: >
+          Translate test requests to CPT codes via LLM, map to CMS prices, and
+          compute cumulative costs.
+        labels: [feature, data, backend]
+      - id: "T15"
+        title: "Create MAI-Dx Orchestrator & Virtual Panel"
+        description: >
+          Implement the orchestrator and the five-persona virtual panel
+          running a chain-of-debate to produce actions.
+        labels: [feature, agent-architecture, backend]
+      - id: "T16"
+        title: "Support MAI-Dx Variants"
+        description: >
+          Enable Instant Answer, Question Only, Budgeted, Unconstrained
+          Budget, and Ensemble modes via config.
+        labels: [feature, backend, ml]
+      - id: "T17"
+        title: "Build Physician UI for SDBench"
+        description: >
+          Provide a synchronous chat interface for physicians interacting with
+          the Gatekeeper and Cost Estimator.
+        labels: [feature, frontend, ux]
+      - id: "T18"
+        title: "Implement Evaluation Pipeline & Reporting"
+        description: >
+          Automate simulation runs over all cases and generate accuracy and
+          cost reports with Pareto plots.
+        labels: [feature, analytics, backend]
+      - id: "T19"
+        title: "Statistical Analysis & Significance Testing"
+        description: >
+          Provide permutation tests for evaluating accuracy improvements and
+          expose a CLI entry point.
+        labels: [feature, statistics, backend]
+      - id: "T20"
+        title: "Document & Package SDBench for Release"
+        description: >
+          Package the benchmark as a Python distribution and supply
+          documentation and licensing instructions.
+        labels: [documentation, release, devops]
+      - id: "T21"
+        title: "Automated Case Ingestion for Future Updates"
+        description: >
+          Design a framework to periodically scrape new NEJM CPC cases and
+          integrate them into SDBench.
+        labels: [feature, data, backend]
+      - id: "T22"
+        title: "Legal & Licensing Review for Public Dataset"
+        description: >
+          Coordinate with legal to ensure the public release complies with
+          NEJM permissions and licensing requirements.
+        labels: [legal, compliance, project-management]
 
+  - name: "Phase 1: SDBench Framework and Environment Setup"
+    tasks:
+      - id: 1
+        title: "Collect NEJM CPC cases"
+        description: "Gather 304 consecutive CPC articles for dataset creation."
+      - id: 2
+        title: "Convert cases to simulation format"
+        description: "Transform each case into an interactive simulation with discrete steps."
+      - id: 3
+        title: "Write summary for each case"
+        description: "Provide a short synopsis highlighting the key features."
+      - id: 4
+        title: "Create hidden test set"
+        description: "Hold out 56 recent cases from 2024\u20132025 as a hidden evaluation set."
+      - id: 5
+        title: "Lookup CPT codes with language model"
+        description: "Translate test requests into CPT codes using an LLM."
+      - id: 6
+        title: "Match codes to pricing table"
+        description: "Achieve >98% coverage when mapping CPT codes to the pricing table."
+      - id: 7
+        title: "Estimate costs for unmatched tests"
+        description: "Use a language model to estimate prices when the table lacks an entry."
+      - id: 8
+        title: "Apply visit fee"
+        description: "Charge a fixed $300 cost for each physician visit."
+      - id: 9
+        title: "Controlled Gatekeeper"
+        description: "Implement Gatekeeper with controlled disclosure of case findings."
+        done: true
+      - id: 10
+        title: "Refusal policy"
+        description: "Gatekeeper must refuse vague queries and diagnostic impressions."
+        done: true
+      - id: 11
+        title: "Synthetic results for off-path tests"
+        description: "Generate synthetic results when the requested information is missing."
+        done: true
+      - id: 12
+        title: "Judge agent with rubric"
+        description: "Implement Judge agent that scores diagnoses with a 5-point rubric."
+        done: true
+      - id: 13
+        title: "Define correct threshold"
+        description: "Treat scores \u22654 from the judge as correct diagnoses."
 
-- phase: "Phase 0: Engineering Foundation"
-  tasks:
-    - id: T1
-      desc: "Refactor VirtualPanel for pluggable decision engines"
-    - id: T2
-      desc: "Integrate semantic retrieval in Gatekeeper"
-    - id: T3
-      desc: "Add dynamic test result handling"
-    - id: T4
-      desc: "Implement detailed logging & metrics"
-    - id: T5
-      desc: "Expand unit tests for error & edge cases"
-    - id: T6
-      desc: "Enforce code style & static analysis"
-    - id: T7
-      desc: "Enhance CLI with model & config flags"
-    - id: T8
-      desc: "Modularize prompt templates & system prompts"
-    - id: T9
-      desc: "CI/CD pipeline & Dockerization"
-    - id: T10
-      desc: "Update tasks.yml with Engineering Backlog"
+  - name: "Phase 2: MAI-DxO Agent Implementation and Execution"
+    tasks:
+      - id: 14
+        title: "XML protocol"
+        description: "Define <question>, <test>, and <diagnosis> messages for communication."
+        done: true
+      - id: 15
+        title: "Enforce question/test separation"
+        description: "Prohibit mixing questions and test orders in a single turn."
+        done: true
+      - id: 16
+        title: "Create virtual panel"
+        description: "Instantiate Dr. Hypothesis, Test-Chooser, Challenger, Stewardship, and Checklist personas."
+        done: true
+      - id: 17
+        title: "Chain of Debate workflow"
+        description: "Implement a sequential debate to decide the next action."
+        done: true
+      - id: 18
+        title: "Unconstrained mode"
+        description: "Run MAI-DxO without budget constraints."
+        done: true
+      - id: 19
+        title: "Budgeted mode"
+        description: "Track spending and enforce a budget limit."
+        done: true
+      - id: 20
+        title: "Question Only and Instant Answer"
+        description: "Support streamlined modes that limit or skip the debate."
+        done: true
+      - id: 21
+        title: "Ensemble variant"
+        description: "Combine multiple MAI-DxO runs to produce a final answer."
+        done: true
+      - id: 22
+        title: "Evaluation"
+        description: "Use the Judge agent to score the final diagnosis and compute cost."
+        done: true
+      - id: 23
+        title: "Plot accuracy vs cost"
+        description: "Visualize trade-offs by plotting the Pareto frontier."
