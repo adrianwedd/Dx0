@@ -18,6 +18,14 @@ class CaseDatabase:
     """Stub for CPC case storage."""
 
     def __init__(self, cases: Iterable[Case]):
+        """Create a database from an iterable of cases.
+
+        Parameters
+        ----------
+        cases:
+            Iterable of :class:`Case` objects to index by their ``id``.
+        """
+
         self.cases = {case.id: case for case in cases}
 
     def get_case(self, case_id: str) -> Case:
