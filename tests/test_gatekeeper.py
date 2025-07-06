@@ -31,3 +31,17 @@ def test_diagnosis_refusal():
     q = build_action(ActionType.QUESTION, "what is the diagnosis?")
     res = gk.answer_question(q)
     assert res.synthetic is True
+
+
+def test_case_insensitive_search():
+    gk = setup_gatekeeper()
+    q = build_action(ActionType.QUESTION, "COUGH FOR 3 DAYS")
+    res = gk.answer_question(q)
+    assert "cough for 3 days" in res.content.lower()
+    assert res.synthetic is False
+
+
+def test_invalid_xml():
+    gk = setup_gatekeeper()
+    res = gk.answer_question("<question>missing</question")
+    assert res.synthetic is True
