@@ -84,3 +84,11 @@ def test_mixed_question_and_test_refused():
     query = "<wrapper><question>a</question><test>b</test></wrapper>"
     res = gk.answer_question(query)
     assert res.synthetic is True
+
+
+def test_unknown_xml_tag():
+    """Unrecognized actions should return a synthetic reply."""
+    gk = setup_gatekeeper()
+    res = gk.answer_question("<foo>bar</foo>")
+    assert res.synthetic is True
+    assert res.content == "Unknown action"
