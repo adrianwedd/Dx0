@@ -24,7 +24,7 @@ class LLMClient(ABC):
     """Generic interface for chat-based language models with metrics."""
 
     def chat(self, messages: List[dict], model: str) -> str | None:
-        """Return the assistant reply for the given messages and record metrics."""
+        """Return the assistant reply and record latency and token metrics."""
 
         start = time.perf_counter()
         reply = self._chat(messages, model)
@@ -32,7 +32,9 @@ class LLMClient(ABC):
         LLM_LATENCY.observe(duration)
         tokens = self._count_tokens(messages)
         if reply is not None:
-            tokens += self._count_tokens([{"role": "assistant", "content": reply}])
+            tokens += self._count_tokens(
+                [{"role": "assistant", "content": reply}]
+            )
         LLM_TOKENS.inc(tokens)
         logger.info(
             json.dumps(
