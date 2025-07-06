@@ -11,6 +11,7 @@ from .decision import DecisionEngine, RuleEngine, LLMEngine
 from .orchestrator import Orchestrator
 from .evaluation import Evaluator
 from .ingest.convert import convert_directory
+from .ingest.pipeline import run_pipeline
 from .cpt_lookup import lookup_cpt
 
 __all__ = [
@@ -31,4 +32,5 @@ __all__ = [
     "Evaluator",
     "convert_directory",
     "lookup_cpt",
+    "run_pipeline",
 ]

@@ -14,7 +14,7 @@ from sdb import (
     Orchestrator,
     Judge,
     Evaluator,
-    convert_directory,
+    run_pipeline,
 )
 
 
@@ -105,7 +105,12 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.convert:
-        convert_directory(args.raw_dir, args.output_dir, args.hidden_dir)
+        run_pipeline(
+            raw_dir=args.raw_dir,
+            output_dir=args.output_dir,
+            hidden_dir=args.hidden_dir,
+            fetch=False,
+        )
         return
 
     required = [args.db, args.case, args.rubric, args.costs]
