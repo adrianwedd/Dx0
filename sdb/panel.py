@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Set, Tuple
-
 from .protocol import ActionType
+
 
 @dataclass
 class PanelAction:
@@ -12,6 +12,7 @@ class PanelAction:
     action_type: ActionType
     content: str
 
+
 class VirtualPanel:
     """Simulate collaborative panel of doctors with simple heuristics."""
 
@@ -19,7 +20,10 @@ class VirtualPanel:
         "cough": (ActionType.TEST, "chest x-ray"),
     }
 
-    def __init__(self, keyword_actions: Optional[Dict[str, Tuple[ActionType, str]]] = None):
+    def __init__(
+        self,
+        keyword_actions: Optional[Dict[str, Tuple[ActionType, str]]] = None,
+    ):
         self.turn = 0
         self.last_case_info = ""
         self.past_infos: List[str] = []
@@ -31,7 +35,10 @@ class VirtualPanel:
 
         text = " ".join(self.past_infos).lower()
         for keyword, (atype, content) in self.keyword_actions.items():
-            if keyword.lower() in text and keyword not in self.triggered_keywords:
+            if (
+                keyword.lower() in text
+                and keyword not in self.triggered_keywords
+            ):
                 self.triggered_keywords.add(keyword)
                 return PanelAction(atype, content)
         return None

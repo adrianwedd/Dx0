@@ -1,11 +1,12 @@
 from dataclasses import dataclass
-from typing import Dict, Any
+from typing import Dict
 import re
 import xml.etree.ElementTree as ET
 
 from .protocol import ActionType
 
-from .case_database import CaseDatabase, Case
+from .case_database import CaseDatabase
+
 
 @dataclass
 class QueryResult:
@@ -20,7 +21,9 @@ class QueryResult:
     """
 
     content: str
+
     synthetic: bool = False
+
 
 class Gatekeeper:
     """Information oracle mediating access to the case."""
@@ -42,17 +45,36 @@ class Gatekeeper:
         except ET.ParseError:
             return QueryResult("Invalid query", synthetic=True)
 
+        tags = {el.tag for el in root.iter()}
+        if (
+            ActionType.QUESTION.value in tags
+            and ActionType.TEST.value in tags
+        ):
+            return QueryResult(
+                "Cannot mix questions and tests in one request",
+                synthetic=True,
+            )
+
         tag = root.tag
         text = (root.text or "").strip()
 
         if tag == ActionType.DIAGNOSIS.value:
             # We never reveal the diagnosis
-            return QueryResult("Diagnosis queries are not allowed", synthetic=True)
+            return QueryResult(
+                "Diagnosis queries are not allowed",
+                synthetic=True,
+            )
 
         if tag == ActionType.QUESTION.value:
             # Refuse vague or diagnostic questions
-            if any(word in text.lower() for word in ["diagnosis", "differential", "what is wrong"]):
-                return QueryResult("I can only answer explicit questions about findings.", synthetic=True)
+            if any(
+                word in text.lower()
+                for word in ["diagnosis", "differential", "what is wrong"]
+            ):
+                return QueryResult(
+                    "I can only answer explicit questions about findings.",
+                    synthetic=True,
+                )
 
             # Search summary and full text for the answer using
             # case-insensitive matching

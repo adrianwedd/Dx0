@@ -2,10 +2,12 @@ import difflib
 from dataclasses import dataclass
 from typing import Dict, Any
 
+
 @dataclass
 class Judgement:
     score: int
     explanation: str
+
 
 class Judge:
     """Evaluate diagnosis with physician-authored rubric."""

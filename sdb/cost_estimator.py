@@ -2,12 +2,15 @@ import csv
 from dataclasses import dataclass
 from typing import Dict, Optional
 
+
 @dataclass
 class CptCost:
     """Mapping between a CPT code and its price."""
 
     cpt_code: str
+
     price: float
+
 
 class CostEstimator:
     """Map tests to CPT codes and prices."""
@@ -52,9 +55,12 @@ class CostEstimator:
         if tc:
             return tc.price
         # Placeholder fallback cost estimation when CPT code is unknown.
-        # In a full system this could call a language model. Here we return
-        # an average price based on known tests if available.
+        # In a full system this could call a language model.
+        # Here we return an average price based on known tests if available.
         if self.cost_table:
-            avg = sum(tc.price for tc in self.cost_table.values()) / len(self.cost_table)
+            avg = (
+                sum(tc.price for tc in self.cost_table.values())
+                / len(self.cost_table)
+            )
             return avg
         return 0.0
