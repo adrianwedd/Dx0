@@ -153,6 +153,7 @@ phases:
       - id: 1
         title: "Collect NEJM CPC cases"
         description: "Gather 304 consecutive CPC articles for dataset creation."
+        done: true
       - id: 2
         title: "Convert cases to simulation format"
         description: "Transform each case into an interactive simulation with discrete steps."
