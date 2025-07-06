@@ -15,6 +15,7 @@ from sdb import (
     Judge,
     Evaluator,
     run_pipeline,
+    start_metrics_server,
 )
 
 
@@ -103,6 +104,8 @@ def main() -> None:
         help="Run mode",
     )
     args = parser.parse_args()
+
+    start_metrics_server()
 
     if args.convert:
         run_pipeline(

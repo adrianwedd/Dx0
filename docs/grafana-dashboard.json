@@ -1,0 +1,21 @@
+{
+  "dashboard": {
+    "title": "MAI DxO Metrics",
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "Panel Actions",
+        "targets": [
+          {"expr": "panel_actions_total", "legendFormat": "{{action_type}}"}
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Orchestrator Turns",
+        "targets": [
+          {"expr": "orchestrator_turns_total"}
+        ]
+      }
+    ]
+  }
+}
