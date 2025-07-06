@@ -76,6 +76,16 @@ python -m sdbench.cli \
   --output results/sdbench_summary.csv
 ```
 
+### Data Ingestion
+
+The repository includes the 304 NEJM CPC cases in `data/json_cases/`. To refresh
+the dataset or fetch updates, run:
+
+```bash
+python scripts/collect_cases.py --dest data/raw_cases
+python sdb/ingest/convert.py data/raw_cases data/json_cases
+```
+
 ### Python API Example
 
 ```python

@@ -75,6 +75,7 @@ phases:
           Build a pipeline to parse the 304 NEJM CPC articles and output
           SDBench-formatted JSON with summary, full text, and diagnosis.
         labels: [feature, data, backend]
+        done: true
       - id: "T12"
         title: "Implement Gatekeeper with Synthetic Findings"
         description: >
