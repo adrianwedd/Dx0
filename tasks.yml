@@ -120,6 +120,7 @@ phases:
           Provide a synchronous chat interface for physicians interacting with
           the Gatekeeper and Cost Estimator.
         labels: [feature, frontend, ux]
+        done: true
       - id: "T18"
         title: "Implement Evaluation Pipeline & Reporting"
         description: >
