@@ -11,6 +11,7 @@ from .decision import DecisionEngine, RuleEngine, LLMEngine
 from .orchestrator import Orchestrator
 from .evaluation import Evaluator
 from .ingest.convert import convert_directory
+from .cpt_lookup import lookup_cpt
 
 __all__ = [
     "Case",
@@ -29,4 +30,5 @@ __all__ = [
     "Orchestrator",
     "Evaluator",
     "convert_directory",
+    "lookup_cpt",
 ]
