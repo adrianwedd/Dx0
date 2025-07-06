@@ -158,9 +158,11 @@ phases:
       - id: 2
         title: "Convert cases to simulation format"
         description: "Transform each case into an interactive simulation with discrete steps."
+        done: true
       - id: 3
         title: "Write summary for each case"
         description: "Provide a short synopsis highlighting the key features."
+        done: true
       - id: 4
         title: "Create hidden test set"
         description: "Hold out 56 recent cases from 2024\u20132025 as a hidden evaluation set."
