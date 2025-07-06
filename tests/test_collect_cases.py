@@ -1,6 +1,6 @@
 import os
 
-from scripts.collect_cases import save_case_text
+from sdb.ingest.pipeline import save_case_text
 
 
 def test_save_case_text(tmp_path):
