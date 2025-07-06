@@ -78,8 +78,10 @@ python -m sdbench.cli \
 
 ### Data Ingestion
 
-The repository includes the 304 NEJM CPC cases in `data/sdbench/cases/`. To
-refresh the dataset or fetch updates, run the ingestion pipeline:
+The repository includes the 304 NEJM CPC cases in `data/sdbench/cases/`.
+These files are for research use only and may not be redistributed without
+permission from NEJM. To refresh the dataset or fetch updates, run the
+ingestion pipeline:
 
 ```bash
 python -m sdb.ingest.pipeline
@@ -169,7 +171,12 @@ clinical-ai-suite/
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+The code in this repository is released under the MIT License. See
+[LICENSE](LICENSE) for details. The NEJM CPC case data in `data/sdbench`
+are provided solely for non-commercial research. NEJM retains all rights
+to the original articles, and redistribution may require permission from
+NEJM. We are unable to confirm further distribution rights; consult your
+own legal counsel before sharing the dataset.
 
 ---
 
