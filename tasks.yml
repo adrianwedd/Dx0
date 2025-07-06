@@ -288,6 +288,7 @@ phases:
           - "Add a user authentication system to manage physician accounts and track their performance over time."
           - "Display the cumulative cost from the `CostEstimator` in the UI, updating it in real-time as tests are ordered."
           - "Ensure the interface is intuitive and requires minimal training for physicians to use effectively."
+        done: true
 
       - id: "T26"
         title: "Enhance Orchestrator for Advanced Ensemble Strategies"

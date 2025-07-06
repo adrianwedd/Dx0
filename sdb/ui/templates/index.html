@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'/>
+  <title>SDBench Physician UI</title>
+  <script crossorigin src='https://unpkg.com/react@18/umd/react.development.js'></script>
+  <script crossorigin src='https://unpkg.com/react-dom@18/umd/react-dom.development.js'></script>
+  <script crossorigin src='https://unpkg.com/babel-standalone@6/babel.min.js'></script>
+</head>
+<body>
+<div id='root'></div>
+<script type='text/babel'>
+function App() {
+  const [token, setToken] = React.useState(null);
+  const [log, setLog] = React.useState([]);
+  const [msg, setMsg] = React.useState('');
+  const [ws, setWs] = React.useState(null);
+  const [cost, setCost] = React.useState(0);
+
+  const login = async (e) => {
+    e.preventDefault();
+    const user = e.target.user.value;
+    const pass = e.target.pass.value;
+    const res = await fetch('/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username: user, password: pass})
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setToken(data.token);
+      const socket = new WebSocket(`ws://${location.host}/ws?token=${data.token}`);
+      socket.onmessage = (ev) => {
+        const d = JSON.parse(ev.data);
+        setLog(l => [...l, {sender: 'Gatekeeper', text: d.reply}]);
+        setCost(d.total_spent);
+      };
+      setWs(socket);
+    } else {
+      alert('Login failed');
+    }
+  };
+
+  const send = () => {
+    if (!ws) return;
+    setLog(l => [...l, {sender: 'You', text: msg}]);
+    let action = 'question';
+    let content = msg;
+    if (msg.toLowerCase().startsWith('test:')) {
+      action = 'test';
+      content = msg.slice(5).trim();
+    }
+    ws.send(JSON.stringify({action, content}));
+    setMsg('');
+  };
+
+  if (!token) {
+    return (
+      <form onSubmit={login}>
+        <input name='user' placeholder='Username'/>
+        <input name='pass' type='password' placeholder='Password'/>
+        <button type='submit'>Login</button>
+      </form>
+    );
+  }
+
+  return (
+    <div>
+      <h2>SDBench Physician Chat</h2>
+      <div>Running Cost: ${cost.toFixed(2)}</div>
+      <div id='log'>
+        {log.map((m, i) => <div key={i}><b>{m.sender}:</b> {m.text}</div>)}
+      </div>
+      <input value={msg} onChange={e => setMsg(e.target.value)} size='80'/>
+      <button onClick={send}>Send</button>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
