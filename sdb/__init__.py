@@ -14,7 +14,7 @@ from .ingest.convert import convert_directory
 from .ingest.pipeline import run_pipeline, update_dataset
 from .cpt_lookup import lookup_cpt
 from .metrics import start_metrics_server
-from .retrieval import SimpleEmbeddingIndex
+from .retrieval import SimpleEmbeddingIndex, SentenceTransformerIndex
 from .statistics import load_scores, permutation_test
 
 __all__ = [
@@ -40,6 +40,7 @@ __all__ = [
     "update_dataset",
     "start_metrics_server",
     "SimpleEmbeddingIndex",
+    "SentenceTransformerIndex",
     "load_scores",
     "permutation_test",
 ]

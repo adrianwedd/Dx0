@@ -46,3 +46,39 @@ class SimpleEmbeddingIndex:
             if scores[i] > 0:
                 results.append((self.documents[i], float(scores[i])))
         return results
+
+
+class SentenceTransformerIndex:
+    """Embedding index backed by a sentence-transformer model."""
+
+    def __init__(
+        self, documents: List[str], model_name: str = "all-MiniLM-L6-v2"
+    ) -> None:
+        self.documents = documents
+        self.model_name = model_name
+        try:
+            from sentence_transformers import SentenceTransformer
+
+            self.model = SentenceTransformer(model_name)
+            self.embeddings = np.array(
+                self.model.encode(documents, normalize_embeddings=True)
+            )
+            self.fallback = None
+        except Exception:
+            # Fall back to simple lexical embeddings if the library is missing
+            self.model = None
+            self.embeddings = None
+            self.fallback = SimpleEmbeddingIndex(documents)
+
+    def query(self, text: str, top_k: int = 1) -> List[Tuple[str, float]]:
+        if self.model is None or self.embeddings is None:
+            return self.fallback.query(text, top_k=top_k)
+
+        qvec = self.model.encode([text], normalize_embeddings=True)[0]
+        scores = self.embeddings.dot(qvec)
+        indices = np.argsort(scores)[::-1][:top_k]
+        results = []
+        for i in indices:
+            if scores[i] > 0:
+                results.append((self.documents[i], float(scores[i])))
+        return results
