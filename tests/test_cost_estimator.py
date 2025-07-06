@@ -1,6 +1,6 @@
 import tempfile
 import csv
-from sdb.cost_estimator import CostEstimator, CptCost
+from sdb.cost_estimator import CostEstimator
 
 
 def test_lookup_and_estimate():
@@ -9,7 +9,9 @@ def test_lookup_and_estimate():
         {"test_name": "bmp", "cpt_code": "101", "price": "20"},
     ]
     with tempfile.NamedTemporaryFile("w", newline="", delete=False) as f:
-        writer = csv.DictWriter(f, fieldnames=["test_name", "cpt_code", "price"])
+        writer = csv.DictWriter(
+            f, fieldnames=["test_name", "cpt_code", "price"]
+        )
         writer.writeheader()
         writer.writerows(data)
         path = f.name

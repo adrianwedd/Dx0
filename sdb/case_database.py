@@ -4,6 +4,7 @@ import os
 from dataclasses import dataclass
 from typing import Iterable
 
+
 @dataclass
 class Case:
     """A clinical case with an identifier, summary and full text."""
@@ -11,6 +12,7 @@ class Case:
     id: str
     summary: str
     full_text: str
+
 
 class CaseDatabase:
     """Stub for CPC case storage."""
@@ -52,7 +54,13 @@ class CaseDatabase:
                     continue
                 if not case_id:
                     continue
-                cases.append(Case(id=case_id, summary=summary, full_text=full_text))
+                cases.append(
+                    Case(
+                        id=case_id,
+                        summary=summary,
+                        full_text=full_text,
+                    )
+                )
         return CaseDatabase(cases)
 
     @staticmethod
@@ -67,11 +75,20 @@ class CaseDatabase:
             case_dir = os.path.join(path, case_id)
             summary_file = os.path.join(case_dir, "summary.txt")
             full_file = os.path.join(case_dir, "full.txt")
-            if not os.path.isfile(summary_file) or not os.path.isfile(full_file):
+            if (
+                not os.path.isfile(summary_file)
+                or not os.path.isfile(full_file)
+            ):
                 continue
             with open(summary_file, "r", encoding="utf-8") as sf:
                 summary = sf.read().strip()
             with open(full_file, "r", encoding="utf-8") as ff:
                 full_text = ff.read().strip()
-            cases.append(Case(id=case_id, summary=summary, full_text=full_text))
+            cases.append(
+                Case(
+                    id=case_id,
+                    summary=summary,
+                    full_text=full_text,
+                )
+            )
         return CaseDatabase(cases)
