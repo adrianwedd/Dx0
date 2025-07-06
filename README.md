@@ -178,6 +178,9 @@ to the original articles, and redistribution may require permission from
 NEJM. We are unable to confirm further distribution rights; consult your
 own legal counsel before sharing the dataset.
 
+For a list of changes in each version, see
+[the release notes](docs/release_notes.md).
+
 ---
 
 ## References
