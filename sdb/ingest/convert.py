@@ -7,10 +7,15 @@ import os
 import re
 from typing import Dict, List, Optional
 
+from ..prompt_loader import load_prompt
+
 try:  # Optional dependency
     import openai  # type: ignore
 except Exception:  # pragma: no cover - openai not required for tests
     openai = None
+
+
+SUMMARY_PROMPT = load_prompt("case_summary_system")
 
 
 def split_steps(text: str) -> List[str]:
@@ -56,10 +61,7 @@ def _llm_summarize(text: str) -> Optional[str]:
         resp = openai.ChatCompletion.create(
             model=os.getenv("OPENAI_MODEL", "gpt-3.5-turbo"),
             messages=[
-                {
-                    "role": "system",
-                    "content": "Summarize the medical case in 1-2 sentences.",
-                },
+                {"role": "system", "content": SUMMARY_PROMPT},
                 {"role": "user", "content": text[:4000]},
             ],
             max_tokens=100,
@@ -111,12 +113,13 @@ def convert_text(text: str, case_id: int) -> Dict[str, object]:
 
     steps = split_steps(text)
     summary = summarize(text)
-    data = {
+    steps_list = []
+    for idx, step in enumerate(steps):
+        steps_list.append({"id": idx + 1, "text": step})
+    data: dict[str, object] = {
         "id": f"case_{case_id:03d}",
         "summary": summary,
-        "steps": [
-            {"id": idx + 1, "text": step} for idx, step in enumerate(steps)
-        ],
+        "steps": steps_list,
     }
     return data
 
@@ -167,7 +170,7 @@ def convert_directory(
         summary_file = f"case_{case_num:03d}_summary.txt"
         summary_path = os.path.join(target_dir, summary_file)
         with open(summary_path, "w", encoding="utf-8") as sf:
-            sf.write(data["summary"])
+            sf.write(str(data["summary"]))
         if target_dir == dest_dir:
             written.append(out_path)
     return written
@@ -180,7 +183,9 @@ if __name__ == "__main__":  # pragma: no cover
     parser.add_argument("src", help="Directory with raw case text files")
     parser.add_argument("dest", help="Output directory for JSON cases")
     parser.add_argument(
-        "--hidden", help="Directory for held-out cases", default=None
+        "--hidden",
+        help="Directory for held-out cases",
+        default=None,
     )
     args = parser.parse_args()
     convert_directory(args.src, args.dest, args.hidden)
