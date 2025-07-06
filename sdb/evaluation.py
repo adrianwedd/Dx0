@@ -4,6 +4,16 @@ from .judge import Judge
 
 @dataclass
 class SessionResult:
+    """Outcome of a session evaluation.
+
+    Attributes
+    ----------
+    total_cost:
+        Sum of test costs incurred during the session.
+    score:
+        Judgement score for the final diagnosis.
+    """
+
     total_cost: float
     score: int
 

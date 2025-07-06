@@ -5,6 +5,8 @@ from typing import List, Dict, Iterable
 
 @dataclass
 class Case:
+    """A clinical case with an identifier, summary and full text."""
+
     id: str
     summary: str
     full_text: str
