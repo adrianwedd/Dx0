@@ -14,6 +14,7 @@ from .ingest.convert import convert_directory
 from .ingest.pipeline import run_pipeline
 from .cpt_lookup import lookup_cpt
 from .metrics import start_metrics_server
+from .retrieval import SimpleEmbeddingIndex
 
 __all__ = [
     "Case",
@@ -35,4 +36,5 @@ __all__ = [
     "lookup_cpt",
     "run_pipeline",
     "start_metrics_server",
+    "SimpleEmbeddingIndex",
 ]

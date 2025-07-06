@@ -5,14 +5,14 @@ from sdb.gatekeeper import Gatekeeper
 from sdb.protocol import build_action, ActionType
 
 
-def setup_gatekeeper():
+def setup_gatekeeper(semantic: bool = False):
     case = Case(
         id="1",
         summary="Patient complains of cough",
         full_text="History: patient has had a cough for 3 days.",
     )
     db = CaseDatabase([case])
-    gk = Gatekeeper(db, "1")
+    gk = Gatekeeper(db, "1", use_semantic_retrieval=semantic)
     gk.register_test_result("complete blood count", "normal")
     return gk
 
@@ -70,6 +70,14 @@ def test_case_insensitive_search():
     q = build_action(ActionType.QUESTION, "COUGH FOR 3 DAYS")
     res = gk.answer_question(q)
     assert "cough for 3 days" in res.content.lower()
+    assert res.synthetic is False
+
+
+def test_semantic_retrieval_enabled():
+    gk = setup_gatekeeper(semantic=True)
+    q = build_action(ActionType.QUESTION, "cough")
+    res = gk.answer_question(q)
+    assert "cough" in res.content.lower()
     assert res.synthetic is False
 
 

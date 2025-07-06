@@ -8,6 +8,7 @@ import xml.etree.ElementTree as ET
 from .protocol import ActionType
 
 from .case_database import CaseDatabase
+from .retrieval import SimpleEmbeddingIndex
 
 
 @dataclass
@@ -30,7 +31,12 @@ class QueryResult:
 class Gatekeeper:
     """Information oracle mediating access to the case."""
 
-    def __init__(self, db: CaseDatabase, case_id: str):
+    def __init__(
+        self,
+        db: CaseDatabase,
+        case_id: str,
+        use_semantic_retrieval: bool = False,
+    ):
         """Bind the gatekeeper to a case and set up test cache.
 
         Parameters
@@ -43,6 +49,13 @@ class Gatekeeper:
 
         self.case = db.get_case(case_id)
         self.known_tests: Dict[str, str] = {}
+        self.use_semantic_retrieval = use_semantic_retrieval
+        self.index = None
+        if self.use_semantic_retrieval:
+            docs = []
+            for text in [self.case.summary, self.case.full_text]:
+                docs.extend([p.strip() for p in text.split("\n") if p.strip()])
+            self.index = SimpleEmbeddingIndex(docs)
 
     def load_results_from_json(self, path: str) -> None:
         """Load test result fixtures from a JSON file."""
@@ -100,6 +113,11 @@ class Gatekeeper:
                     "I can only answer explicit questions about findings.",
                     synthetic=True,
                 )
+
+            if self.use_semantic_retrieval and self.index is not None:
+                results = self.index.query(text, top_k=1)
+                if results:
+                    return QueryResult(content=results[0][0], synthetic=False)
 
             # Search summary and full text for the answer using
             # case-insensitive matching

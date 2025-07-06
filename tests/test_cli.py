@@ -91,6 +91,7 @@ def test_cli_flag_parsing(tmp_path):
         "--llm-model",
         "turbo",
         "--quiet",
+        "--semantic-retrieval",
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     assert result.returncode == 0
