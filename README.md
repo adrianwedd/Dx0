@@ -85,13 +85,7 @@ the dataset or fetch updates, run:
 python scripts/collect_cases.py --dest data/raw_cases
 python sdb/ingest/convert.py data/raw_cases data/json_cases
 ```
-This command also writes `case_###_summary.txt` files alongside the JSON
-for quick reference.
 
-Cases published in 2024–2025 are automatically placed in
-`data/sdbench/hidden_cases/` during conversion and excluded from the public
-dataset. These 56 recent cases form a held‑out evaluation set selected purely
-by publication year parsed from the case citation.
 
 ### Python API Example
 
