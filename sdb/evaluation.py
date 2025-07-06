@@ -20,7 +20,19 @@ class SessionResult:
 
 
 class Evaluator:
+    """Score diagnoses and tally the cost of ordered tests."""
+
     def __init__(self, judge: Judge, cost_estimator: CostEstimator):
+        """Create an evaluator with a judge and cost estimator.
+
+        Parameters
+        ----------
+        judge:
+            :class:`Judge` instance used to grade diagnoses.
+        cost_estimator:
+            :class:`CostEstimator` used to compute the price of tests.
+        """
+
         self.judge = judge
         self.cost_estimator = cost_estimator
 

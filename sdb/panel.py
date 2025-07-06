@@ -12,6 +12,17 @@ class VirtualPanel:
     """Simulate collaborative panel of doctors using pluggable engines."""
 
     def __init__(self, decision_engine: DecisionEngine | None = None):
+        """Initialize the panel and underlying decision engine.
+
+        Parameters
+        ----------
+        decision_engine:
+            Optional engine used to select actions. If ``None``, a
+            :class:`RuleEngine` is instantiated.
+
+        The panel starts with no previous case information, zero turn count
+        and an empty set of triggered keywords.
+        """
 
         self.turn = 0
         self.last_case_info = ""
