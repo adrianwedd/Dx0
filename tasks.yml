@@ -9,6 +9,7 @@ phases:
           implementations and update VirtualPanel to accept an engine via
           configuration.
         labels: [enhancement, refactor, backend]
+        done: true
       - id: "T2"
         title: "Integrate Semantic Retrieval in Gatekeeper"
         description: >
@@ -23,6 +24,7 @@ phases:
           default results. Define the schema, implement a loader, and handle
           missing fixture errors.
         labels: [feature, backend, data]
+        done: true
       - id: "T4"
         title: "Implement Detailed Logging & Metrics"
         description: >
@@ -48,6 +50,7 @@ phases:
           Extend cli.py with flags for selecting the panel engine, LLM model,
           and logging verbosity.
         labels: [feature, cli, backend]
+        done: true
       - id: "T8"
         title: "Modularize Prompt Templates & System Prompts"
         description: >
@@ -65,6 +68,7 @@ phases:
         description: >
           Track the initial engineering tasks in this file.
         labels: [project-management, documentation]
+        done: true
       - id: "T11"
         title: "Ingest & Convert NEJM CPC Cases for SDBench"
         description: >
@@ -77,30 +81,35 @@ phases:
           Create the Gatekeeper agent that mediates information requests and
           synthesizes plausible findings for unmentioned tests.
         labels: [feature, ai, backend]
+        done: true
       - id: "T13"
         title: "Develop Judge Agent with Likert Rubric"
         description: >
           Implement the Judge agent using an LLM prompted with a 5-point
           clinical accuracy rubric to score diagnoses.
         labels: [feature, ai, evaluation]
+        done: true
       - id: "T14"
         title: "Build Cost Estimator & CPT Mapper"
         description: >
           Translate test requests to CPT codes via LLM, map to CMS prices, and
           compute cumulative costs.
         labels: [feature, data, backend]
+        done: true
       - id: "T15"
         title: "Create MAI-Dx Orchestrator & Virtual Panel"
         description: >
           Implement the orchestrator and the five-persona virtual panel
           running a chain-of-debate to produce actions.
         labels: [feature, agent-architecture, backend]
+        done: true
       - id: "T16"
         title: "Support MAI-Dx Variants"
         description: >
           Enable Instant Answer, Question Only, Budgeted, Unconstrained
           Budget, and Ensemble modes via config.
         labels: [feature, backend, ml]
+        done: true
       - id: "T17"
         title: "Build Physician UI for SDBench"
         description: >
@@ -113,6 +122,7 @@ phases:
           Automate simulation runs over all cases and generate accuracy and
           cost reports with Pareto plots.
         labels: [feature, analytics, backend]
+        done: true
       - id: "T19"
         title: "Statistical Analysis & Significance Testing"
         description: >
@@ -225,3 +235,4 @@ phases:
       - id: 23
         title: "Plot accuracy vs cost"
         description: "Visualize trade-offs by plotting the Pareto frontier."
+        done: true
