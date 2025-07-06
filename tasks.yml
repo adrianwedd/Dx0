@@ -166,6 +166,7 @@ phases:
       - id: 4
         title: "Create hidden test set"
         description: "Hold out 56 recent cases from 2024\u20132025 as a hidden evaluation set."
+        done: true
       - id: 5
         title: "Lookup CPT codes with language model"
         description: "Translate test requests into CPT codes using an LLM."
