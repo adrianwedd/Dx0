@@ -158,7 +158,10 @@ def main() -> None:
 
     truth = db.get_case(args.case).summary
     result = evaluator.evaluate(
-        orchestrator.final_diagnosis or "", truth, orchestrator.ordered_tests
+        orchestrator.final_diagnosis or "",
+        truth,
+        orchestrator.ordered_tests,
+        visits=turn,
     )
 
     print(f"Final diagnosis: {orchestrator.final_diagnosis}")
