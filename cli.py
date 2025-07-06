@@ -73,6 +73,11 @@ def main() -> None:
         help="Destination for converted JSON cases",
     )
     parser.add_argument(
+        "--hidden-dir",
+        default="data/sdbench/hidden_cases",
+        help="Directory for held-out cases from 2024-2025",
+    )
+    parser.add_argument(
 
         "--budget",
         type=float,
@@ -94,7 +99,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.convert:
-        convert_directory(args.raw_dir, args.output_dir)
+        convert_directory(args.raw_dir, args.output_dir, args.hidden_dir)
         return
 
     required = [args.db, args.case, args.rubric, args.costs]

@@ -5,7 +5,12 @@ from __future__ import annotations
 import json
 import os
 import re
-from typing import List, Dict
+from typing import Dict, List, Optional
+
+try:  # Optional dependency
+    import openai  # type: ignore
+except Exception:  # pragma: no cover - openai not required for tests
+    openai = None
 
 
 def split_steps(text: str) -> List[str]:
@@ -27,6 +32,67 @@ def split_steps(text: str) -> List[str]:
     return paragraphs
 
 
+def _extract_abstract(text: str) -> Optional[str]:
+    """Return the abstract section if present in ``text``."""
+
+    match = re.search(r"(?im)^abstract[:\s]*\n(.+?)(?:\n\s*\n|$)", text)
+    if match:
+        abstract = re.sub(r"\s+", " ", match.group(1)).strip()
+        if abstract:
+            return abstract
+    return None
+
+
+def _llm_summarize(text: str) -> Optional[str]:
+    """Summarize ``text`` using an LLM if credentials are configured."""
+
+    if openai is None:
+        return None
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return None
+    openai.api_key = api_key
+    try:
+        resp = openai.ChatCompletion.create(
+            model=os.getenv("OPENAI_MODEL", "gpt-3.5-turbo"),
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Summarize the medical case in 1-2 sentences.",
+                },
+                {"role": "user", "content": text[:4000]},
+            ],
+            max_tokens=100,
+        )
+        return resp.choices[0].message["content"].strip()
+    except Exception:  # pragma: no cover - network issues
+        return None
+
+
+def summarize(text: str) -> str:
+    """Produce a short summary for a case."""
+
+    summary = _extract_abstract(text)
+    if not summary:
+        summary = _llm_summarize(text)
+    if not summary:
+        steps = split_steps(text)
+        summary = " ".join(steps[:2]) if steps else ""
+    return summary.strip()
+
+
+def extract_year(text: str) -> Optional[int]:
+    """Return the first four-digit year found in ``text``."""
+
+    match = re.search(r"\b(19|20)\d{2}\b", text)
+    if match:
+        try:
+            return int(match.group(0))
+        except ValueError:  # pragma: no cover - regex ensures digits
+            return None
+    return None
+
+
 def convert_text(text: str, case_id: int) -> Dict[str, object]:
     """Convert raw case text to SDBench JSON structure.
 
@@ -44,7 +110,7 @@ def convert_text(text: str, case_id: int) -> Dict[str, object]:
     """
 
     steps = split_steps(text)
-    summary = steps[0] if steps else ""
+    summary = summarize(text)
     data = {
         "id": f"case_{case_id:03d}",
         "summary": summary,
@@ -55,7 +121,9 @@ def convert_text(text: str, case_id: int) -> Dict[str, object]:
     return data
 
 
-def convert_directory(src_dir: str, dest_dir: str) -> List[str]:
+def convert_directory(
+    src_dir: str, dest_dir: str, hidden_dir: str | None = None
+) -> List[str]:
     """Convert all ``case_*.txt`` files in ``src_dir`` to JSON files.
 
     Parameters
@@ -64,6 +132,8 @@ def convert_directory(src_dir: str, dest_dir: str) -> List[str]:
         Directory containing raw ``case_###.txt`` files.
     dest_dir:
         Output directory for ``case_###.json`` files.
+    hidden_dir:
+        Directory for cases from 2024–2025 that should be held out.
 
     Returns
     -------
@@ -72,6 +142,8 @@ def convert_directory(src_dir: str, dest_dir: str) -> List[str]:
     """
 
     os.makedirs(dest_dir, exist_ok=True)
+    if hidden_dir:
+        os.makedirs(hidden_dir, exist_ok=True)
     written: List[str] = []
     for name in sorted(os.listdir(src_dir)):
         if not name.startswith("case_") or not name.endswith(".txt"):
@@ -84,11 +156,20 @@ def convert_directory(src_dir: str, dest_dir: str) -> List[str]:
         path = os.path.join(src_dir, name)
         with open(path, "r", encoding="utf-8") as fh:
             text = fh.read()
+        year = extract_year(text)
         data = convert_text(text, case_num)
-        out_path = os.path.join(dest_dir, f"case_{case_num:03d}.json")
+        target_dir = dest_dir
+        if hidden_dir and year and 2024 <= year <= 2025:
+            target_dir = hidden_dir
+        out_path = os.path.join(target_dir, f"case_{case_num:03d}.json")
         with open(out_path, "w", encoding="utf-8") as fh:
             json.dump(data, fh, indent=2)
-        written.append(out_path)
+        summary_file = f"case_{case_num:03d}_summary.txt"
+        summary_path = os.path.join(target_dir, summary_file)
+        with open(summary_path, "w", encoding="utf-8") as sf:
+            sf.write(data["summary"])
+        if target_dir == dest_dir:
+            written.append(out_path)
     return written
 
 
@@ -98,5 +179,8 @@ if __name__ == "__main__":  # pragma: no cover
     parser = argparse.ArgumentParser(description="Convert raw cases to JSON")
     parser.add_argument("src", help="Directory with raw case text files")
     parser.add_argument("dest", help="Output directory for JSON cases")
+    parser.add_argument(
+        "--hidden", help="Directory for held-out cases", default=None
+    )
     args = parser.parse_args()
-    convert_directory(args.src, args.dest)
+    convert_directory(args.src, args.dest, args.hidden)
