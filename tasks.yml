@@ -386,7 +386,6 @@ phases:
         description: >
           Publish wheels to PyPI from CI when tagging a release.
         labels: [ci, release]
-
       - id: "T36"
         title: "Cross-Encoder Re-Ranking"
         description: >
@@ -414,3 +413,4 @@ phases:
           Run large-scale case evaluations concurrently to reduce
           turnaround time on shared compute clusters.
         labels: [enhancement, performance]
+
