@@ -23,6 +23,8 @@ from sdb import (
     permutation_test,
     load_from_sqlite,
 )
+import asyncio
+import csv
 
 
 def stats_main(argv: list[str]) -> None:
@@ -48,6 +50,151 @@ def stats_main(argv: list[str]) -> None:
     b = load_scores(args.variant, args.column)
     p = permutation_test(a, b, num_rounds=args.rounds)
     print(f"p-value: {p:.4f}")
+
+
+def batch_eval_main(argv: list[str]) -> None:
+    """Run evaluations for multiple cases concurrently."""
+
+    parser = argparse.ArgumentParser(description="Batch evaluate cases")
+    parser.add_argument("--db", help="Path to case JSON, CSV or directory")
+    parser.add_argument("--db-sqlite", help="Path to case SQLite database")
+    parser.add_argument("--rubric", required=True, help="Scoring rubric JSON")
+    parser.add_argument("--costs", required=True, help="Test cost table CSV")
+    parser.add_argument("--output", required=True, help="CSV file for results")
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=2,
+        help="Number of concurrent sessions",
+    )
+    parser.add_argument(
+        "--correct-threshold",
+        type=int,
+        default=4,
+        help="Judge score required for a correct diagnosis",
+    )
+    parser.add_argument(
+        "--panel-engine", choices=["rule", "llm"], default="rule"
+    )
+    parser.add_argument(
+        "--llm-provider", choices=["openai", "ollama"], default="openai"
+    )
+    parser.add_argument("--llm-model", default="gpt-4")
+    parser.add_argument("--budget", type=float, default=None)
+    parser.add_argument(
+        "--mode",
+        choices=["unconstrained", "budgeted", "question-only", "instant"],
+        default="unconstrained",
+    )
+    semantic = parser.add_mutually_exclusive_group()
+    semantic.add_argument(
+        "--semantic-retrieval", dest="semantic", action="store_true"
+    )
+    semantic.add_argument(
+        "--no-semantic-retrieval", dest="semantic", action="store_false"
+    )
+    parser.set_defaults(semantic=False)
+    parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--quiet", action="store_true")
+    args = parser.parse_args(argv)
+
+    level = logging.INFO
+    if args.verbose:
+        level = logging.DEBUG
+    elif args.quiet:
+        level = logging.WARNING
+    logging.basicConfig(level=level, format="%(message)s")
+
+    if args.db is None and args.db_sqlite is None:
+        parser.error("--db or --db-sqlite is required")
+
+    if args.db_sqlite:
+        db = load_from_sqlite(args.db_sqlite)
+    elif os.path.isdir(args.db):
+        db = CaseDatabase.load_from_directory(args.db)
+    elif args.db.endswith(".csv"):
+        db = CaseDatabase.load_from_csv(args.db)
+    else:
+        db = CaseDatabase.load_from_json(args.db)
+
+    with open(args.rubric, "r", encoding="utf-8") as fh:
+        rubric = json.load(fh)
+
+    cost_estimator = CostEstimator.load_from_csv(args.costs)
+    judge = Judge(rubric)
+    evaluator = Evaluator(
+        judge,
+        cost_estimator,
+        correct_threshold=args.correct_threshold,
+    )
+
+    def run_case(case_id: str) -> dict[str, str]:
+        gatekeeper = Gatekeeper(
+            db,
+            case_id,
+            use_semantic_retrieval=args.semantic,
+        )
+        if args.panel_engine == "rule":
+            engine = RuleEngine()
+        else:
+            if args.llm_provider == "ollama":
+                client = OllamaClient()
+            else:
+                client = OpenAIClient()
+            engine = LLMEngine(model=args.llm_model, client=client)
+
+        panel = VirtualPanel(decision_engine=engine)
+        orch_kwargs = {}
+        if args.mode == "budgeted":
+            orch_kwargs["cost_estimator"] = cost_estimator
+            orch_kwargs["budget"] = args.budget
+        if args.mode == "question-only":
+            orch_kwargs["question_only"] = True
+
+        orchestrator = Orchestrator(panel, gatekeeper, **orch_kwargs)
+        turn = 0
+        max_turns = 1 if args.mode == "instant" else 10
+        while not orchestrator.finished and turn < max_turns:
+            orchestrator.run_turn("")
+            turn += 1
+
+        truth = db.get_case(case_id).summary
+        result = evaluator.evaluate(
+            orchestrator.final_diagnosis or "",
+            truth,
+            orchestrator.ordered_tests,
+            visits=turn,
+            duration=orchestrator.total_time,
+        )
+        return {
+            "id": case_id,
+            "total_cost": f"{result.total_cost:.2f}",
+            "score": str(result.score),
+            "correct": str(result.correct),
+            "duration": f"{result.duration:.2f}",
+        }
+
+    async def run_all() -> list[dict[str, str]]:
+        sem = asyncio.Semaphore(args.concurrency)
+
+        async def run_one(cid: str) -> dict[str, str]:
+            async with sem:
+                return await asyncio.to_thread(run_case, cid)
+
+        tasks = [asyncio.create_task(run_one(cid)) for cid in db.cases]
+        results: list[dict[str, str]] = []
+        for task in asyncio.as_completed(tasks):
+            results.append(await task)
+        return results
+
+    results = asyncio.run(run_all())
+    results.sort(key=lambda r: r["id"])
+
+    fieldnames = ["id", "total_cost", "score", "correct", "duration"]
+    with open(args.output, "w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(results)
 
 
 def main() -> None:
@@ -265,5 +412,7 @@ def main() -> None:
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "stats":
         stats_main(sys.argv[2:])
+    elif len(sys.argv) > 1 and sys.argv[1] == "batch-eval":
+        batch_eval_main(sys.argv[2:])
     else:
         main()

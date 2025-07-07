@@ -386,3 +386,10 @@ phases:
         description: >
           Publish wheels to PyPI from CI when tagging a release.
         labels: [ci, release]
+      - id: "T39"
+        title: "Asynchronous Batch Evaluation CLI"
+        description: >
+          Add a `batch-eval` subcommand that evaluates multiple cases concurrently
+          and writes aggregated CSV results.
+        labels: [feature, cli, evaluation]
+        done: true
