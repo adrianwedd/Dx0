@@ -12,4 +12,6 @@ fastapi
 uvicorn
 sentence-transformers
 tiktoken
+httpx
+starlette
 
