@@ -45,3 +45,31 @@ def test_cli_convert(tmp_path):
     assert result.returncode == 0
     assert (hidden_dir / "case_001.json").exists()
     assert (hidden_dir / "case_001_summary.txt").exists()
+
+
+def test_cli_convert_sqlite(tmp_path):
+    raw_dir = tmp_path / "raw"
+    out_dir = tmp_path / "out"
+    hidden_dir = tmp_path / "hidden"
+    db_file = tmp_path / "cases.db"
+    raw_dir.mkdir()
+    (raw_dir / "case_001.txt").write_text("P1 2023\n")
+    cmd = [
+        sys.executable,
+        "cli.py",
+        "--convert",
+        "--raw-dir",
+        str(raw_dir),
+        "--output-dir",
+        str(out_dir),
+        "--hidden-dir",
+        str(hidden_dir),
+        "--export-sqlite",
+        str(db_file),
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0
+    from sdb.sqlite_db import load_from_sqlite
+
+    db = load_from_sqlite(str(db_file))
+    assert db.get_case("case_001").summary

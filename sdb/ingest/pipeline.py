@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import json
 from typing import List, Set
 
 try:
@@ -12,6 +13,7 @@ except Exception:  # pragma: no cover - optional
     requests = None
 
 from .convert import convert_directory
+from ..sqlite_db import save_to_sqlite
 
 PUBMED_SEARCH_URL = (
     "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
@@ -144,11 +146,34 @@ def run_pipeline(
     output_dir: str = "data/sdbench/cases",
     hidden_dir: str | None = "data/sdbench/hidden_cases",
     fetch: bool = True,
+    sqlite_path: str | None = None,
 ) -> List[str]:
     """Run the full ingestion pipeline."""
     if fetch:
         collect_cases(raw_dir)
-    return convert_directory(raw_dir, output_dir, hidden_dir)
+    paths = convert_directory(raw_dir, output_dir, hidden_dir)
+    if sqlite_path:
+        json_dirs = [output_dir]
+        if hidden_dir:
+            json_dirs.append(hidden_dir)
+        cases = []
+        for d in json_dirs:
+            for name in sorted(os.listdir(d)):
+                if not name.endswith(".json"):
+                    continue
+                with open(os.path.join(d, name), "r", encoding="utf-8") as fh:
+                    data = json.load(fh)
+                step_texts = [s["text"] for s in data.get("steps", [])]
+                full_text = "\n\n".join(step_texts)
+                cases.append(
+                    {
+                        "id": data["id"],
+                        "summary": data["summary"],
+                        "full_text": full_text,
+                    }
+                )
+        save_to_sqlite(sqlite_path, cases)
+    return paths
 
 
 def update_dataset(
@@ -156,11 +181,18 @@ def update_dataset(
     raw_dir: str = "data/raw_cases",
     output_dir: str = "data/sdbench/cases",
     hidden_dir: str | None = "data/sdbench/hidden_cases",
+    sqlite_path: str | None = None,
 ) -> List[str]:
     """Fetch newly released cases and convert the entire dataset."""
 
     collect_new_cases(raw_dir)
-    return convert_directory(raw_dir, output_dir, hidden_dir)
+    return run_pipeline(
+        raw_dir=raw_dir,
+        output_dir=output_dir,
+        hidden_dir=hidden_dir,
+        fetch=False,
+        sqlite_path=sqlite_path,
+    )
 
 
 if __name__ == "__main__":  # pragma: no cover

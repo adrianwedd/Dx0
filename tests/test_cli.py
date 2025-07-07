@@ -124,3 +124,42 @@ def test_cli_stats_command(tmp_path):
     result = subprocess.run(cmd, capture_output=True, text=True)
     assert result.returncode == 0
     assert "p-value" in result.stdout
+
+
+def test_cli_with_sqlite(tmp_path):
+    from sdb.sqlite_db import save_to_sqlite
+
+    cases = [{"id": "1", "summary": "s", "full_text": "t"}]
+    db_path = tmp_path / "cases.db"
+    save_to_sqlite(str(db_path), cases)
+
+    rubric_file = tmp_path / "r.json"
+    with open(rubric_file, "w", encoding="utf-8") as f:
+        json.dump({}, f)
+
+    cost_file = tmp_path / "c.csv"
+    with open(cost_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f, fieldnames=["test_name", "cpt_code", "price"]
+        )
+        writer.writeheader()
+        writer.writerow({"test_name": "x", "cpt_code": "1", "price": "1"})
+
+    cmd = [
+        sys.executable,
+        "cli.py",
+        "--db-sqlite",
+        str(db_path),
+        "--case",
+        "1",
+        "--rubric",
+        str(rubric_file),
+        "--costs",
+        str(cost_file),
+        "--panel-engine",
+        "rule",
+        "--llm-model",
+        "gpt-4",
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0
