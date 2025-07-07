@@ -6,16 +6,25 @@
   <script crossorigin src='https://unpkg.com/react@18/umd/react.development.js'></script>
   <script crossorigin src='https://unpkg.com/react-dom@18/umd/react-dom.development.js'></script>
   <script crossorigin src='https://unpkg.com/babel-standalone@6/babel.min.js'></script>
+  <style>
+    body { font-family: sans-serif; }
+    #layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    #chat-panel { grid-column: span 2; border: 1px solid #ccc; padding: 0.5rem; height: 300px; overflow-y: auto; }
+    #summary-panel, #tests-panel, #flow-panel { border: 1px solid #ccc; padding: 0.5rem; }
+  </style>
 </head>
 <body>
 <div id='root'></div>
 <script type='text/babel'>
 function App() {
   const [token, setToken] = React.useState(null);
+  const [summary, setSummary] = React.useState('');
   const [log, setLog] = React.useState([]);
   const [msg, setMsg] = React.useState('');
   const [ws, setWs] = React.useState(null);
   const [cost, setCost] = React.useState(0);
+  const [tests, setTests] = React.useState([]);
+  const [flow, setFlow] = React.useState([]);
 
   const login = async (e) => {
     e.preventDefault();
@@ -29,9 +38,15 @@ function App() {
     if (res.ok) {
       const data = await res.json();
       setToken(data.token);
+      const caseRes = await fetch('/case');
+      if (caseRes.ok) {
+        const caseData = await caseRes.json();
+        setSummary(caseData.summary);
+      }
       const socket = new WebSocket(`ws://${location.host}/ws?token=${data.token}`);
       socket.onmessage = (ev) => {
         const d = JSON.parse(ev.data);
+        let msgText = '';
         setLog(l => {
           const log = [...l];
           if (
@@ -40,16 +55,22 @@ function App() {
             log[log.length - 1].done
           ) {
             log.push({sender: 'Gatekeeper', text: d.reply, done: d.done});
+            msgText = d.reply;
           } else {
             log[log.length - 1] = {
               ...log[log.length - 1],
               text: log[log.length - 1].text + d.reply,
               done: d.done
             };
+            msgText = log[log.length - 1].text;
           }
           return log;
         });
-        if (d.done) setCost(d.total_spent);
+        if (d.done) {
+          setCost(d.total_spent);
+          if (d.ordered_tests) setTests(d.ordered_tests);
+          setFlow(f => [...f, {sender: 'Gatekeeper', text: msgText}]);
+        }
       };
       setWs(socket);
     } else {
@@ -60,6 +81,7 @@ function App() {
   const send = () => {
     if (!ws) return;
     setLog(l => [...l, {sender: 'You', text: msg}]);
+    setFlow(f => [...f, {sender: 'You', text: msg}]);
     let action = 'question';
     let content = msg;
     if (msg.toLowerCase().startsWith('test:')) {
@@ -81,14 +103,28 @@ function App() {
   }
 
   return (
-    <div>
-      <h2>SDBench Physician Chat</h2>
-      <div>Running Cost: ${cost.toFixed(2)}</div>
-      <div id='log'>
-        {log.map((m, i) => <div key={i}><b>{m.sender}:</b> {m.text}</div>)}
+    <div id='layout'>
+      <div id='summary-panel'>
+        <h3>Case Summary</h3>
+        <div>{summary}</div>
       </div>
-      <input value={msg} onChange={e => setMsg(e.target.value)} size='80'/>
-      <button onClick={send}>Send</button>
+      <div id='tests-panel'>
+        <h3>Ordered Tests</h3>
+        <ul>{tests.map((t, i) => <li key={i}>{t}</li>)}</ul>
+      </div>
+      <div id='chat-panel'>
+        <h2>SDBench Physician Chat</h2>
+        <div>Running Cost: ${cost.toFixed(2)}</div>
+        <div id='log'>
+          {log.map((m, i) => <div key={i}><b>{m.sender}:</b> {m.text}</div>)}
+        </div>
+        <input value={msg} onChange={e => setMsg(e.target.value)} size='80'/>
+        <button onClick={send}>Send</button>
+      </div>
+      <div id='flow-panel'>
+        <h3>Diagnostic Flow</h3>
+        <ol>{flow.map((m, i) => <li key={i}>{m.sender}: {m.text}</li>)}</ol>
+      </div>
     </div>
   );
 }

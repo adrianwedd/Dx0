@@ -18,6 +18,7 @@ def test_websocket_chat():
             parts.append(data["reply"])
             if data["done"]:
                 assert data["total_spent"] == 0.0
+                assert data["ordered_tests"] == []
                 break
         assert len(parts) > 1
 
@@ -29,5 +30,16 @@ def test_websocket_chat():
             if data["done"]:
                 assert data["cost"] == 10.0
                 assert data["total_spent"] == 10.0
+                assert data["ordered_tests"] == ["complete blood count"]
                 break
         assert len(parts) > 1
+
+
+def test_index_layout():
+    client = TestClient(app)
+    res = client.get("/")
+    html = res.text
+    assert "summary-panel" in html
+    assert "tests-panel" in html
+    assert "flow-panel" in html
+    assert "grid" in html  # check styling
