@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from .cost_estimator import CostEstimator
 from .judge import Judge
+from typing import Iterable, Callable
+import asyncio
 
 
 @dataclass
@@ -89,3 +91,54 @@ class Evaluator:
             correct=correct,
             duration=duration,
         )
+
+
+async def async_batch_evaluate(
+    case_ids: Iterable[str],
+    run_case: Callable[[str], dict[str, str]],
+    *,
+    concurrency: int = 2,
+) -> list[dict[str, str]]:
+    """Evaluate multiple cases concurrently.
+
+    Parameters
+    ----------
+    case_ids:
+        Iterable of case identifiers to evaluate.
+    run_case:
+        Function that executes a single case and returns a result ``dict``.
+    concurrency:
+        Maximum number of concurrent evaluations.
+
+    Returns
+    -------
+    list[dict[str, str]]
+        Result dictionaries sorted by ``id``.
+    """
+
+    sem = asyncio.Semaphore(concurrency)
+
+    async def run_one(cid: str) -> dict[str, str]:
+        async with sem:
+            return await asyncio.to_thread(run_case, cid)
+
+    tasks = [asyncio.create_task(run_one(cid)) for cid in case_ids]
+    results: list[dict[str, str]] = []
+    for task in asyncio.as_completed(tasks):
+        results.append(await task)
+
+    results.sort(key=lambda r: r.get("id", ""))
+    return results
+
+
+def batch_evaluate(
+    case_ids: Iterable[str],
+    run_case: Callable[[str], dict[str, str]],
+    *,
+    concurrency: int = 2,
+) -> list[dict[str, str]]:
+    """Synchronous wrapper for :func:`async_batch_evaluate`."""
+
+    return asyncio.run(
+        async_batch_evaluate(case_ids, run_case, concurrency=concurrency)
+    )

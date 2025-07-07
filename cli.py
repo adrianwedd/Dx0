@@ -17,13 +17,13 @@ from sdb import (
     Orchestrator,
     Judge,
     Evaluator,
+    batch_evaluate,
     run_pipeline,
     start_metrics_server,
     load_scores,
     permutation_test,
     load_from_sqlite,
 )
-import asyncio
 import csv
 
 
@@ -74,7 +74,9 @@ def batch_eval_main(argv: list[str]) -> None:
         help="Judge score required for a correct diagnosis",
     )
     parser.add_argument(
-        "--panel-engine", choices=["rule", "llm"], default="rule"
+        "--panel-engine",
+        choices=["rule", "llm"],
+        default="rule",
     )
     parser.add_argument(
         "--llm-provider", choices=["openai", "ollama"], default="openai"
@@ -99,10 +101,14 @@ def batch_eval_main(argv: list[str]) -> None:
     )
     semantic = parser.add_mutually_exclusive_group()
     semantic.add_argument(
-        "--semantic-retrieval", dest="semantic", action="store_true"
+        "--semantic-retrieval",
+        dest="semantic",
+        action="store_true",
     )
     semantic.add_argument(
-        "--no-semantic-retrieval", dest="semantic", action="store_false"
+        "--no-semantic-retrieval",
+        dest="semantic",
+        action="store_false",
     )
     parser.set_defaults(semantic=False)
     parser.add_argument("--verbose", action="store_true")
@@ -192,20 +198,12 @@ def batch_eval_main(argv: list[str]) -> None:
             "duration": f"{result.duration:.2f}",
         }
 
-    async def run_all() -> list[dict[str, str]]:
-        sem = asyncio.Semaphore(args.concurrency)
+    results = batch_evaluate(
+        db.cases,
+        run_case,
+        concurrency=args.concurrency,
+    )
 
-        async def run_one(cid: str) -> dict[str, str]:
-            async with sem:
-                return await asyncio.to_thread(run_case, cid)
-
-        tasks = [asyncio.create_task(run_one(cid)) for cid in db.cases]
-        results: list[dict[str, str]] = []
-        for task in asyncio.as_completed(tasks):
-            results.append(await task)
-        return results
-
-    results = asyncio.run(run_all())
     results.sort(key=lambda r: r["id"])
 
     fieldnames = ["id", "total_cost", "score", "correct", "duration"]
@@ -219,7 +217,7 @@ def main() -> None:
     """Run a demo diagnostic session using the virtual panel."""
 
     parser = argparse.ArgumentParser(
-        description="Run a simple diagnostic session"
+        description="Run a simple diagnostic session",
     )
     parser.add_argument(
         "--db",
@@ -320,7 +318,6 @@ def main() -> None:
         help="Path to SQLite file when using --convert",
     )
     parser.add_argument(
-
         "--budget",
         type=float,
         default=None,
@@ -362,9 +359,7 @@ def main() -> None:
     if args.db is None and args.db_sqlite is None:
         parser.error("--db or --db-sqlite is required for a session")
     if any(item is None for item in required):
-        parser.error(
-            "--case, --rubric and --costs are required for a session"
-        )
+        parser.error("--case, --rubric and --costs are required for a session")
 
     level = logging.INFO
     if args.verbose:

@@ -426,6 +426,7 @@ phases:
           Run large-scale case evaluations concurrently to reduce
           turnaround time on shared compute clusters.
         labels: [enhancement, performance]
+        done: true
 
 
       - id: "T40"
