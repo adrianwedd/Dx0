@@ -4,10 +4,20 @@ import os
 from dataclasses import dataclass
 from typing import Iterable
 
+from pydantic import BaseModel, ValidationError
+
 
 @dataclass
 class Case:
     """A clinical case with an identifier, summary and full text."""
+
+    id: str
+    summary: str
+    full_text: str
+
+
+class CaseModel(BaseModel):
+    """Validation model for case records."""
 
     id: str
     summary: str
@@ -40,7 +50,19 @@ class CaseDatabase:
         """
         with open(path, "r", encoding="utf-8") as fh:
             data = json.load(fh)
-        cases = [Case(**item) for item in data]
+        cases = []
+        for item in data:
+            try:
+                model = CaseModel.model_validate(item)
+            except ValidationError:
+                continue
+            cases.append(
+                Case(
+                    id=model.id.strip(),
+                    summary=model.summary.strip(),
+                    full_text=model.full_text.strip(),
+                )
+            )
         return CaseDatabase(cases)
 
     @staticmethod
@@ -55,18 +77,23 @@ class CaseDatabase:
             reader = csv.DictReader(fh)
             for row in reader:
                 try:
-                    case_id = row["id"].strip()
-                    summary = row["summary"].strip()
-                    full_text = row["full_text"].strip()
-                except Exception:
+                    model = CaseModel.model_validate(
+                        {
+                            "id": row.get("id"),
+                            "summary": row.get("summary"),
+                            "full_text": row.get("full_text"),
+                        }
+                    )
+                except ValidationError:
                     continue
+                case_id = model.id.strip()
                 if not case_id:
                     continue
                 cases.append(
                     Case(
                         id=case_id,
-                        summary=summary,
-                        full_text=full_text,
+                        summary=model.summary.strip(),
+                        full_text=model.full_text.strip(),
                     )
                 )
         return CaseDatabase(cases)
