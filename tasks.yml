@@ -444,6 +444,7 @@ phases:
         acceptance_criteria:
           - "`cpt_lookup.csv` contains the new codes."
           - "LLM CPT lookups decrease by 20%."
+        done: true
 
       - id: "T42"
         title: "Improve Rule-Based Decision Engine"
