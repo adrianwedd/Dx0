@@ -5,10 +5,10 @@ Thank you for wanting to contribute! This project uses several development tools
 ## Setup
 
 1. Create a Python virtual environment and activate it.
-2. Install development dependencies:
+2. Install development dependencies (requires Make):
 
    ```bash
-   pip install -r requirements-dev.txt
+   make install-dev
    ```
 
 3. Install the pre-commit hooks so they run automatically on each commit:
