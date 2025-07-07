@@ -49,6 +49,7 @@ def test_cli_outputs_final_results(tmp_path):
     assert "Final diagnosis" in result.stdout
     assert "Total cost" in result.stdout
     assert "Session score" in result.stdout
+    assert "Total time" in result.stdout
 
 
 def test_cli_flag_parsing(tmp_path):

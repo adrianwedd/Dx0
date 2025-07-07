@@ -15,11 +15,14 @@ class SessionResult:
         Judgement score for the final diagnosis.
     correct:
         Whether the diagnosis is considered correct.
+    duration:
+        Total session duration in seconds.
     """
 
     total_cost: float
     score: int
     correct: bool
+    duration: float
 
 
 class Evaluator:
@@ -51,7 +54,13 @@ class Evaluator:
     VISIT_FEE = 300.0
 
     def evaluate(
-        self, diagnosis: str, truth: str, tests: list[str], visits: int = 1
+        self,
+        diagnosis: str,
+        truth: str,
+        tests: list[str],
+        visits: int = 1,
+        *,
+        duration: float = 0.0,
     ) -> SessionResult:
         """Evaluate a diagnosis and compute total session cost.
 
@@ -65,6 +74,8 @@ class Evaluator:
             List of ordered test names.
         visits:
             Number of physician visits that occurred during the session.
+        duration:
+            Total time spent in the session in seconds.
         """
 
         judgement = self.judge.evaluate(diagnosis, truth)
@@ -76,4 +87,5 @@ class Evaluator:
             total_cost=total_cost,
             score=judgement.score,
             correct=correct,
+            duration=duration,
         )

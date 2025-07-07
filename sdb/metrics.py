@@ -16,6 +16,11 @@ LLM_LATENCY = Histogram(
     "Latency of LLM requests in seconds.",
 )
 
+# Time spent processing each orchestrator turn.
+ORCHESTRATOR_LATENCY = Histogram(
+    "orchestrator_turn_seconds", "Time spent in each orchestrator turn.",
+)
+
 LLM_TOKENS = Counter(
     "llm_tokens_total",
     "Total number of tokens processed by the LLM.",

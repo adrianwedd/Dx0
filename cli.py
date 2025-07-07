@@ -237,12 +237,14 @@ def main() -> None:
         truth,
         orchestrator.ordered_tests,
         visits=turn,
+        duration=orchestrator.total_time,
     )
 
     print(f"Final diagnosis: {orchestrator.final_diagnosis}")
     print(f"Total cost: ${result.total_cost:.2f}")
     print(f"Session score: {result.score}")
     print(f"Correct diagnosis: {result.correct}")
+    print(f"Total time: {result.duration:.2f}s")
 
 
 if __name__ == "__main__":
