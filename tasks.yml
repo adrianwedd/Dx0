@@ -418,6 +418,7 @@ phases:
           Add utilities to convert FHIR diagnostic reports and
           observations into the internal SDBench case format.
         labels: [feature, interoperability]
+        done: true
 
       - id: "T39a"
         title: "Asynchronous Batch Evaluation"
