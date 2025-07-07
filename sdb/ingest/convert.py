@@ -8,11 +8,7 @@ import re
 from typing import Dict, List, Optional
 
 from ..prompt_loader import load_prompt
-
-try:  # Optional dependency
-    import openai  # type: ignore
-except Exception:  # pragma: no cover - openai not required for tests
-    openai = None
+from ..llm_client import OpenAIClient
 
 
 SUMMARY_PROMPT = load_prompt("case_summary_system")
@@ -48,27 +44,22 @@ def _extract_abstract(text: str) -> Optional[str]:
     return None
 
 
+_openai_client = OpenAIClient()
+
+
 def _llm_summarize(text: str) -> Optional[str]:
     """Summarize ``text`` using an LLM if credentials are configured."""
 
-    if openai is None:
-        return None
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        return None
-    openai.api_key = api_key
-    try:
-        resp = openai.ChatCompletion.create(
-            model=os.getenv("OPENAI_MODEL", "gpt-3.5-turbo"),
-            messages=[
-                {"role": "system", "content": SUMMARY_PROMPT},
-                {"role": "user", "content": text[:4000]},
-            ],
-            max_tokens=100,
-        )
-        return resp.choices[0].message["content"].strip()
-    except Exception:  # pragma: no cover - network issues
-        return None
+    reply = _openai_client.chat(
+        [
+            {"role": "system", "content": SUMMARY_PROMPT},
+            {"role": "user", "content": text[:4000]},
+        ],
+        model=os.getenv("OPENAI_MODEL", "gpt-3.5-turbo"),
+    )
+    if reply:
+        return reply.strip()
+    return None
 
 
 def summarize(text: str) -> str:

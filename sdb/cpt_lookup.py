@@ -7,10 +7,12 @@ import os
 import time
 from typing import Dict, Optional
 
+from .llm_client import OpenAIClient
+
 from .prompt_loader import load_prompt
 from .metrics import CPT_CACHE_HITS, CPT_LLM_LOOKUPS
 
-try:
+try:  # maintain compatibility with tests
     import openai  # type: ignore
 except Exception:  # pragma: no cover - openai not required for tests
     openai = None
@@ -48,28 +50,37 @@ def _append_cache(path: str, test_name: str, cpt_code: str) -> None:
         writer.writerow({"test_name": test_name, "cpt_code": cpt_code})
 
 
-def _query_llm(test_name: str, retries: int = 3) -> Optional[str]:
-    if openai is None:
-        return None
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        return None
-    openai.api_key = api_key
-    model = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+_openai_client = OpenAIClient()
+
+
+def _query_llm(test_name: str) -> Optional[str]:
     messages = [
         {"role": "system", "content": CPT_LOOKUP_PROMPT},
         {"role": "user", "content": test_name},
     ]
-    for _ in range(retries):
-        try:
-            resp = openai.ChatCompletion.create(
-                model=model,
-                messages=messages,
-                max_tokens=10,
-            )
-            return resp.choices[0].message["content"].strip().split()[0]
-        except Exception:  # pragma: no cover - network issues
-            time.sleep(1)
+
+    if openai is not None:
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            return None
+        openai.api_key = api_key
+        model = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+        for _ in range(3):
+            try:
+                resp = openai.ChatCompletion.create(
+                    model=model,
+                    messages=messages,
+                    max_tokens=10,
+                )
+                return resp.choices[0].message["content"].strip().split()[0]
+            except Exception:  # pragma: no cover - network issues
+                time.sleep(1)
+    else:
+        reply = _openai_client.chat(
+            messages, model=os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+        )
+        if reply:
+            return reply.strip().split()[0]
     return None
 
 
