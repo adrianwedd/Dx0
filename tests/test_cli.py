@@ -292,3 +292,32 @@ def test_cli_cache_size(monkeypatch, tmp_path):
     cli.main()
     assert captured["path"] == "llm_cache.jsonl"
     assert captured["size"] == 5
+
+
+def test_fhir_export_command(tmp_path):
+    transcript = [["panel", "hello"], ["gatekeeper", "hi"]]
+    tests = ["cbc"]
+    t_file = tmp_path / "t.json"
+    with open(t_file, "w", encoding="utf-8") as f:
+        json.dump(transcript, f)
+    tests_file = tmp_path / "tests.json"
+    with open(tests_file, "w", encoding="utf-8") as f:
+        json.dump(tests, f)
+
+    cmd = [
+        sys.executable,
+        "cli.py",
+        "fhir-export",
+        str(t_file),
+        str(tests_file),
+        "--patient-id",
+        "p1",
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0
+    data = json.loads(result.stdout)
+    assert data["resourceType"] == "Bundle"
+    assert any(
+        entry["resource"]["resourceType"] == "ServiceRequest"
+        for entry in data["entry"]
+    )

@@ -195,6 +195,19 @@ python cli.py batch-eval --db cases.json --rubric rubric.json \
     --costs costs.csv --output results.csv --concurrency 4
 ```
 
+### FHIR Session Export
+
+To convert a session transcript and ordered tests into a FHIR Bundle use the
+`fhir-export` subcommand:
+
+```bash
+python cli.py fhir-export transcript.json tests.json --patient-id 123 > bundle.json
+```
+
+The command reads the JSON transcript (list of `[speaker, text]` pairs) and test
+list, then writes a combined FHIR ``Bundle`` to ``stdout`` or the optional
+``--output`` path.
+
 ---
 
 ## Repository Structure

@@ -23,6 +23,8 @@ from sdb import (
     load_scores,
     permutation_test,
     load_from_sqlite,
+    transcript_to_fhir,
+    ordered_tests_to_fhir,
 )
 import csv
 
@@ -211,6 +213,42 @@ def batch_eval_main(argv: list[str]) -> None:
         writer = csv.DictWriter(fh, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(results)
+
+
+def fhir_export_main(argv: list[str]) -> None:
+    """Serialize a transcript and ordered tests as a FHIR bundle."""
+
+    parser = argparse.ArgumentParser(description="Export session data to FHIR")
+    parser.add_argument("transcript", help="Path to JSON transcript file")
+    parser.add_argument("tests", help="Path to JSON ordered tests file")
+    parser.add_argument(
+        "--patient-id",
+        default="example",
+        help="Patient identifier used in references",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        default=None,
+        help="File path for the output bundle (defaults to stdout)",
+    )
+    args = parser.parse_args(argv)
+
+    with open(args.transcript, "r", encoding="utf-8") as fh:
+        transcript = json.load(fh)
+    with open(args.tests, "r", encoding="utf-8") as fh:
+        tests = json.load(fh)
+
+    bundle = transcript_to_fhir(transcript, patient_id=args.patient_id)
+    test_bundle = ordered_tests_to_fhir(tests, patient_id=args.patient_id)
+    bundle["entry"].extend(test_bundle["entry"])
+
+    output = json.dumps(bundle, indent=2)
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as fh:
+            fh.write(output)
+    else:
+        print(output)
 
 
 def main() -> None:
@@ -451,5 +489,7 @@ if __name__ == "__main__":
         stats_main(sys.argv[2:])
     elif len(sys.argv) > 1 and sys.argv[1] == "batch-eval":
         batch_eval_main(sys.argv[2:])
+    elif len(sys.argv) > 1 and sys.argv[1] == "fhir-export":
+        fhir_export_main(sys.argv[2:])
     else:
         main()
