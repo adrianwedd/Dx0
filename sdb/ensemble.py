@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Iterable, Sequence
+from typing import Iterable, Mapping, Sequence
 
 
 @dataclass
@@ -12,6 +12,7 @@ class DiagnosisResult:
     diagnosis: str
     confidence: float
     cost: float = 0.0
+    run_id: str | None = None
 
 
 class WeightedVoter:
@@ -21,7 +22,7 @@ class WeightedVoter:
         self,
         results: Iterable[DiagnosisResult],
         *,
-        weights: Sequence[float] | None = None,
+        weights: Mapping[str, float] | None = None,
     ) -> str:
         """Return the diagnosis with the highest weighted score.
 
@@ -30,7 +31,7 @@ class WeightedVoter:
         results:
             Iterable of ``DiagnosisResult`` objects.
         weights:
-            Optional sequence of weights corresponding to ``results``.
+            Optional mapping from ``run_id`` to vote weight.
 
         Returns
         -------
@@ -40,16 +41,13 @@ class WeightedVoter:
         """
 
         res_list = list(results)
-        if weights is not None and len(weights) != len(res_list):
-            raise ValueError("weights must match number of results")
 
         scores: dict[str, float] = defaultdict(float)
-        if weights is None:
-            for res in res_list:
-                scores[res.diagnosis] += res.confidence
-        else:
-            for res, w in zip(res_list, weights):
-                scores[res.diagnosis] += res.confidence * w
+        for res in res_list:
+            weight = 1.0
+            if weights is not None and res.run_id is not None:
+                weight = weights.get(res.run_id, 1.0)
+            scores[res.diagnosis] += res.confidence * weight
 
         if not scores:
             return ""

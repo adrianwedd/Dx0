@@ -18,8 +18,11 @@ def test_weighted_voter_selects_highest_score():
 
 def test_weighted_voter_respects_weights():
     voter = WeightedVoter()
-    results = [DiagnosisResult("a", 1.0), DiagnosisResult("b", 1.0)]
-    weights = [0.5, 2.0]
+    results = [
+        DiagnosisResult("a", 1.0, run_id="r1"),
+        DiagnosisResult("b", 1.0, run_id="r2"),
+    ]
+    weights = {"r1": 0.5, "r2": 2.0}
     assert voter.vote(results, weights=weights) == "b"
 
 
