@@ -484,6 +484,7 @@ phases:
         description: >
           Provide a clearer case summary, test history, and a visual diagram of the
           diagnostic process.
+        done: true
         labels: [frontend, ux]
         actionable_steps:
           - "Add summary and ordered-test panels."
