@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from sdb.evaluation import Evaluator
+from sdb.evaluation import Evaluator, batch_evaluate
 from sdb.judge import Judgement
 
 
@@ -64,3 +64,15 @@ def test_evaluator_correctness_threshold_custom():
     ev2 = Evaluator(judge2, coster, correct_threshold=3)
     result2 = ev2.evaluate("x", "x", [])
     assert not result2.correct
+
+
+def test_async_batch_evaluate():
+    executed: list[str] = []
+
+    def run_case(cid: str) -> dict[str, str]:
+        executed.append(cid)
+        return {"id": cid}
+
+    result = batch_evaluate(["a", "b", "c"], run_case, concurrency=2)
+    assert len(result) == 3
+    assert executed == ["a", "b", "c"]

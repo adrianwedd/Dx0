@@ -158,6 +158,27 @@ The command prints a p-value. Values below 0.05 indicate the observed
 difference in the selected column is unlikely under the null hypothesis of no
 effect.
 
+### Asynchronous Batch Evaluation
+
+Use the :func:`batch_evaluate` helper to run case evaluations concurrently:
+
+```python
+from sdb.evaluation import batch_evaluate
+
+def run_case(cid: str) -> dict[str, str]:
+    ...
+
+case_ids = ["1", "2"]
+results = batch_evaluate(case_ids, run_case, concurrency=4)
+```
+
+Equivalent functionality is available via the CLI subcommand:
+
+```bash
+python cli.py batch-eval --db cases.json --rubric rubric.json \
+    --costs costs.csv --output results.csv --concurrency 4
+```
+
 ---
 
 ## Repository Structure
