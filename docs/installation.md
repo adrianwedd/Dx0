@@ -49,3 +49,15 @@ python -m build
 
 The archives will be written to the `dist/` directory as
 `sdb-<version>.tar.gz` and `sdb-<version>-py3-none-any.whl`.
+
+## Development Dependencies
+
+To run the unit tests and other developer tools, install the additional
+requirements listed in `requirements-dev.txt`:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+The `pytest` suite relies on packages such as `numpy`, `httpx`, and
+`starlette`.
