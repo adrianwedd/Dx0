@@ -80,6 +80,11 @@ def batch_eval_main(argv: list[str]) -> None:
         "--llm-provider", choices=["openai", "ollama"], default="openai"
     )
     parser.add_argument("--llm-model", default="gpt-4")
+    parser.add_argument(
+        "--cache",
+        action="store_true",
+        help="Cache LLM responses",
+    )
     parser.add_argument("--budget", type=float, default=None)
     parser.add_argument(
         "--mode",
@@ -137,10 +142,11 @@ def batch_eval_main(argv: list[str]) -> None:
         if args.panel_engine == "rule":
             engine = RuleEngine()
         else:
+            cache_path = "llm_cache.jsonl" if args.cache else None
             if args.llm_provider == "ollama":
-                client = OllamaClient()
+                client = OllamaClient(cache_path=cache_path)
             else:
-                client = OpenAIClient()
+                client = OpenAIClient(cache_path=cache_path)
             engine = LLMEngine(model=args.llm_model, client=client)
 
         panel = VirtualPanel(decision_engine=engine)
@@ -242,6 +248,11 @@ def main() -> None:
         "--llm-model",
         default="gpt-4",
         help="Model name for LLM engine",
+    )
+    parser.add_argument(
+        "--cache",
+        action="store_true",
+        help="Cache LLM responses",
     )
     semantic = parser.add_mutually_exclusive_group()
     semantic.add_argument(
@@ -375,10 +386,11 @@ def main() -> None:
     if args.panel_engine == "rule":
         engine = RuleEngine()
     else:
+        cache_path = "llm_cache.jsonl" if args.cache else None
         if args.llm_provider == "ollama":
-            client = OllamaClient()
+            client = OllamaClient(cache_path=cache_path)
         else:
-            client = OpenAIClient()
+            client = OpenAIClient(cache_path=cache_path)
         engine = LLMEngine(model=args.llm_model, client=client)
 
     panel = VirtualPanel(decision_engine=engine)
