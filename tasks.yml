@@ -415,7 +415,7 @@ phases:
           observations into the internal SDBench case format.
         labels: [feature, interoperability]
 
-      - id: "T39a"
+      - id: "T39"
         title: "Asynchronous Batch Evaluation"
         description: >
           Run large-scale case evaluations concurrently to reduce
