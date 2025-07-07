@@ -1,9 +1,0 @@
-1. N Engl J Med. 2015 Jan 8;372(2):162-70. doi: 10.1056/NEJMcpc1408601.
-
-Case records of the Massachusetts General Hospital. Case 1-2015. A 66-year-old 
-woman with metastatic breast cancer after endocrine therapy.
-
-Moy B, Specht MC, Lanuti M, Rafferty EA, Lerwill MF.
-
-DOI: 10.1056/NEJMcpc1408601
-PMID: 25564900 [Indexed for MEDLINE]

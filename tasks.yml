@@ -389,6 +389,7 @@ phases:
           Track case data and embeddings using DVC to enable
           reproducible experiments.
         labels: [tooling, data]
+        done: true
       - id: "T35"
         title: "Continuous Packaging Workflow"
         description: >

@@ -61,3 +61,16 @@ pip install -r requirements-dev.txt
 
 The `pytest` suite relies on packages such as `numpy`, `httpx`,
 `starlette`, and `pydantic`.
+
+## Data Versioning with DVC
+
+The case data and computed embeddings are tracked with [DVC](https://dvc.org/).
+Install the tool and pull the datasets after cloning:
+
+```bash
+pip install "dvc[s3]"
+dvc pull
+```
+
+If you modify files under `data/`, rerun `dvc add` on the directories and push the
+changes with `dvc push` so other contributors can reproduce your results.
