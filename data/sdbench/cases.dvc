@@ -1,0 +1,6 @@
+outs:
+- md5: b7402ead95118f57502b92666002bbda.dir
+  size: 259494
+  nfiles: 304
+  hash: md5
+  path: cases

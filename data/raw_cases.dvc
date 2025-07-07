@@ -1,0 +1,6 @@
+outs:
+- md5: ccb38fe24d79fb51b05ddf34c2411cd9.dir
+  size: 151717
+  nfiles: 304
+  hash: md5
+  path: raw_cases

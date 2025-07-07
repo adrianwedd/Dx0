@@ -16,3 +16,4 @@ httpx
 starlette
 pydantic
 
+dvc[s3]

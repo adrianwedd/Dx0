@@ -1,2 +1,5 @@
 __pycache__/
 *.py[cod]
+/.dvc/cache
+/.dvc/tmp
+dvc_storage/

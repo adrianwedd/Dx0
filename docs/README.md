@@ -16,3 +16,5 @@ uvicorn sdb.ui.app:app --reload
 ```
 
 Visit `http://localhost:8000` to open the chat interface.
+
+See `dvc_setup.md` for dataset versioning instructions.
