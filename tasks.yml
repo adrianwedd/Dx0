@@ -395,6 +395,7 @@ phases:
         description: >
           Publish wheels to PyPI from CI when tagging a release.
         labels: [ci, release]
+        done: true
       - id: "T36"
         title: "Cross-Encoder Re-Ranking"
         description: >
