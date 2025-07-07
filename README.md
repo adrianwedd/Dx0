@@ -96,14 +96,20 @@ python scripts/update_cases.py
 
 ### Physician UI
 
-Start the demo web interface to chat with the Gatekeeper and view
-running cost estimates:
+Install the development requirements first (provides `uvicorn` and other packages):
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+Then start the demo web interface to chat with the Gatekeeper and view running cost estimates:
 
 ```bash
 uvicorn sdb.ui.app:app --reload
 ```
 
 Then open `http://localhost:8000` in your browser.
+
 
 
 ### Python API Example
