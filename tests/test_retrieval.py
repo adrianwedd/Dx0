@@ -1,5 +1,6 @@
 from sdb.retrieval import SimpleEmbeddingIndex, SentenceTransformerIndex
 from sdb.llm_client import LLMClient
+import numpy as np
 import pytest
 
 
@@ -53,3 +54,39 @@ def test_count_tokens_bpe():
     msgs = [{"role": "user", "content": "erythema"}]
     tokens = DummyClient._count_tokens(msgs)
     assert tokens in {1, 3}
+
+
+def test_cross_encoder_reranking(monkeypatch):
+    """SentenceTransformerIndex should use reranker when available."""
+
+    import sdb.retrieval as retrieval
+
+    docs = ["patient denies cough", "patient has cough"]
+
+    class DummyModel:
+        def encode(self, texts, normalize_embeddings=True):
+            vecs = []
+            for t in texts:
+                if "denies" in t:
+                    vecs.append([1.0, 0.0])
+                elif "has cough" in t:
+                    vecs.append([0.9, 0.1])
+                else:  # query
+                    vecs.append([1.0, 0.0])
+            return np.array(vecs)
+
+    class DummyReranker:
+        def __init__(self, *a, **k):
+            pass
+
+        def rerank(self, query, passages):
+            return [(passages[1], 1.0), (passages[0], 0.5)]
+
+    monkeypatch.setattr(retrieval, "SentenceTransformer", lambda name: DummyModel())
+    monkeypatch.setattr(retrieval, "CrossEncoderReranker", lambda name=None: DummyReranker())
+
+    index = retrieval.SentenceTransformerIndex(
+        docs, model_name="dummy", cross_encoder_name="dummy"
+    )
+    results = index.query("cough", top_k=1)
+    assert results[0][0] == "patient has cough"

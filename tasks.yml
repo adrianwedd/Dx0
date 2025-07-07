@@ -402,6 +402,7 @@ phases:
           Improve semantic retrieval by re-ranking top passages
           with a cross-encoder model for higher precision.
         labels: [enhancement, ml]
+        done: true
 
       - id: "T37"
         title: "Automatic CMS Pricing Updates"
