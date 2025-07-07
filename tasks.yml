@@ -422,7 +422,7 @@ phases:
         labels: [enhancement, performance]
 
 
-      - id: "T39"
+      - id: "T40"
         title: "Asynchronous Batch Evaluation CLI"
         description: >
           Add a `batch-eval` subcommand that evaluates multiple cases concurrently
@@ -430,7 +430,7 @@ phases:
         labels: [feature, cli, evaluation]
         done: true
 
-      - id: "T40"
+      - id: "T41"
         title: "Expand CPT Code Lookup Table"
         description: >
           Reduce reliance on the LLM for pricing by expanding the built-in mapping
@@ -444,7 +444,7 @@ phases:
           - "`cpt_lookup.csv` contains the new codes."
           - "LLM CPT lookups decrease by 20%."
 
-      - id: "T41"
+      - id: "T42"
         title: "Improve Rule-Based Decision Engine"
         description: >
           Extend `sdb/decision.py` with additional clinical rules to boost accuracy
@@ -457,7 +457,7 @@ phases:
         acceptance_criteria:
           - "Rule-based accuracy improves by 10%."
 
-      - id: "T42"
+      - id: "T43"
         title: "Refine LLM Prompts"
         description: >
           Improve the prompts used by the LLM-based engine to reduce errors and
@@ -469,7 +469,7 @@ phases:
         acceptance_criteria:
           - "Error rate drops by 15%."
 
-      - id: "T43"
+      - id: "T44"
         title: "Enhance Web UI"
         description: >
           Provide a clearer case summary, test history, and a visual diagram of the
