@@ -1,5 +1,6 @@
 """Prometheus metrics helpers for MAI-DxO."""
 
+import os
 from prometheus_client import Counter, Histogram, start_http_server
 
 ORCHESTRATOR_TURNS = Counter(
@@ -27,6 +28,18 @@ LLM_TOKENS = Counter(
 )
 
 
-def start_metrics_server(port: int = 8000) -> None:
-    """Start a Prometheus metrics HTTP server."""
+def start_metrics_server(port: int | None = None) -> None:
+    """Start a Prometheus metrics HTTP server.
+
+    Parameters
+    ----------
+    port:
+        Port for the HTTP server. If ``None`` the value from the
+        ``SDB_METRICS_PORT`` environment variable is used when set,
+        otherwise ``8000``.
+    """
+
+    if port is None:
+        env = os.getenv("SDB_METRICS_PORT")
+        port = int(env) if env else 8000
     start_http_server(port)

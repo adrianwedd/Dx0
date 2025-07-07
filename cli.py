@@ -309,9 +309,15 @@ def main() -> None:
         default="unconstrained",
         help="Run mode",
     )
+    parser.add_argument(
+        "--metrics-port",
+        type=int,
+        default=None,
+        help="Port for Prometheus metrics server (default 8000)",
+    )
     args = parser.parse_args()
 
-    start_metrics_server()
+    start_metrics_server(args.metrics_port)
 
     if args.convert:
         run_pipeline(
