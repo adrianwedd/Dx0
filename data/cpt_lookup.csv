@@ -1,1 +1,13 @@
 test_name,cpt_code
+complete blood count,85027
+basic metabolic panel,80048
+comprehensive metabolic panel,80053
+lipid panel,80061
+thyroid stimulating hormone,84443
+hemoglobin a1c,83036
+chest x-ray 2 views,71046
+ct head without contrast,70450
+mri brain with contrast,70553
+urinalysis,81001
+electrocardiogram,93000
+prothrombin time,85610
