@@ -12,7 +12,7 @@ fastapi
 uvicorn
 sentence-transformers
 tiktoken
-httpx
+httpx<0.28
 starlette
 pydantic
 
