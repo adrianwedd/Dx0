@@ -59,5 +59,5 @@ requirements listed in `requirements-dev.txt`:
 pip install -r requirements-dev.txt
 ```
 
-The `pytest` suite relies on packages such as `numpy`, `httpx`, and
-`starlette`.
+The `pytest` suite relies on packages such as `numpy`, `httpx`,
+`starlette`, and `pydantic`.
