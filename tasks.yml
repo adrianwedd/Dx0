@@ -6,7 +6,6 @@ phases:
         description: >
           Replace the hard-coded keyword\u2192action mappings with a
           DecisionEngine interface. Provide both rule-based and LLM-based
-          implementations and update VirtualPanel to accept an engine via
           configuration.
         labels: [enhancement, refactor, backend]
         done: true
@@ -17,6 +16,7 @@ phases:
           generation for question answering. Fall back to regex search if the
           embedding step fails.
         labels: [enhancement, backend, ml]
+        done: true
       - id: "T3"
         title: "Add Dynamic Test Result Handling"
         description: >
@@ -39,12 +39,14 @@ phases:
           Cover parsing errors, unknown inputs, and timeouts across core
           modules with comprehensive tests.
         labels: [test, quality, backend]
+        done: true
       - id: "T6"
         title: "Enforce Code Style & Static Analysis"
         description: >
           Add Black, isort, flake8, and mypy checks via pre-commit and CI.
           Document installation steps for contributors.
         labels: [ci, quality, tooling]
+        done: true
       - id: "T7"
         title: "Enhance CLI with Model & Config Flags"
         description: >
@@ -141,12 +143,14 @@ phases:
           Package the benchmark as a Python distribution and supply
           documentation and licensing instructions.
         labels: [documentation, release, devops]
+        done: true
       - id: "T21"
         title: "Automated Case Ingestion for Future Updates"
         description: >
           Design a framework to periodically scrape new NEJM CPC cases and
           integrate them into SDBench.
         labels: [feature, data, backend]
+        done: true
       - id: "T22"
         title: "Legal & Licensing Review for Public Dataset"
         description: >
@@ -175,6 +179,7 @@ phases:
       - id: 5
         title: "Lookup CPT codes with language model"
         description: "Translate test requests into CPT codes using an LLM."
+        done: true
       - id: 6
         title: "Match codes to pricing table"
         description: "Achieve >98% coverage when mapping CPT codes to the pricing table."
@@ -182,9 +187,11 @@ phases:
       - id: 7
         title: "Estimate costs for unmatched tests"
         description: "Use a language model to estimate prices when the table lacks an entry."
+        done: true
       - id: 8
         title: "Apply visit fee"
         description: "Charge a fixed $300 cost for each physician visit."
+        done: true
       - id: 9
         title: "Controlled Gatekeeper"
         description: "Implement Gatekeeper with controlled disclosure of case findings."
@@ -356,3 +363,26 @@ phases:
         labels: [automation, data]
         done: true
 
+      - id: "T32"
+        title: "Cache LLM Responses"
+        description: >
+          Store completions from the LLM engine on disk to avoid
+          duplicate API calls and reduce cost.
+        labels: [enhancement, backend, optimization]
+      - id: "T33"
+        title: "FHIR Export for Sessions"
+        description: >
+          Output orchestrator transcripts and ordered tests in a
+          FHIR-compatible format for integration with clinical systems.
+        labels: [feature, interoperability]
+      - id: "T34"
+        title: "Dataset Versioning with DVC"
+        description: >
+          Track case data and embeddings using DVC to enable
+          reproducible experiments.
+        labels: [tooling, data]
+      - id: "T35"
+        title: "Continuous Packaging Workflow"
+        description: >
+          Publish wheels to PyPI from CI when tagging a release.
+        labels: [ci, release]
