@@ -386,6 +386,35 @@ phases:
         description: >
           Publish wheels to PyPI from CI when tagging a release.
         labels: [ci, release]
+      - id: "T36"
+        title: "Cross-Encoder Re-Ranking"
+        description: >
+          Improve semantic retrieval by re-ranking top passages
+          with a cross-encoder model for higher precision.
+        labels: [enhancement, ml]
+
+      - id: "T37"
+        title: "Automatic CMS Pricing Updates"
+        description: >
+          Provide a script that fetches the latest CMS pricing table
+          and refreshes the local cost database.
+        labels: [automation, data]
+
+      - id: "T38"
+        title: "FHIR Case Import"
+        description: >
+          Add utilities to convert FHIR diagnostic reports and
+          observations into the internal SDBench case format.
+        labels: [feature, interoperability]
+
+      - id: "T39"
+        title: "Asynchronous Batch Evaluation"
+        description: >
+          Run large-scale case evaluations concurrently to reduce
+          turnaround time on shared compute clusters.
+        labels: [enhancement, performance]
+
+
       - id: "T39"
         title: "Asynchronous Batch Evaluation CLI"
         description: >
@@ -393,3 +422,4 @@ phases:
           and writes aggregated CSV results.
         labels: [feature, cli, evaluation]
         done: true
+
