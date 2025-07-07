@@ -82,8 +82,16 @@ def test_cross_encoder_reranking(monkeypatch):
         def rerank(self, query, passages):
             return [(passages[1], 1.0), (passages[0], 0.5)]
 
-    monkeypatch.setattr(retrieval, "SentenceTransformer", lambda name: DummyModel())
-    monkeypatch.setattr(retrieval, "CrossEncoderReranker", lambda name=None: DummyReranker())
+    monkeypatch.setattr(
+        retrieval,
+        "SentenceTransformer",
+        lambda name: DummyModel(),
+    )
+    monkeypatch.setattr(
+        retrieval,
+        "CrossEncoderReranker",
+        lambda name=None: DummyReranker(),
+    )
 
     index = retrieval.SentenceTransformerIndex(
         docs, model_name="dummy", cross_encoder_name="dummy"

@@ -410,6 +410,7 @@ phases:
           Provide a script that fetches the latest CMS pricing table
           and refreshes the local cost database.
         labels: [automation, data]
+        done: true
 
       - id: "T38"
         title: "FHIR Case Import"
