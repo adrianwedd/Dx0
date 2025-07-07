@@ -158,4 +158,5 @@ async def websocket_endpoint(ws: WebSocket) -> None:
                 orchestrator.ordered_tests,
             )
     except WebSocketDisconnect:
+        TOKENS.pop(token, None)
         return
