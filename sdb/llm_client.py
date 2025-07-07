@@ -10,6 +10,11 @@ from abc import ABC, abstractmethod
 from typing import List
 
 try:
+    import tiktoken  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    tiktoken = None
+
+try:
     import openai  # type: ignore
 except Exception:  # pragma: no cover - optional dependency
     openai = None
@@ -57,6 +62,9 @@ class LLMClient(ABC):
     def _count_tokens(messages: List[dict]) -> int:
         """Approximate the number of tokens in a list of messages."""
 
+        if tiktoken is not None:
+            enc = tiktoken.get_encoding("cl100k_base")
+            return sum(len(enc.encode(m.get("content", ""))) for m in messages)
         return sum(len(m.get("content", "").split()) for m in messages)
 
 
