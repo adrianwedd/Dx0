@@ -7,7 +7,7 @@ import time
 import json
 import logging
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, OrderedDict
 
 try:
     import tiktoken  # type: ignore
@@ -25,11 +25,65 @@ from .metrics import LLM_LATENCY, LLM_TOKENS
 logger = logging.getLogger(__name__)
 
 
+class FileCache:
+    """Simple JSONL-based LRU cache for LLM responses."""
+
+    def __init__(self, path: str, max_size: int = 128) -> None:
+        self.path = path
+        self.max_size = max_size
+        self.data: OrderedDict[str, str] = OrderedDict()
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as fh:
+                    for line in fh:
+                        item = json.loads(line)
+                        self.data[item["key"]] = item["value"]
+            except Exception:  # pragma: no cover - corrupt cache
+                self.data.clear()
+
+    def get(self, key: str) -> str | None:
+        value = self.data.get(key)
+        if value is not None:
+            # refresh position for LRU
+            self.data.pop(key)
+            self.data[key] = value
+        return value
+
+    def set(self, key: str, value: str) -> None:
+        if key in self.data:
+            self.data.pop(key)
+        elif len(self.data) >= self.max_size:
+            self.data.pop(next(iter(self.data)))
+        self.data[key] = value
+        self._write()
+
+    def _write(self) -> None:
+        tmp = self.path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            for k, v in self.data.items():
+                fh.write(json.dumps({"key": k, "value": v}) + "\n")
+        os.replace(tmp, self.path)
+
+
 class LLMClient(ABC):
     """Generic interface for chat-based language models with metrics."""
 
+    def __init__(
+        self, cache_path: str | None = None, cache_size: int = 128
+    ) -> None:
+        self.cache = FileCache(cache_path, cache_size) if cache_path else None
+
     def chat(self, messages: List[dict], model: str) -> str | None:
         """Return the assistant reply and record latency and token metrics."""
+
+        key = json.dumps(
+            {"model": model, "messages": messages},
+            sort_keys=True,
+        )
+        if self.cache:
+            cached = self.cache.get(key)
+            if cached is not None:
+                return cached
 
         start = time.perf_counter()
         reply = self._chat(messages, model)
@@ -41,6 +95,8 @@ class LLMClient(ABC):
                 [{"role": "assistant", "content": reply}]
             )
         LLM_TOKENS.inc(tokens)
+        if self.cache and reply is not None:
+            self.cache.set(key, reply)
         logger.info(
             json.dumps(
                 {
@@ -71,7 +127,13 @@ class LLMClient(ABC):
 class OpenAIClient(LLMClient):
     """Client for the OpenAI chat completion API."""
 
-    def __init__(self, api_key: str | None = None) -> None:
+    def __init__(
+        self,
+        api_key: str | None = None,
+        cache_path: str | None = None,
+        cache_size: int = 128,
+    ) -> None:
+        super().__init__(cache_path=cache_path, cache_size=cache_size)
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
 
     def _chat(self, messages: List[dict], model: str) -> str | None:
@@ -95,7 +157,13 @@ class OpenAIClient(LLMClient):
 class OllamaClient(LLMClient):
     """Client for a local Ollama server."""
 
-    def __init__(self, base_url: str = "http://localhost:11434") -> None:
+    def __init__(
+        self,
+        base_url: str = "http://localhost:11434",
+        cache_path: str | None = None,
+        cache_size: int = 128,
+    ) -> None:
+        super().__init__(cache_path=cache_path, cache_size=cache_size)
         self.base_url = base_url.rstrip("/")
 
     def _chat(self, messages: List[dict], model: str) -> str | None:

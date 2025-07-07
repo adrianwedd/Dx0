@@ -66,6 +66,11 @@ python -m dx0.cli \
   --budget 1000 \
   --output results/dx0_case_001.json
 ```
+Add `--cache` to reuse previous LLM responses and reduce API calls:
+
+```bash
+python -m dx0.cli --cache ...
+```
 
 ### SDBench CLI
 

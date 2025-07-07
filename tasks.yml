@@ -376,6 +376,7 @@ phases:
         acceptance_criteria:
           - "Average latency of LLM requests is reduced by at least 30%."
           - "API calls to the provider drop by at least 40%."
+        done: true
       - id: "T33"
         title: "FHIR Export for Sessions"
         description: >
