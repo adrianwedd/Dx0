@@ -126,6 +126,11 @@ class LLMEngine(DecisionEngine):
         return self.client.chat(messages, self.model)
 
     def decide(self, context: Context) -> PanelAction:
+        """Return the next panel action from the LLM persona chain.
+
+        Falls back to the rule engine when the LLM output cannot be parsed.
+        """
+
         conversation = "\n".join(context.past_infos)
         messages = []
         for name in self.PERSONAS:
