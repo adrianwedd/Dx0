@@ -23,6 +23,7 @@ from .retrieval import (
 from .statistics import load_scores, permutation_test
 from .sqlite_db import load_from_sqlite, save_to_sqlite
 from .fhir_export import transcript_to_fhir, ordered_tests_to_fhir
+from .fhir_import import diagnostic_report_to_case, bundle_to_case
 from .ensemble import (
     DiagnosisResult,
     WeightedVoter,
@@ -68,4 +69,6 @@ __all__ = [
     "cost_adjusted_selection",
     "transcript_to_fhir",
     "ordered_tests_to_fhir",
+    "diagnostic_report_to_case",
+    "bundle_to_case",
 ]
