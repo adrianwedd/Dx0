@@ -48,6 +48,7 @@ async def stream_reply(
     text: str,
     cost: float,
     total: float,
+    tests: list[str] | None = None,
     chunk_size: int = 20,
 ) -> None:
     """Send a reply over the websocket in small chunks."""
@@ -58,6 +59,7 @@ async def stream_reply(
         if done:
             payload["cost"] = cost
             payload["total_spent"] = total
+            payload["ordered_tests"] = tests or []
         await ws.send_json(payload)
         await asyncio.sleep(0)
 
@@ -102,6 +104,14 @@ async def index() -> HTMLResponse:
     return HTMLResponse(HTML)
 
 
+@app.get("/case")
+async def get_case() -> dict[str, str]:
+    """Return the demo case summary."""
+
+    case = demo_case.get_case("demo")
+    return {"summary": case.summary}
+
+
 @app.post("/login")
 async def login(req: LoginRequest) -> dict[str, str]:
     """Authenticate a user and return a session token."""
@@ -140,6 +150,12 @@ async def websocket_endpoint(ws: WebSocket) -> None:
             prev_spent = orchestrator.spent
             reply = orchestrator.run_turn(content)
             step_cost = orchestrator.spent - prev_spent
-            await stream_reply(ws, reply, step_cost, orchestrator.spent)
+            await stream_reply(
+                ws,
+                reply,
+                step_cost,
+                orchestrator.spent,
+                orchestrator.ordered_tests,
+            )
     except WebSocketDisconnect:
         return
