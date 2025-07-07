@@ -43,6 +43,25 @@ cost_table = {
 cost_estimator = CostEstimator(cost_table)
 
 
+async def stream_reply(
+    ws: WebSocket,
+    text: str,
+    cost: float,
+    total: float,
+    chunk_size: int = 20,
+) -> None:
+    """Send a reply over the websocket in small chunks."""
+
+    for start in range(0, len(text), chunk_size):
+        done = start + chunk_size >= len(text)
+        payload = {"reply": text[start : start + chunk_size], "done": done}
+        if done:
+            payload["cost"] = cost
+            payload["total_spent"] = total
+        await ws.send_json(payload)
+        await asyncio.sleep(0)
+
+
 class LoginRequest(BaseModel):
     """Request body for user login."""
 
@@ -121,13 +140,6 @@ async def websocket_endpoint(ws: WebSocket) -> None:
             prev_spent = orchestrator.spent
             reply = orchestrator.run_turn(content)
             step_cost = orchestrator.spent - prev_spent
-            await ws.send_json(
-                {
-                    "reply": reply,
-                    "cost": step_cost,
-                    "total_spent": orchestrator.spent,
-                }
-            )
-            await asyncio.sleep(0)
+            await stream_reply(ws, reply, step_cost, orchestrator.spent)
     except WebSocketDisconnect:
         return
