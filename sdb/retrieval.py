@@ -1,5 +1,5 @@
 import re
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 try:  # pragma: no cover - trivial import handling
     import numpy as np
@@ -7,6 +7,14 @@ try:  # pragma: no cover - trivial import handling
 except Exception:  # pragma: no cover - numpy not installed
     np = None  # type: ignore
     NUMPY_AVAILABLE = False
+
+try:  # pragma: no cover - optional dependency
+    from sentence_transformers import CrossEncoder, SentenceTransformer
+    TRANSFORMERS_AVAILABLE = True
+except Exception:  # pragma: no cover - dependency missing
+    CrossEncoder = None  # type: ignore
+    SentenceTransformer = None  # type: ignore
+    TRANSFORMERS_AVAILABLE = False
 
 
 def _tokenize(text: str) -> List[str]:
@@ -91,31 +99,69 @@ class SimpleEmbeddingIndex:
             return results
 
 
+class CrossEncoderReranker:
+    """Optional cross-encoder for re-ranking retrieved passages."""
+
+    def __init__(self, model_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"):
+        self.model_name = model_name
+        if TRANSFORMERS_AVAILABLE:
+            try:
+                self.model = CrossEncoder(model_name)
+            except Exception:
+                self.model = None
+        else:  # pragma: no cover - dependency missing
+            self.model = None
+
+    def rerank(self, query: str, docs: List[str]) -> List[Tuple[str, float]]:
+        """Return documents ordered by cross-encoder score."""
+        if self.model is None:
+            return [(doc, 0.0) for doc in docs]
+
+        pairs = [(query, doc) for doc in docs]
+        scores = self.model.predict(pairs)
+        ranking = sorted(zip(docs, scores), key=lambda x: x[1], reverse=True)
+        return [(doc, float(score)) for doc, score in ranking]
+
+
 class SentenceTransformerIndex:
     """Embedding index backed by a sentence-transformer model."""
 
     def __init__(
-        self, documents: List[str], model_name: str = "all-MiniLM-L6-v2"
+        self,
+        documents: List[str],
+        model_name: str = "all-MiniLM-L6-v2",
+        *,
+        cross_encoder_name: Optional[str] = None,
+        rerank_k: int = 5,
     ) -> None:
         self.documents = documents
         self.model_name = model_name
+        self.reranker: Optional[CrossEncoderReranker] = None
+        self.rerank_k = rerank_k
 
         if not NUMPY_AVAILABLE:
             raise RuntimeError("SentenceTransformerIndex requires numpy")
 
         try:
-            from sentence_transformers import SentenceTransformer
-
-            self.model = SentenceTransformer(model_name)
-            self.embeddings = np.array(
-                self.model.encode(documents, normalize_embeddings=True)
-            )
-            self.fallback = None
+            if TRANSFORMERS_AVAILABLE:
+                self.model = SentenceTransformer(model_name)
+                self.embeddings = np.array(
+                    self.model.encode(documents, normalize_embeddings=True)
+                )
+                self.fallback = None
+            else:
+                raise RuntimeError()
         except Exception:
             # Fall back to simple lexical embeddings if the library is missing
             self.model = None
             self.embeddings = None
             self.fallback = SimpleEmbeddingIndex(documents)
+
+        if cross_encoder_name:
+            try:
+                self.reranker = CrossEncoderReranker(cross_encoder_name)
+            except Exception:  # pragma: no cover - fallback
+                self.reranker = None
 
     def query(self, text: str, top_k: int = 1) -> List[Tuple[str, float]]:
         if self.model is None or self.embeddings is None:
@@ -123,6 +169,14 @@ class SentenceTransformerIndex:
 
         qvec = self.model.encode([text], normalize_embeddings=True)[0]
         scores = self.embeddings.dot(qvec)
+
+        if self.reranker is not None:
+            prelim_k = max(top_k * self.rerank_k, top_k)
+            indices = np.argsort(scores)[::-1][:prelim_k]
+            docs = [self.documents[i] for i in indices]
+            reranked = self.reranker.rerank(text, docs)[:top_k]
+            return reranked
+
         indices = np.argsort(scores)[::-1][:top_k]
         results = []
         for i in indices:

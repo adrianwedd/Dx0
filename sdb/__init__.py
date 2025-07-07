@@ -15,7 +15,11 @@ from .ingest.convert import convert_directory
 from .ingest.pipeline import run_pipeline, update_dataset
 from .cpt_lookup import lookup_cpt
 from .metrics import start_metrics_server
-from .retrieval import SimpleEmbeddingIndex, SentenceTransformerIndex
+from .retrieval import (
+    SimpleEmbeddingIndex,
+    SentenceTransformerIndex,
+    CrossEncoderReranker,
+)
 from .statistics import load_scores, permutation_test
 from .sqlite_db import load_from_sqlite, save_to_sqlite
 from .fhir_export import transcript_to_fhir, ordered_tests_to_fhir
@@ -55,6 +59,7 @@ __all__ = [
     "start_metrics_server",
     "SimpleEmbeddingIndex",
     "SentenceTransformerIndex",
+    "CrossEncoderReranker",
     "load_scores",
     "permutation_test",
     "DiagnosisResult",
