@@ -383,6 +383,7 @@ phases:
           Output orchestrator transcripts and ordered tests in a
           FHIR-compatible format for integration with clinical systems.
         labels: [feature, interoperability]
+        done: true
       - id: "T34"
         title: "Dataset Versioning with DVC"
         description: >
