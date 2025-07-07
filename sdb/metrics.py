@@ -27,6 +27,16 @@ LLM_TOKENS = Counter(
     "Total number of tokens processed by the LLM.",
 )
 
+# Count of CPT lookups served from the local cache.
+CPT_CACHE_HITS = Counter(
+    "cpt_cache_hits_total", "Number of CPT lookups served from cache."
+)
+
+# Count of CPT lookups that required an LLM call.
+CPT_LLM_LOOKUPS = Counter(
+    "cpt_llm_lookups_total", "Number of CPT lookups resolved via LLM."
+)
+
 
 def start_metrics_server(port: int | None = None) -> None:
     """Start a Prometheus metrics HTTP server.
