@@ -18,6 +18,7 @@ from .metrics import start_metrics_server
 from .retrieval import SimpleEmbeddingIndex, SentenceTransformerIndex
 from .statistics import load_scores, permutation_test
 from .sqlite_db import load_from_sqlite, save_to_sqlite
+from .fhir_export import transcript_to_fhir, ordered_tests_to_fhir
 from .ensemble import (
     DiagnosisResult,
     WeightedVoter,
@@ -60,4 +61,6 @@ __all__ = [
     "WeightedVoter",
     "MetaPanel",
     "cost_adjusted_selection",
+    "transcript_to_fhir",
+    "ordered_tests_to_fhir",
 ]
