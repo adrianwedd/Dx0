@@ -113,7 +113,23 @@ Then start the demo web interface to chat with the Gatekeeper and view running c
 uvicorn sdb.ui.app:app --reload
 ```
 
-Then open `http://localhost:8000` in your browser.
+Then open `http://localhost:8000` in your browser. Log in with the default
+credentials `physician` / `secret`.
+
+The UI makes a request to the `/case` endpoint immediately after login to
+retrieve the vignette. Three information panels appear alongside the chat box:
+
+* **Case Summary** – displays the text returned by `/case`.
+* **Ordered Tests** – lists labs and imaging that have been completed.
+* **Diagnostic Flow** – records each step of the debate among persona agents.
+
+![Screenshot of UI](docs/images/ui.png.b64)
+This screenshot is base64-encoded. To view it, save the contents of
+`docs/images/ui.png.b64` to a file and decode it with:
+
+```bash
+base64 -d docs/images/ui.png.b64 > ui.png
+```
 
 
 
