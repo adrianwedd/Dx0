@@ -454,6 +454,7 @@ phases:
           - "Analyze common diagnostic misses with the current engine."
           - "Add rules considering more clinical variables."
           - "Document new logic within `RuleEngine`."
+        done: true
         acceptance_criteria:
           - "Rule-based accuracy improves by 10%."
 
