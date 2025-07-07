@@ -43,3 +43,11 @@ def test_index_layout():
     assert "tests-panel" in html
     assert "flow-panel" in html
     assert "grid" in html  # check styling
+
+
+def test_case_summary():
+    """Case summary endpoint returns the demo case info."""
+    client = TestClient(app)
+    res = client.get("/case")
+    assert res.status_code == 200
+    assert res.json() == {"summary": "A 30 year old with cough"}
