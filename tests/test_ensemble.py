@@ -16,6 +16,13 @@ def test_weighted_voter_selects_highest_score():
     assert voter.vote(results) == "flu"
 
 
+def test_weighted_voter_respects_weights():
+    voter = WeightedVoter()
+    results = [DiagnosisResult("a", 1.0), DiagnosisResult("b", 1.0)]
+    weights = [0.5, 2.0]
+    assert voter.vote(results, weights=weights) == "b"
+
+
 def test_meta_panel_uses_voter():
     mp = MetaPanel()
     results = [DiagnosisResult("a", 1.0), DiagnosisResult("b", 2.0)]

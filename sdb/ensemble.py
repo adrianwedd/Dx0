@@ -17,11 +17,40 @@ class DiagnosisResult:
 class WeightedVoter:
     """Aggregate diagnoses using weighted voting."""
 
-    def vote(self, results: Iterable[DiagnosisResult]) -> str:
-        """Return the diagnosis with the highest weighted score."""
+    def vote(
+        self,
+        results: Iterable[DiagnosisResult],
+        *,
+        weights: Sequence[float] | None = None,
+    ) -> str:
+        """Return the diagnosis with the highest weighted score.
+
+        Parameters
+        ----------
+        results:
+            Iterable of ``DiagnosisResult`` objects.
+        weights:
+            Optional sequence of weights corresponding to ``results``.
+
+        Returns
+        -------
+        str
+            The diagnosis with the highest weighted score. Returns an empty
+            string if ``results`` is empty.
+        """
+
+        res_list = list(results)
+        if weights is not None and len(weights) != len(res_list):
+            raise ValueError("weights must match number of results")
+
         scores: dict[str, float] = defaultdict(float)
-        for res in results:
-            scores[res.diagnosis] += res.confidence
+        if weights is None:
+            for res in res_list:
+                scores[res.diagnosis] += res.confidence
+        else:
+            for res, w in zip(res_list, weights):
+                scores[res.diagnosis] += res.confidence * w
+
         if not scores:
             return ""
         return max(scores.items(), key=lambda x: x[1])[0]
