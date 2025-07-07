@@ -8,6 +8,7 @@ import time
 from typing import Dict, Optional
 
 from .prompt_loader import load_prompt
+from .metrics import CPT_CACHE_HITS, CPT_LLM_LOOKUPS
 
 try:
     import openai  # type: ignore
@@ -81,8 +82,10 @@ def lookup_cpt(
     key = test_name.strip().lower()
     cache = _load_cache(cache_path)
     if key in cache:
+        CPT_CACHE_HITS.inc()
         return cache[key]
 
+    CPT_LLM_LOOKUPS.inc()
     code = _query_llm(test_name)
     if code:
         _append_cache(cache_path, key, code)

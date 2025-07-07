@@ -99,3 +99,112 @@ vitamin e,84597,20.0
 ceruloplasmin,82390,25.0
 prolactin,84146,20.0
 vitamin k,84591,20.0
+red blood cell count,85041,9.0
+white blood cell differential,85025,10.0
+platelet count,85730,9.0
+mean corpuscular volume,85032,9.0
+iron serum,83540,10.0
+total iron binding capacity,83550,10.0
+transferrin,84266,15.0
+serum albumin,82040,10.0
+total protein,84155,10.0
+bilirubin total,82247,10.0
+bilirubin direct,82248,10.0
+alkaline phosphatase,84075,10.0
+aspartate aminotransferase,84450,10.0
+alanine aminotransferase,84460,10.0
+gamma glutamyl transferase,82977,15.0
+troponin t,84484,25.0
+bnp,83880,25.0
+coombs direct,86880,20.0
+coombs indirect,86886,20.0
+blood gas arterial,82803,30.0
+blood urea nitrogen,84520,10.0
+lipase,83690,15.0
+amylase,82150,15.0
+uric acid,84550,10.0
+copper urine,82525,20.0
+zinc urine,84630,20.0
+lead level blood,83655,20.0
+haptoglobin,83010,20.0
+beta hcg qualitative,84702,20.0
+beta hcg quantitative,84703,25.0
+follicle stimulating hormone,83001,25.0
+luteinizing hormone,83002,25.0
+estradiol,82670,25.0
+progesterone,84144,25.0
+testosterone total,84403,25.0
+parathyroid hormone,83970,30.0
+calcitonin,82308,30.0
+"vitamin d 1,25-dihydroxy",82652,30.0
+anti-thyroid peroxidase antibody,86376,20.0
+anti-thyroglobulin antibody,86800,20.0
+thyroid uptake scan,78012,150.0
+bone density scan,77080,120.0
+mri lumbar spine without contrast,72148,400.0
+mri knee without contrast,73721,400.0
+ct chest with contrast,71260,150.0
+ultrasound abdomen complete,76700,100.0
+ultrasound pelvis transvaginal,76830,120.0
+doppler carotid ultrasound,93880,200.0
+echocardiogram complete,93306,250.0
+stress echocardiography,93350,300.0
+holter monitor 24 hour,93224,200.0
+electroencephalogram,95816,250.0
+sleep study,95810,500.0
+spirometry,94010,40.0
+methacholine challenge test,95070,100.0
+allergen specific ige panel,86003,100.0
+skin prick allergy test,95004,80.0
+intradermal allergy test,95024,80.0
+radioallergosorbent test,86008,90.0
+hepatitis a antibody igm,86709,25.0
+hepatitis b core antibody,86705,20.0
+varicella zoster antibody,86787,25.0
+measles antibody,86765,25.0
+mumps antibody,86735,25.0
+rubella antibody,86762,25.0
+cytomegalovirus igg,86644,25.0
+cytomegalovirus igm,86645,25.0
+epstein barr virus antibody,86664,25.0
+herpes simplex virus type 1 igg,86694,25.0
+herpes simplex virus type 2 igg,86695,25.0
+blood smear malaria,87207,25.0
+tuberculosis quantiferon,86480,35.0
+coccidioides antibody,86635,30.0
+histoplasma antigen,87385,30.0
+h pylori breath test,83013,50.0
+clostridioides difficile toxin,87493,40.0
+respiratory viral panel pcr,87631,100.0
+sars-cov-2 pcr,87635,100.0
+influenza a/b pcr,87502,80.0
+resp syncytial virus pcr,87634,80.0
+blood lead level,83655,25.0
+chest ct angiography,71275,250.0
+abdominal aortic ultrasound,76775,120.0
+renal artery doppler,93975,200.0
+pelvic mri with contrast,72197,500.0
+thyroid ultrasound,76536,120.0
+ct abdomen pelvis with contrast,74177,200.0
+pet scan whole body,78815,1500.0
+bone scan whole body,78306,600.0
+ventilation perfusion scan,78582,400.0
+thyroid uptake and scan,78014,160.0
+stress test treadmill,93015,150.0
+tilt table test,93660,200.0
+loop recorder implantation,33285,3000.0
+cardiac catheterization,93458,1000.0
+coronary angioplasty,92920,2000.0
+pacemaker insertion,33208,2500.0
+defibrillator implantation,33249,3000.0
+endoscopy upper gi,43235,600.0
+colonoscopy diagnostic,45378,800.0
+sigmoidoscopy,45330,400.0
+flexible laryngoscopy,31575,300.0
+bronchoscopy diagnostic,31622,500.0
+thoracentesis,32555,350.0
+lumbar puncture,62270,250.0
+arthrocentesis knee,20610,200.0
+nerve conduction studies,95900,350.0
+electromyography,95860,350.0
+bone marrow biopsy,38221,400.0
