@@ -38,10 +38,17 @@ function App() {
     if (res.ok) {
       const data = await res.json();
       setToken(data.token);
-      const caseRes = await fetch('/case');
-      if (caseRes.ok) {
-        const caseData = await caseRes.json();
-        setSummary(caseData.summary);
+      try {
+        const caseRes = await fetch('/case');
+        if (caseRes.ok) {
+          const caseData = await caseRes.json();
+          setSummary(caseData.summary);
+        } else {
+          setSummary('Unable to load case summary.');
+        }
+      } catch (err) {
+        console.error('Failed to fetch case:', err);
+        setSummary('Unable to load case summary.');
       }
       const socket = new WebSocket(`ws://${location.host}/ws?token=${data.token}`);
       socket.onmessage = (ev) => {
