@@ -1,13 +1,101 @@
-test_name,cpt_code
-complete blood count,85027
-basic metabolic panel,80048
-comprehensive metabolic panel,80053
-lipid panel,80061
-thyroid stimulating hormone,84443
-hemoglobin a1c,83036
-chest x-ray 2 views,71046
-ct head without contrast,70450
-mri brain with contrast,70553
-urinalysis,81001
-electrocardiogram,93000
-prothrombin time,85610
+test_name,cpt_code,price
+complete blood count,85027,9.0
+basic metabolic panel,80048,13.0
+comprehensive metabolic panel,80053,14.0
+lipid panel,80061,15.0
+thyroid stimulating hormone,84443,20.0
+hemoglobin a1c,83036,13.0
+chest x-ray 2 views,71046,30.0
+ct head without contrast,70450,100.0
+mri brain with contrast,70553,400.0
+urinalysis,81001,5.0
+electrocardiogram,93000,10.0
+prothrombin time,85610,5.0
+partial thromboplastin time,85730,7.0
+stool occult blood,82274,5.0
+blood culture,87040,20.0
+urine culture,87086,15.0
+sputum culture,87070,12.0
+stool culture,87045,15.0
+throat culture,87070,10.0
+influenza a/b rapid test,87804,35.0
+strep a rapid test,87880,15.0
+covid-19 pcr,87635,50.0
+covid-19 antigen,87426,35.0
+pregnancy test urine,81025,10.0
+pregnancy test serum qualitative,84703,10.0
+pregnancy test serum quantitative,84702,20.0
+blood type abo/rh,86900,15.0
+crossmatch,86920,20.0
+vitamin d 25-hydroxy,82306,30.0
+vitamin b12,82607,20.0
+folate serum,82746,15.0
+ferritin,82728,15.0
+iron and tibc,83540,10.0
+c-reactive protein,86140,10.0
+erythrocyte sedimentation rate,85652,5.0
+d-dimer,85379,20.0
+troponin i,84484,20.0
+b-type natriuretic peptide,83880,25.0
+creatine kinase total,82550,10.0
+lactic acid,83605,15.0
+arterial blood gas,82803,20.0
+magnesium,83735,10.0
+phosphorus inorganic,84100,10.0
+uric acid serum,84550,10.0
+cortisol,82533,15.0
+insulin,83525,15.0
+h. pylori stool antigen,87338,25.0
+h. pylori breath test,83013,40.0
+hepatitis b surface antigen,87340,20.0
+hepatitis b surface antibody,86706,20.0
+hepatitis c antibody,86803,20.0
+hiv 1/2 antigen/antibody,87389,25.0
+chlamydia trachomatis pcr,87491,30.0
+neisseria gonorrhoeae pcr,87591,30.0
+syphilis treponemal antibody,86780,15.0
+rheumatoid factor,86431,10.0
+antinuclear antibody,86038,20.0
+complement c3,86160,15.0
+complement c4,86162,15.0
+prostate specific antigen total,84153,20.0
+ca-125,86304,40.0
+ca 19-9,86301,40.0
+carcinoembryonic antigen,82378,25.0
+alpha fetoprotein,82105,25.0
+lactate dehydrogenase,83615,10.0
+ammonia,82140,15.0
+lead blood,83655,20.0
+lithium,80178,15.0
+digoxin,80162,15.0
+valproic acid,80164,15.0
+carbamazepine,80156,15.0
+phenytoin total,80185,15.0
+theophylline,80198,15.0
+salicylate level,80329,15.0
+acetaminophen level,80307,15.0
+gentamicin level,80170,15.0
+vancomycin level,80202,15.0
+tobramycin level,80200,15.0
+amikacin level,80150,15.0
+serum osmolality,83930,15.0
+creatinine clearance,82575,20.0
+ionized calcium,82330,15.0
+free t4,84439,20.0
+ck-mb,82553,25.0
+myoglobin,83874,20.0
+fibrinogen,85384,20.0
+procalcitonin,84145,25.0
+peripheral blood smear,85060,15.0
+reticulocyte count,85045,15.0
+serum protein electrophoresis,84165,30.0
+urine protein electrophoresis,84166,30.0
+serum zinc,84630,20.0
+serum copper,82525,20.0
+serum vitamin b1,84425,20.0
+serum vitamin a,84590,20.0
+vitamin e,84597,20.0
+25-hydroxyvitamin d2,82306,30.0
+ceruloplasmin,82390,25.0
+prolactin,84146,20.0
+vitamin k,84591,20.0
