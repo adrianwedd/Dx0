@@ -49,6 +49,7 @@ def test_cli_outputs_final_results(tmp_path):
     assert "Final diagnosis" in result.stdout
     assert "Total cost" in result.stdout
     assert "Session score" in result.stdout
+    assert "Total time" in result.stdout
 
 
 def test_cli_flag_parsing(tmp_path):
@@ -123,3 +124,99 @@ def test_cli_stats_command(tmp_path):
     result = subprocess.run(cmd, capture_output=True, text=True)
     assert result.returncode == 0
     assert "p-value" in result.stdout
+
+
+def test_cli_with_sqlite(tmp_path):
+    from sdb.sqlite_db import save_to_sqlite
+
+    cases = [{"id": "1", "summary": "s", "full_text": "t"}]
+    db_path = tmp_path / "cases.db"
+    save_to_sqlite(str(db_path), cases)
+
+    rubric_file = tmp_path / "r.json"
+    with open(rubric_file, "w", encoding="utf-8") as f:
+        json.dump({}, f)
+
+    cost_file = tmp_path / "c.csv"
+    with open(cost_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f, fieldnames=["test_name", "cpt_code", "price"]
+        )
+        writer.writeheader()
+        writer.writerow({"test_name": "x", "cpt_code": "1", "price": "1"})
+
+    cmd = [
+        sys.executable,
+        "cli.py",
+        "--db-sqlite",
+        str(db_path),
+        "--case",
+        "1",
+        "--rubric",
+        str(rubric_file),
+        "--costs",
+        str(cost_file),
+        "--panel-engine",
+        "rule",
+        "--llm-model",
+        "gpt-4",
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0
+
+
+def test_batch_eval_command(tmp_path):
+    cases = [
+        {"id": "1", "summary": "a", "full_text": "x"},
+        {"id": "2", "summary": "b", "full_text": "y"},
+    ]
+    case_file = tmp_path / "cases.json"
+    with open(case_file, "w", encoding="utf-8") as f:
+        json.dump(cases, f)
+
+    rubric_file = tmp_path / "r.json"
+    with open(rubric_file, "w", encoding="utf-8") as f:
+        json.dump({}, f)
+
+    cost_file = tmp_path / "c.csv"
+    with open(cost_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f, fieldnames=["test_name", "cpt_code", "price"]
+        )
+        writer.writeheader()
+        writer.writerow(
+            {
+                "test_name": "complete blood count",
+                "cpt_code": "1",
+                "price": "1",
+            }
+        )
+
+    out_file = tmp_path / "out.csv"
+    cmd = [
+        sys.executable,
+        "cli.py",
+        "batch-eval",
+        "--db",
+        str(case_file),
+        "--rubric",
+        str(rubric_file),
+        "--costs",
+        str(cost_file),
+        "--output",
+        str(out_file),
+        "--panel-engine",
+        "rule",
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0
+    with open(out_file, newline="", encoding="utf-8") as fh:
+        rows = list(csv.DictReader(fh))
+    assert len(rows) == 2
+    assert set(rows[0].keys()) == {
+        "id",
+        "total_cost",
+        "score",
+        "correct",
+        "duration",
+    }

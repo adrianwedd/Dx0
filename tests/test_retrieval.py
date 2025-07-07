@@ -1,4 +1,10 @@
 from sdb.retrieval import SimpleEmbeddingIndex, SentenceTransformerIndex
+from sdb.llm_client import LLMClient
+
+
+class DummyClient(LLMClient):
+    def _chat(self, messages, model):
+        return None
 
 
 def test_simple_embedding_index_returns_match():
@@ -15,3 +21,10 @@ def test_sentence_transformer_index_fallback():
     index = SentenceTransformerIndex(docs, model_name="all-MiniLM-L6-v2")
     results = index.query("cough")
     assert results
+
+
+def test_count_tokens_bpe():
+    """LLMClient should tokenize using BPE when available."""
+
+    msgs = [{"role": "user", "content": "erythema"}]
+    assert DummyClient._count_tokens(msgs) == 3

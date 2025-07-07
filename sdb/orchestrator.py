@@ -9,7 +9,8 @@ from .panel import VirtualPanel, PanelAction
 from .gatekeeper import Gatekeeper
 from .protocol import build_action, ActionType
 from .cost_estimator import CostEstimator
-from .metrics import ORCHESTRATOR_TURNS
+import time
+from .metrics import ORCHESTRATOR_TURNS, ORCHESTRATOR_LATENCY
 
 logger = logging.getLogger(__name__)
 
@@ -48,10 +49,12 @@ class Orchestrator:
         self.finished = False
         self.ordered_tests: list[str] = []
         self.final_diagnosis: str | None = None
+        self.total_time = 0.0
 
     def run_turn(self, case_info: str) -> str:
         """Process a single interaction turn with the panel."""
 
+        start = time.perf_counter()
         action = self.panel.deliberate(case_info=case_info)
         ORCHESTRATOR_TURNS.inc()
         logger.info(
@@ -94,4 +97,7 @@ class Orchestrator:
                 )
             )
 
+        duration = time.perf_counter() - start
+        self.total_time += duration
+        ORCHESTRATOR_LATENCY.observe(duration)
         return result.content

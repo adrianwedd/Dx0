@@ -32,8 +32,24 @@ function App() {
       const socket = new WebSocket(`ws://${location.host}/ws?token=${data.token}`);
       socket.onmessage = (ev) => {
         const d = JSON.parse(ev.data);
-        setLog(l => [...l, {sender: 'Gatekeeper', text: d.reply}]);
-        setCost(d.total_spent);
+        setLog(l => {
+          const log = [...l];
+          if (
+            log.length === 0 ||
+            log[log.length - 1].sender !== 'Gatekeeper' ||
+            log[log.length - 1].done
+          ) {
+            log.push({sender: 'Gatekeeper', text: d.reply, done: d.done});
+          } else {
+            log[log.length - 1] = {
+              ...log[log.length - 1],
+              text: log[log.length - 1].text + d.reply,
+              done: d.done
+            };
+          }
+          return log;
+        });
+        if (d.done) setCost(d.total_spent);
       };
       setWs(socket);
     } else {
