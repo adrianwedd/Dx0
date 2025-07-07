@@ -40,7 +40,9 @@ class RuleEngine(DecisionEngine):
     pain`` and ``rash`` frequently appear early in the narratives but were not
     handled by the initial prototype. As a result, many sessions defaulted to a
     generic ``"viral infection"`` diagnosis. The rules below address these
-    common presentations.
+    common presentations and incorporate additional heuristics for complaints
+    like ``headache`` or ``sore throat``. Combination rules such as ``fever``
+    with ``neck stiffness`` help surface critical tests like lumbar puncture.
     """
 
     DEFAULT_KEYWORD_ACTIONS = {
@@ -52,6 +54,10 @@ class RuleEngine(DecisionEngine):
         "chest pain": (ActionType.TEST, "electrocardiogram"),
         "shortness of breath": (ActionType.TEST, "pulse oximetry"),
         "rash": (ActionType.QUESTION, "rash appearance"),
+        # Additional rules improving diagnostic accuracy
+        "headache": (ActionType.QUESTION, "headache duration"),
+        "sore throat": (ActionType.TEST, "rapid strep test"),
+        "dizziness": (ActionType.TEST, "blood pressure measurement"),
     }
 
     # Multi-keyword rules evaluated before the single keyword lookup. Each set
@@ -61,6 +67,15 @@ class RuleEngine(DecisionEngine):
         frozenset({"fever", "rash"}): (
             ActionType.QUESTION,
             "recent travel history",
+        ),
+        # New combos capturing more complex presentations
+        frozenset({"fever", "neck stiffness"}): (
+            ActionType.TEST,
+            "lumbar puncture",
+        ),
+        frozenset({"weight loss", "night sweats"}): (
+            ActionType.QUESTION,
+            "tuberculosis exposure",
         ),
     }
 
