@@ -34,20 +34,62 @@ class DecisionEngine(ABC):
 
 
 class RuleEngine(DecisionEngine):
-    """Replicate the original keyword-based heuristics."""
+    """Rule-based decision engine using simple keyword heuristics.
+
+    An analysis of the 304 sample cases revealed that ``fever``, ``abdominal
+    pain`` and ``rash`` frequently appear early in the narratives but were not
+    handled by the initial prototype. As a result, many sessions defaulted to a
+    generic ``"viral infection"`` diagnosis. The rules below address these
+    common presentations.
+    """
 
     DEFAULT_KEYWORD_ACTIONS = {
+        # Respiratory complaints
         "cough": (ActionType.TEST, "chest x-ray"),
+        # New rules derived from dataset statistics
+        "fever": (ActionType.TEST, "blood culture"),
+        "abdominal pain": (ActionType.TEST, "abdominal ultrasound"),
+        "chest pain": (ActionType.TEST, "electrocardiogram"),
+        "shortness of breath": (ActionType.TEST, "pulse oximetry"),
+        "rash": (ActionType.QUESTION, "rash appearance"),
     }
 
-    def __init__(self, keyword_actions: dict | None = None):
+    # Multi-keyword rules evaluated before the single keyword lookup. Each set
+    # of keywords maps to an action. Keys are stored as frozensets so they can
+    # be used in dictionaries.
+    DEFAULT_COMBO_ACTIONS = {
+        frozenset({"fever", "rash"}): (
+            ActionType.QUESTION,
+            "recent travel history",
+        ),
+    }
+
+    def __init__(
+        self,
+        keyword_actions: dict | None = None,
+        combo_actions: (
+            dict[frozenset[str], tuple[ActionType, str]] | None
+        ) = None,
+    ) -> None:
         self.keyword_actions = keyword_actions or self.DEFAULT_KEYWORD_ACTIONS
+        self.combo_actions = combo_actions or self.DEFAULT_COMBO_ACTIONS
 
     def decide(self, context: Context) -> PanelAction:
         if context.turn == 1:
             return PanelAction(ActionType.QUESTION, "chief complaint")
 
         text = " ".join(context.past_infos).lower()
+        # Check multi-keyword rules first so specific combinations take
+        # precedence over single keywords.
+        for keywords, (atype, content) in self.combo_actions.items():
+            key = "+".join(sorted(keywords))
+            if (
+                all(kw in text for kw in keywords)
+                and key not in context.triggered_keywords
+            ):
+                context.triggered_keywords.add(key)
+                return PanelAction(atype, content)
+
         for kw, (atype, content) in self.keyword_actions.items():
             if kw.lower() in text and kw not in context.triggered_keywords:
                 context.triggered_keywords.add(kw)
