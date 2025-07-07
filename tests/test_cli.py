@@ -3,6 +3,9 @@ import csv
 import subprocess
 import sys
 
+import cli
+from sdb.llm_client import LLMClient
+
 
 def test_cli_outputs_final_results(tmp_path):
     cases = [{"id": "1", "summary": "viral infection", "full_text": "cough"}]
@@ -220,3 +223,72 @@ def test_batch_eval_command(tmp_path):
         "correct",
         "duration",
     }
+
+
+def test_cli_cache_size(monkeypatch, tmp_path):
+    cases = [{"id": "1", "summary": "s", "full_text": "t"}]
+    case_file = tmp_path / "cases.json"
+    with open(case_file, "w", encoding="utf-8") as f:
+        json.dump(cases, f)
+
+    rubric_file = tmp_path / "r.json"
+    with open(rubric_file, "w", encoding="utf-8") as f:
+        json.dump({}, f)
+
+    cost_file = tmp_path / "c.csv"
+    with open(cost_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=["test_name", "cpt_code", "price"],
+        )
+        writer.writeheader()
+        writer.writerow({"test_name": "x", "cpt_code": "1", "price": "1"})
+
+    captured: dict[str, int | str | None] = {}
+
+    class DummyClient(LLMClient):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            captured["path"] = kwargs.get("cache_path")
+            captured["size"] = kwargs.get("cache_size")
+
+        def _chat(self, messages, model):
+            return None
+
+    monkeypatch.setattr(cli, "OpenAIClient", DummyClient)
+    monkeypatch.setattr(cli, "start_metrics_server", lambda *_: None)
+
+    class DummyOrchestrator:
+        def __init__(self, *args, **kwargs):
+            self.finished = True
+            self.total_time = 0.0
+            self.final_diagnosis = ""
+            self.ordered_tests = []
+
+        def run_turn(self, *_args, **_kwargs):
+            return ""
+
+    monkeypatch.setattr(cli, "Orchestrator", DummyOrchestrator)
+
+    argv = [
+        "cli.py",
+        "--db",
+        str(case_file),
+        "--case",
+        "1",
+        "--rubric",
+        str(rubric_file),
+        "--costs",
+        str(cost_file),
+        "--panel-engine",
+        "llm",
+        "--llm-provider",
+        "openai",
+        "--cache",
+        "--cache-size",
+        "5",
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+    cli.main()
+    assert captured["path"] == "llm_cache.jsonl"
+    assert captured["size"] == 5

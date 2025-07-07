@@ -85,6 +85,12 @@ def batch_eval_main(argv: list[str]) -> None:
         action="store_true",
         help="Cache LLM responses",
     )
+    parser.add_argument(
+        "--cache-size",
+        type=int,
+        default=128,
+        help="Maximum number of responses to keep in the cache",
+    )
     parser.add_argument("--budget", type=float, default=None)
     parser.add_argument(
         "--mode",
@@ -144,9 +150,15 @@ def batch_eval_main(argv: list[str]) -> None:
         else:
             cache_path = "llm_cache.jsonl" if args.cache else None
             if args.llm_provider == "ollama":
-                client = OllamaClient(cache_path=cache_path)
+                client = OllamaClient(
+                    cache_path=cache_path,
+                    cache_size=args.cache_size,
+                )
             else:
-                client = OpenAIClient(cache_path=cache_path)
+                client = OpenAIClient(
+                    cache_path=cache_path,
+                    cache_size=args.cache_size,
+                )
             engine = LLMEngine(model=args.llm_model, client=client)
 
         panel = VirtualPanel(decision_engine=engine)
@@ -253,6 +265,12 @@ def main() -> None:
         "--cache",
         action="store_true",
         help="Cache LLM responses",
+    )
+    parser.add_argument(
+        "--cache-size",
+        type=int,
+        default=128,
+        help="Maximum number of responses to keep in the cache",
     )
     semantic = parser.add_mutually_exclusive_group()
     semantic.add_argument(
@@ -388,9 +406,15 @@ def main() -> None:
     else:
         cache_path = "llm_cache.jsonl" if args.cache else None
         if args.llm_provider == "ollama":
-            client = OllamaClient(cache_path=cache_path)
+            client = OllamaClient(
+                cache_path=cache_path,
+                cache_size=args.cache_size,
+            )
         else:
-            client = OpenAIClient(cache_path=cache_path)
+            client = OpenAIClient(
+                cache_path=cache_path,
+                cache_size=args.cache_size,
+            )
         engine = LLMEngine(model=args.llm_model, client=client)
 
     panel = VirtualPanel(decision_engine=engine)
