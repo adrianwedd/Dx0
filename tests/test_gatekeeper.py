@@ -2,6 +2,7 @@ import json
 
 from sdb.case_database import Case, CaseDatabase
 from sdb.gatekeeper import Gatekeeper
+import sdb.gatekeeper as gatekeeper
 from sdb.protocol import build_action, ActionType
 
 
@@ -80,6 +81,28 @@ def test_semantic_retrieval_enabled():
     assert "cough" in res.content.lower()
     assert "context:" in res.content.lower()
     assert res.synthetic is False
+
+
+def test_cross_encoder_name_passed(monkeypatch):
+    captured = {}
+
+    class DummyIndex:
+        def __init__(
+            self,
+            docs,
+            model_name="all-MiniLM-L6-v2",
+            *,
+            cross_encoder_name=None,
+            rerank_k=5,
+        ):
+            captured["name"] = cross_encoder_name
+
+    monkeypatch.setattr(gatekeeper, "SentenceTransformerIndex", DummyIndex)
+
+    case = Case(id="1", summary="s", full_text="t")
+    db = CaseDatabase([case])
+    Gatekeeper(db, "1", use_semantic_retrieval=True, cross_encoder_name="ce")
+    assert captured["name"] == "ce"
 
 
 def test_invalid_xml():

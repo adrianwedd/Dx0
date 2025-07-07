@@ -113,6 +113,11 @@ def batch_eval_main(argv: list[str]) -> None:
         action="store_false",
     )
     parser.set_defaults(semantic=False)
+    parser.add_argument(
+        "--cross-encoder-model",
+        default=None,
+        help="Cross-encoder model name for semantic retrieval",
+    )
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--quiet", action="store_true")
     args = parser.parse_args(argv)
@@ -152,6 +157,7 @@ def batch_eval_main(argv: list[str]) -> None:
             db,
             case_id,
             use_semantic_retrieval=args.semantic,
+            cross_encoder_name=args.cross_encoder_model,
         )
         if args.panel_engine == "rule":
             engine = RuleEngine()
@@ -323,6 +329,11 @@ def main() -> None:
     )
     parser.set_defaults(semantic=False)
     parser.add_argument(
+        "--cross-encoder-model",
+        default=None,
+        help="Cross-encoder model name for semantic retrieval",
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Enable debug logging",
@@ -419,6 +430,7 @@ def main() -> None:
         db,
         args.case,
         use_semantic_retrieval=args.semantic,
+        cross_encoder_name=args.cross_encoder_model,
     )
     gatekeeper.register_test_result("complete blood count", "normal")
 

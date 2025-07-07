@@ -294,6 +294,68 @@ def test_cli_cache_size(monkeypatch, tmp_path):
     assert captured["size"] == 5
 
 
+def test_cli_cross_encoder_flag(monkeypatch, tmp_path):
+    cases = [{"id": "1", "summary": "s", "full_text": "t"}]
+    case_file = tmp_path / "cases.json"
+    with open(case_file, "w", encoding="utf-8") as f:
+        json.dump(cases, f)
+
+    rubric_file = tmp_path / "r.json"
+    with open(rubric_file, "w", encoding="utf-8") as f:
+        json.dump({}, f)
+
+    cost_file = tmp_path / "c.csv"
+    with open(cost_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=["test_name", "cpt_code", "price"],
+        )
+        writer.writeheader()
+        writer.writerow({"test_name": "x", "cpt_code": "1", "price": "1"})
+
+    captured: dict[str, str | None] = {}
+
+    class DummyGatekeeper:
+        def __init__(self, *_args, **kwargs):
+            captured["ce"] = kwargs.get("cross_encoder_name")
+
+        def register_test_result(self, *_args, **_kwargs):
+            pass
+
+    monkeypatch.setattr(cli, "Gatekeeper", DummyGatekeeper)
+    monkeypatch.setattr(cli, "start_metrics_server", lambda *_: None)
+
+    class DummyOrchestrator:
+        def __init__(self, *args, **kwargs):
+            self.finished = True
+            self.total_time = 0.0
+            self.final_diagnosis = ""
+            self.ordered_tests = []
+
+        def run_turn(self, *_args, **_kwargs):
+            return ""
+
+    monkeypatch.setattr(cli, "Orchestrator", DummyOrchestrator)
+
+    argv = [
+        "cli.py",
+        "--db",
+        str(case_file),
+        "--case",
+        "1",
+        "--rubric",
+        str(rubric_file),
+        "--costs",
+        str(cost_file),
+        "--cross-encoder-model",
+        "ce",
+        "--semantic-retrieval",
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+    cli.main()
+    assert captured["ce"] == "ce"
+
+
 def test_fhir_export_command(tmp_path):
     transcript = [["panel", "hello"], ["gatekeeper", "hi"]]
     tests = ["cbc"]

@@ -39,6 +39,7 @@ class Gatekeeper:
         db: CaseDatabase,
         case_id: str,
         use_semantic_retrieval: bool = False,
+        cross_encoder_name: str | None = None,
     ):
         """Bind the gatekeeper to a case and set up test cache.
 
@@ -48,6 +49,8 @@ class Gatekeeper:
             Database from which to retrieve the case.
         case_id:
             Identifier of the case the gatekeeper will manage.
+        cross_encoder_name:
+            Optional cross-encoder model used to rerank retrieval results.
         """
 
         self.case = db.get_case(case_id)
@@ -61,7 +64,9 @@ class Gatekeeper:
                     docs.extend(
                         [p.strip() for p in text.split("\n") if p.strip()]
                     )
-            self.index = SentenceTransformerIndex(docs)
+            self.index = SentenceTransformerIndex(
+                docs, cross_encoder_name=cross_encoder_name
+            )
 
     def load_results_from_json(self, path: str) -> None:
         """Load test result fixtures from a JSON file."""
