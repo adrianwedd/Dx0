@@ -135,6 +135,16 @@ metrics = bench.run()
 print(metrics)
 ```
 
+### Running Tests
+
+The test suite depends on additional packages such as `httpx` and
+`starlette`. Install the development requirements first:
+
+```bash
+pip install -r requirements-dev.txt
+pytest -q
+```
+
 ### Statistical Significance Testing
 
 After running evaluations you can test whether a variant's scores differ
