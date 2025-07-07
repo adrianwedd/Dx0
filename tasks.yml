@@ -369,6 +369,13 @@ phases:
           Store completions from the LLM engine on disk to avoid
           duplicate API calls and reduce cost.
         labels: [enhancement, backend, optimization]
+        actionable_steps:
+          - "Design a caching strategy balancing performance and data freshness."
+          - "Implement the cache in `LLMClient` with optional CLI flag to enable it."
+          - "Write unit tests covering cache hits and evictions."
+        acceptance_criteria:
+          - "Average latency of LLM requests is reduced by at least 30%."
+          - "API calls to the provider drop by at least 40%."
       - id: "T33"
         title: "FHIR Export for Sessions"
         description: >
@@ -422,4 +429,56 @@ phases:
           and writes aggregated CSV results.
         labels: [feature, cli, evaluation]
         done: true
+
+      - id: "T40"
+        title: "Expand CPT Code Lookup Table"
+        description: >
+          Reduce reliance on the LLM for pricing by expanding the built-in mapping
+          of common medical tests to CPT codes and CMS prices.
+        labels: [data, enhancement]
+        actionable_steps:
+          - "Identify frequently ordered tests in the case data."
+          - "Research corresponding CPT codes and current prices."
+          - "Add at least 100 new entries to `cpt_lookup.csv`."
+        acceptance_criteria:
+          - "`cpt_lookup.csv` contains the new codes."
+          - "LLM CPT lookups decrease by 20%."
+
+      - id: "T41"
+        title: "Improve Rule-Based Decision Engine"
+        description: >
+          Extend `sdb/decision.py` with additional clinical rules to boost accuracy
+          of the non-LLM engine.
+        labels: [ai, backend]
+        actionable_steps:
+          - "Analyze common diagnostic misses with the current engine."
+          - "Add rules considering more clinical variables."
+          - "Document new logic within `RuleEngine`."
+        acceptance_criteria:
+          - "Rule-based accuracy improves by 10%."
+
+      - id: "T42"
+        title: "Refine LLM Prompts"
+        description: >
+          Improve the prompts used by the LLM-based engine to reduce errors and
+          make maintenance easier.
+        labels: [ai, prompt-engineering]
+        actionable_steps:
+          - "Review common LLM mistakes and adjust instructions."
+          - "A/B test revised prompts for effectiveness."
+        acceptance_criteria:
+          - "Error rate drops by 15%."
+
+      - id: "T43"
+        title: "Enhance Web UI"
+        description: >
+          Provide a clearer case summary, test history, and a visual diagram of the
+          diagnostic process.
+        labels: [frontend, ux]
+        actionable_steps:
+          - "Add summary and ordered-test panels."
+          - "Draw the system's diagnostic path graphically."
+          - "Improve layout styling for readability."
+        acceptance_criteria:
+          - "New features are functional and intuitive."
 
