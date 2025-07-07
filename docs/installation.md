@@ -74,3 +74,30 @@ dvc pull
 
 If you modify files under `data/`, rerun `dvc add` on the directories and push the
 changes with `dvc push` so other contributors can reproduce your results.
+
+## Running the Demo UI
+
+Install the development dependencies to get `uvicorn` and the packages used by
+the small FastAPI demo:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+Start the server and open `http://localhost:8000`:
+
+```bash
+uvicorn sdb.ui.app:app --reload
+```
+
+Log in with username `physician` and password `secret`. After authentication the
+interface calls the `/case` endpoint to display the vignette in the **Case
+Summary** panel. The **Ordered Tests** list and **Diagnostic Flow** log update as
+you interact with the chat panel.
+
+![Screenshot of UI](images/ui.png.b64)
+The screenshot file is base64 encoded. Decode it with:
+
+```bash
+base64 -d docs/images/ui.png.b64 > ui.png
+```
