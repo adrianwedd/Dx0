@@ -479,6 +479,7 @@ phases:
           - "A/B test revised prompts for effectiveness."
         acceptance_criteria:
           - "Error rate drops by 15%."
+        done: true
 
       - id: "T44"
         title: "Enhance Web UI"
