@@ -21,6 +21,7 @@ from sdb import (
     start_metrics_server,
     load_scores,
     permutation_test,
+    load_from_sqlite,
 )
 
 
@@ -58,6 +59,10 @@ def main() -> None:
     parser.add_argument(
         "--db",
         help="Path to case JSON, CSV or directory",
+    )
+    parser.add_argument(
+        "--db-sqlite",
+        help="Path to case SQLite database",
     )
     parser.add_argument("--case", help="Case identifier")
     parser.add_argument(
@@ -134,6 +139,11 @@ def main() -> None:
         help="Directory for held-out cases from 2024-2025",
     )
     parser.add_argument(
+        "--export-sqlite",
+        default=None,
+        help="Path to SQLite file when using --convert",
+    )
+    parser.add_argument(
 
         "--budget",
         type=float,
@@ -162,13 +172,16 @@ def main() -> None:
             output_dir=args.output_dir,
             hidden_dir=args.hidden_dir,
             fetch=False,
+            sqlite_path=args.export_sqlite,
         )
         return
 
-    required = [args.db, args.case, args.rubric, args.costs]
+    required = [args.case, args.rubric, args.costs]
+    if args.db is None and args.db_sqlite is None:
+        parser.error("--db or --db-sqlite is required for a session")
     if any(item is None for item in required):
         parser.error(
-            "--db, --case, --rubric and --costs are required for a session"
+            "--case, --rubric and --costs are required for a session"
         )
 
     level = logging.INFO
@@ -178,7 +191,9 @@ def main() -> None:
         level = logging.WARNING
     logging.basicConfig(level=level, format="%(message)s")
 
-    if os.path.isdir(args.db):
+    if args.db_sqlite:
+        db = load_from_sqlite(args.db_sqlite)
+    elif os.path.isdir(args.db):
         db = CaseDatabase.load_from_directory(args.db)
     elif args.db.endswith(".csv"):
         db = CaseDatabase.load_from_csv(args.db)

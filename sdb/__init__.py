@@ -17,6 +17,7 @@ from .cpt_lookup import lookup_cpt
 from .metrics import start_metrics_server
 from .retrieval import SimpleEmbeddingIndex, SentenceTransformerIndex
 from .statistics import load_scores, permutation_test
+from .sqlite_db import load_from_sqlite, save_to_sqlite
 from .ensemble import (
     DiagnosisResult,
     WeightedVoter,
@@ -48,6 +49,8 @@ __all__ = [
     "lookup_cpt",
     "run_pipeline",
     "update_dataset",
+    "load_from_sqlite",
+    "save_to_sqlite",
     "start_metrics_server",
     "SimpleEmbeddingIndex",
     "SentenceTransformerIndex",
