@@ -18,3 +18,22 @@ uvicorn sdb.ui.app:app --reload
 Visit `http://localhost:8000` to open the chat interface.
 
 See `dvc_setup.md` for dataset versioning instructions.
+
+## Case Summary Endpoint
+
+The API exposes a small `/case` endpoint that returns the current case summary
+as JSON. The UI calls this endpoint immediately after a successful login to
+display the vignette before any questions are asked.
+
+## Web Interface Layout
+
+The React demo arranges four panels in a two-column grid:
+
+* **Case Summary** – shows the summary text returned by `/case`.
+* **Ordered Tests** – lists completed labs or imaging studies.
+* **Chat Panel** – spans both columns and displays the running conversation and
+  cost tracker.
+* **Diagnostic Flow** – captures a step-by-step log of the debate.
+
+Together these panels provide an overview of the ordered tests and reasoning
+flow while you chat with the Gatekeeper.

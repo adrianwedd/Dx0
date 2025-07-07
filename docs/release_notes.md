@@ -1,5 +1,11 @@
 # Release Notes
 
+## v0.2.0
+
+* Added `/case` endpoint delivering the case summary to the UI.
+* Web interface now displays a summary panel, ordered-tests list, and diagnostic
+  flow diagram using a simple grid layout.
+
 ## v0.1.0
 
 Initial public release of the SDB package and Dx0 demo. Highlights:
