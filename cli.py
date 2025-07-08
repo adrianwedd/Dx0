@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import sys
+from sdb.config import load_settings, settings
 from sdb import (
     CaseDatabase,
     Gatekeeper,
@@ -53,6 +54,7 @@ def stats_main(argv: list[str]) -> None:
     parser = argparse.ArgumentParser(description="Run significance test")
     parser.add_argument("baseline", help="CSV file for baseline results")
     parser.add_argument("variant", help="CSV file for variant results")
+    parser.add_argument("--config", default=None, help="YAML settings file")
     parser.add_argument(
         "--column",
         default="score",
@@ -65,6 +67,7 @@ def stats_main(argv: list[str]) -> None:
         help="Number of permutations",
     )
     args = parser.parse_args(argv)
+    load_settings(args.config)
 
     a = load_scores(args.baseline, args.column)
     b = load_scores(args.variant, args.column)
@@ -76,6 +79,7 @@ def batch_eval_main(argv: list[str]) -> None:
     """Run evaluations for multiple cases concurrently."""
 
     parser = argparse.ArgumentParser(description="Batch evaluate cases")
+    parser.add_argument("--config", default=None, help="YAML settings file")
     parser.add_argument("--db", help="Path to case JSON, CSV or directory")
     parser.add_argument("--db-sqlite", help="Path to case SQLite database")
     parser.add_argument("--rubric", required=True, help="Scoring rubric JSON")
@@ -198,7 +202,7 @@ def batch_eval_main(argv: list[str]) -> None:
             cache_path = "llm_cache.jsonl" if args.cache else None
             if args.llm_provider == "ollama":
                 client = OllamaClient(
-                    base_url=args.ollama_base_url,
+                    base_url=args.ollama_base_url or settings.ollama_base_url,
                     cache_path=cache_path,
                     cache_size=args.cache_size,
                 )
@@ -337,6 +341,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Run a simple diagnostic session",
     )
+    parser.add_argument("--config", default=None, help="YAML settings file")
     parser.add_argument(
         "--db",
         help="Path to case JSON, CSV or directory",
@@ -477,6 +482,7 @@ def main() -> None:
         help="Port for Prometheus metrics server (default 8000)",
     )
     args = parser.parse_args()
+    load_settings(args.config)
 
     vote_weights = _load_weights(args.vote_weights)
     meta_panel = MetaPanel(weights=vote_weights)
@@ -541,7 +547,7 @@ def main() -> None:
         cache_path = "llm_cache.jsonl" if args.cache else None
         if args.llm_provider == "ollama":
             client = OllamaClient(
-                base_url=args.ollama_base_url,
+                base_url=args.ollama_base_url or settings.ollama_base_url,
                 cache_path=cache_path,
                 cache_size=args.cache_size,
             )

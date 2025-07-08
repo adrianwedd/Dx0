@@ -8,6 +8,7 @@ import time
 from typing import Dict, Optional
 
 from .llm_client import OpenAIClient
+from .config import settings
 
 from .prompt_loader import load_prompt
 from .metrics import CPT_CACHE_HITS, CPT_LLM_LOOKUPS
@@ -50,7 +51,7 @@ def _append_cache(path: str, test_name: str, cpt_code: str) -> None:
         writer.writerow({"test_name": test_name, "cpt_code": cpt_code})
 
 
-_openai_client = OpenAIClient()
+_openai_client = OpenAIClient(api_key=settings.openai_api_key)
 
 
 def _query_llm(test_name: str) -> Optional[str]:
@@ -60,11 +61,11 @@ def _query_llm(test_name: str) -> Optional[str]:
     ]
 
     if openai is not None:
-        api_key = os.getenv("OPENAI_API_KEY")
+        api_key = settings.openai_api_key or os.getenv("OPENAI_API_KEY")
         if not api_key:
             return None
         openai.api_key = api_key
-        model = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+        model = os.getenv("OPENAI_MODEL", settings.openai_model)
         for _ in range(3):
             try:
                 resp = openai.ChatCompletion.create(
@@ -76,9 +77,7 @@ def _query_llm(test_name: str) -> Optional[str]:
             except Exception:  # pragma: no cover - network issues
                 time.sleep(1)
     else:
-        reply = _openai_client.chat(
-            messages, model=os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
-        )
+        reply = _openai_client.chat(messages, model=settings.openai_model)
         if reply:
             return reply.strip().split()[0]
     return None

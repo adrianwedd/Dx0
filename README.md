@@ -93,6 +93,23 @@ python -m dx0.cli \
   --ollama-base-url http://localhost:11434 ...
 ```
 
+### Configuration
+
+You can load common settings from a YAML file using `--config`:
+
+```yaml
+openai_api_key: sk-your-key
+openai_model: gpt-4
+ollama_base_url: http://localhost:11434
+metrics_port: 8000
+```
+
+Pass the file to any CLI command:
+
+```bash
+python cli.py --config settings.yml --db cases.json --case 1 --rubric r.json --costs c.csv
+```
+
 ### SDBench CLI
 
 ```bash

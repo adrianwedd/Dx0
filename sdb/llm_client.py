@@ -8,6 +8,7 @@ import json
 import logging
 from abc import ABC, abstractmethod
 from typing import List, OrderedDict
+from .config import settings
 
 try:
     import tiktoken  # type: ignore
@@ -134,7 +135,9 @@ class OpenAIClient(LLMClient):
         cache_size: int = 128,
     ) -> None:
         super().__init__(cache_path=cache_path, cache_size=cache_size)
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.api_key = (
+            api_key or settings.openai_api_key or os.getenv("OPENAI_API_KEY")
+        )
 
     def _chat(self, messages: List[dict], model: str) -> str | None:
         if openai is None or not self.api_key:
@@ -159,11 +162,12 @@ class OllamaClient(LLMClient):
 
     def __init__(
         self,
-        base_url: str = "http://localhost:11434",
+        base_url: str | None = None,
         cache_path: str | None = None,
         cache_size: int = 128,
     ) -> None:
         super().__init__(cache_path=cache_path, cache_size=cache_size)
+        base_url = base_url or settings.ollama_base_url
         self.base_url = base_url.rstrip("/")
 
     def _chat(self, messages: List[dict], model: str) -> str | None:
