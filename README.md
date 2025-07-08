@@ -83,6 +83,15 @@ python -m dx0.cli \
 The cross encoder re-scores the top semantic matches so the most relevant
 passages appear first, improving precision.
 
+To run models via a local Ollama server, specify `--llm-provider ollama` and
+optionally set `--ollama-base-url` if the server is not on the default port:
+
+```bash
+python -m dx0.cli \
+  --llm-provider ollama \
+  --ollama-base-url http://localhost:11434 ...
+```
+
 ### SDBench CLI
 
 ```bash

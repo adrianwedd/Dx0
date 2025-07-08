@@ -85,6 +85,11 @@ def batch_eval_main(argv: list[str]) -> None:
     )
     parser.add_argument("--llm-model", default="gpt-4")
     parser.add_argument(
+        "--ollama-base-url",
+        default="http://localhost:11434",
+        help="Base URL for the Ollama server",
+    )
+    parser.add_argument(
         "--cache",
         action="store_true",
         help="Cache LLM responses",
@@ -165,6 +170,7 @@ def batch_eval_main(argv: list[str]) -> None:
             cache_path = "llm_cache.jsonl" if args.cache else None
             if args.llm_provider == "ollama":
                 client = OllamaClient(
+                    base_url=args.ollama_base_url,
                     cache_path=cache_path,
                     cache_size=args.cache_size,
                 )
@@ -302,6 +308,11 @@ def main() -> None:
         "--llm-model",
         default="gpt-4",
         help="Model name for LLM engine",
+    )
+    parser.add_argument(
+        "--ollama-base-url",
+        default="http://localhost:11434",
+        help="Base URL for the Ollama server",
     )
     parser.add_argument(
         "--cache",
@@ -452,6 +463,7 @@ def main() -> None:
         cache_path = "llm_cache.jsonl" if args.cache else None
         if args.llm_provider == "ollama":
             client = OllamaClient(
+                base_url=args.ollama_base_url,
                 cache_path=cache_path,
                 cache_size=args.cache_size,
             )
