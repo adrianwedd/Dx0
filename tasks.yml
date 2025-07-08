@@ -495,3 +495,213 @@ phases:
         acceptance_criteria:
           - "New features are functional and intuitive."
 
+- id: 45
+  title: Secure Web UI Authentication
+  description: >
+    Replace the hardcoded credential store in `sdb/ui/app.py` with a
+    configuration-based approach using hashed passwords. Credentials should be
+    loaded from environment variables or an external file and verified using a
+    secure hashing algorithm. Add tests covering authentication success and
+    failure cases.
+  component: ui
+  area: security
+  dependencies: []
+  priority: 1
+  status: pending
+  actionable_steps:
+    - Remove the `USERS` dict from the codebase.
+    - Load user credentials from a config file or environment variable.
+    - Store and verify passwords using a strong hash (e.g., bcrypt).
+    - Update login logic and add unit tests.
+  acceptance_criteria:
+    - "No plaintext passwords remain in the repository."
+    - "Login succeeds with valid credentials and fails otherwise."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
+- id: 46
+  title: Centralize Application Configuration
+  description: >
+    Introduce a Pydantic-based configuration schema loaded from a YAML file.
+    The CLI should accept a `--config` flag to specify the config path, and all
+    modules should access settings via this centralized object.
+  component: cli
+  area: configuration
+  dependencies: []
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Define `Settings` dataclass or Pydantic model.
+    - Load settings from YAML at startup.
+    - Refactor modules to read values from the settings object.
+    - Document the configuration options.
+  acceptance_criteria:
+    - "CLI runs with --config and values propagate to orchestrator."
+    - "Default configuration file documented in README."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
+- id: 47
+  title: Add Async LLMClient for Concurrent Calls
+  description: >
+    Implement an asynchronous variant of `LLMClient` so batch evaluations can
+    perform concurrent LLM requests without blocking the event loop. Update the
+    orchestrator and evaluator as needed to support async operation.
+  component: backend
+  area: performance
+  dependencies: []
+  priority: 2
+  status: pending
+  actionable_steps:
+    - Create `AsyncLLMClient` with async `chat` method.
+    - Update `LLMEngine` and evaluation helpers to use async when provided.
+    - Add tests for concurrent execution path.
+  acceptance_criteria:
+    - "Batch evaluations run asynchronously without errors."
+    - "Performance improves when using async client."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
+- id: 48
+  title: Harden Gatekeeper Query Parsing
+  description: >
+    Improve XML parsing in `Gatekeeper.answer_question` by validating against a
+    strict schema and sanitizing inputs to prevent malformed or malicious
+    queries. Return clear error messages on validation failures.
+  component: gatekeeper
+  area: security
+  dependencies: []
+  priority: 2
+  status: pending
+  actionable_steps:
+    - Define an XML schema for allowed queries.
+    - Validate incoming XML against the schema.
+    - Add tests for malformed and malicious inputs.
+  acceptance_criteria:
+    - "Gatekeeper rejects invalid XML with informative errors."
+    - "All new tests pass."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
+- id: 49
+  title: Standardize Structured Logging
+  description: >
+    Replace ad-hoc logging calls with a unified structured logging framework
+    (e.g., `structlog`). Ensure all modules log consistent fields and severity
+    levels for easier monitoring.
+  component: backend
+  area: observability
+  dependencies: []
+  priority: 4
+  status: pending
+  actionable_steps:
+    - Integrate `structlog` and configure JSON output.
+    - Refactor existing `logger` calls across modules.
+    - Update documentation on log consumption.
+  acceptance_criteria:
+    - "Logs are JSON-formatted and include module, level, and message." 
+    - "No remaining plain `print` or inconsistent logger usage." 
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
+- id: 50
+  title: Plugin System for Panel Personas
+  description: >
+    Allow custom persona chains to be loaded as plugins so researchers can
+    experiment with alternative agent roles without modifying core code.
+  component: panel
+  area: architecture
+  dependencies: []
+  priority: 5
+  status: pending
+  actionable_steps:
+    - Define entry point mechanism for persona plugins.
+    - Load persona definitions dynamically at runtime.
+    - Provide example plugin and documentation.
+  acceptance_criteria:
+    - "New personas can be added via plugin without touching core modules."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
+- id: 51
+  title: Expand Test Coverage for Web UI and Async Evaluation
+  description: >
+    Add integration tests exercising the FastAPI WebSocket endpoints and the
+    asynchronous batch evaluation helpers to prevent regressions.
+  component: tests
+  area: testing
+  dependencies: [47]
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Use `httpx.AsyncClient` to test WebSocket flows.
+    - Add tests validating concurrency limits in `async_batch_evaluate`.
+  acceptance_criteria:
+    - "CI runs new tests successfully."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
+- id: 52
+  title: Switch Embedding Index to FAISS
+  description: >
+    Replace the custom `SentenceTransformerIndex` backend with FAISS for faster
+    and more memory-efficient retrieval when indexing the full CPC dataset.
+  component: retrieval
+  area: performance
+  dependencies: []
+  priority: 4
+  status: pending
+  actionable_steps:
+    - Add FAISS as an optional dependency.
+    - Implement FAISS-backed index class.
+    - Provide migration guide for existing embeddings.
+  acceptance_criteria:
+    - "Retrieval latency decreases on large datasets." 
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
+- id: 53
+  title: Pin Dependency Versions and Document Updates
+  description: >
+    Pin exact dependency versions in `requirements-dev.txt` and document a
+    process for regular security updates using tools like `pip-audit`.
+  component: build
+  area: dependencies
+  dependencies: []
+  priority: 4
+  status: pending
+  actionable_steps:
+    - Update requirements files with version pins.
+    - Add a docs section on updating and auditing dependencies.
+  acceptance_criteria:
+    - "`pip install -r requirements-dev.txt` yields deterministic versions."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
+- id: 54
+  title: Make LLM FileCache Thread-Safe
+  description: >
+    Protect the JSONL cache used by `LLMClient` with file locks to avoid
+    corruption when multiple threads or processes access it concurrently.
+  component: backend
+  area: robustness
+  dependencies: []
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Add a cross-platform file lock around cache read/write.
+    - Write tests simulating concurrent access.
+  acceptance_criteria:
+    - "Concurrent LLM calls do not corrupt the cache file."
+  command: null
+  epic: Phase 5
+  assigned_to: null
