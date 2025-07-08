@@ -573,7 +573,7 @@ phases:
   area: performance
   dependencies: []
   priority: 2
-  status: pending
+  status: done
   actionable_steps:
     - Create `AsyncLLMClient` with async `chat` method.
     - Update `LLMEngine` and evaluation helpers to use async when provided.
@@ -595,7 +595,7 @@ phases:
   area: security
   dependencies: []
   priority: 2
-  status: pending
+  status: done
   actionable_steps:
     - Define an XML schema for allowed queries.
     - Validate incoming XML against the schema.

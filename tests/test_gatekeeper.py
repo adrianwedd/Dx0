@@ -123,7 +123,7 @@ def test_unknown_xml_tag():
     gk = setup_gatekeeper()
     res = gk.answer_question("<foo>bar</foo>")
     assert res.synthetic is True
-    assert res.content == "Unknown action"
+    assert "Invalid query" in res.content
 
 
 def test_load_results_from_invalid_json(tmp_path):
@@ -146,4 +146,13 @@ def test_unexpected_nested_xml():
     query = "<question>info<test>cbc</test></question>"
     res = gk.answer_question(query)
     assert res.synthetic is True
-    assert "Cannot mix" in res.content
+    assert "Invalid query" in res.content
+
+
+def test_malicious_doctype():
+    """XXE-style payloads should be rejected as invalid."""
+    gk = setup_gatekeeper()
+    payload = "<!DOCTYPE foo [<!ENTITY xxe SYSTEM 'file:///etc/passwd'>]><question>&xxe;</question>"
+    res = gk.answer_question(payload)
+    assert res.synthetic is True
+    assert "Invalid query" in res.content
