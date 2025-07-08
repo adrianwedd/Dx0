@@ -41,3 +41,9 @@ def test_llm_engine_behaves_like_rule_engine():
         ActionType.QUESTION,
         ActionType.DIAGNOSIS,
     ]
+
+
+def test_persona_plugin_loaded():
+    panel = VirtualPanel(persona_chain="optimist")
+    assert isinstance(panel.engine, LLMEngine)
+    assert "optimist_system" in panel.engine.prompts

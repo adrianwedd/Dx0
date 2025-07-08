@@ -118,7 +118,7 @@ class RuleEngine(DecisionEngine):
 class LLMEngine(DecisionEngine):
     """LLM-driven decision engine following the Chain of Debate."""
 
-    PERSONAS = [
+    DEFAULT_PERSONAS = [
         "hypothesis_system",
         "test_chooser_system",
         "challenger_system",
@@ -130,11 +130,13 @@ class LLMEngine(DecisionEngine):
         self,
         model: str = "gpt-4",
         client: LLMClient | AsyncLLMClient | None = None,
+        personas: list[str] | None = None,
     ) -> None:
         self.model = model
         self.client = client or OpenAIClient()
         self.fallback = RuleEngine()
-        self.prompts = {name: load_prompt(name) for name in self.PERSONAS}
+        self.personas = personas or self.DEFAULT_PERSONAS
+        self.prompts = {name: load_prompt(name) for name in self.personas}
         for name, text in self.prompts.items():
             if not text.strip():
                 raise ValueError(f"Prompt {name} is empty")
@@ -155,7 +157,7 @@ class LLMEngine(DecisionEngine):
 
         conversation = "\n".join(context.past_infos)
         messages = []
-        for name in self.PERSONAS:
+        for name in self.personas:
             system = {"role": "system", "content": self.prompts[name]}
             user = {"role": "user", "content": conversation}
             messages.extend([system, user])
@@ -178,7 +180,7 @@ class LLMEngine(DecisionEngine):
 
         conversation = "\n".join(context.past_infos)
         messages = []
-        for name in self.PERSONAS:
+        for name in self.personas:
             system = {"role": "system", "content": self.prompts[name]}
             user = {"role": "user", "content": conversation}
             messages.extend([system, user])

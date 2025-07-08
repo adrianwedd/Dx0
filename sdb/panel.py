@@ -5,9 +5,10 @@ from __future__ import annotations
 import structlog
 import asyncio
 from typing import List, Set
+from importlib import metadata
 
 from .actions import PanelAction
-from .decision import Context, DecisionEngine, RuleEngine
+from .decision import Context, DecisionEngine, RuleEngine, LLMEngine
 from .metrics import PANEL_ACTIONS
 
 logger = structlog.get_logger(__name__)
@@ -16,14 +17,21 @@ logger = structlog.get_logger(__name__)
 class VirtualPanel:
     """Simulate collaborative panel of doctors using pluggable engines."""
 
-    def __init__(self, decision_engine: DecisionEngine | None = None):
+    def __init__(
+        self,
+        decision_engine: DecisionEngine | None = None,
+        persona_chain: str | None = None,
+    ):
         """Initialize the panel and underlying decision engine.
 
         Parameters
         ----------
         decision_engine:
-            Optional engine used to select actions. If ``None``, a
-            :class:`RuleEngine` is instantiated.
+            Optional engine used to select actions. If provided, it overrides
+            ``persona_chain``.
+        persona_chain:
+            Name of an installed persona plugin to load. Ignored when
+            ``decision_engine`` is supplied.
 
         The panel starts with no previous case information, zero turn count
         and an empty set of triggered keywords.
@@ -33,7 +41,24 @@ class VirtualPanel:
         self.last_case_info = ""
         self.past_infos: List[str] = []
         self.triggered_keywords: Set[str] = set()
-        self.engine = decision_engine or RuleEngine()
+        if decision_engine is not None:
+            self.engine = decision_engine
+        elif persona_chain is not None:
+            chain = self._load_persona_chain(persona_chain)
+            self.engine = LLMEngine(personas=chain)
+        else:
+            self.engine = RuleEngine()
+
+    def _load_persona_chain(self, name: str) -> list[str]:
+        """Return persona prompt names from the plugin ``name``."""
+
+        for ep in metadata.entry_points(group="dx0.personas"):
+            if ep.name == name:
+                chain = ep.load()()
+                if not isinstance(chain, list):
+                    raise TypeError("Persona plugin must return a list of names")
+                return chain
+        raise ValueError(f"Persona chain '{name}' not found")
 
     def deliberate(self, case_info: str) -> PanelAction:
         """Run one deliberation step and return the chosen action."""

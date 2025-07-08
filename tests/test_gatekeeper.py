@@ -152,7 +152,9 @@ def test_unexpected_nested_xml():
 def test_malicious_doctype():
     """XXE-style payloads should be rejected as invalid."""
     gk = setup_gatekeeper()
-    payload = "<!DOCTYPE foo [<!ENTITY xxe SYSTEM 'file:///etc/passwd'>]><question>&xxe;</question>"
+    payload = (
+        "<!DOCTYPE foo [<!ENTITY xxe SYSTEM 'file:///etc/passwd'>]><question>&xxe;</question>"  # noqa: E501
+    )
     res = gk.answer_question(payload)
     assert res.synthetic is True
     assert "Invalid query" in res.content

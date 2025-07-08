@@ -550,7 +550,7 @@ phases:
   area: configuration
   dependencies: []
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
     - Define `Settings` dataclass or Pydantic model.
     - Load settings from YAML at startup.
@@ -617,7 +617,7 @@ phases:
   area: observability
   dependencies: []
   priority: 4
-  status: pending
+  status: done
   actionable_steps:
     - Integrate `structlog` and configure JSON output.
     - Refactor existing `logger` calls across modules.
@@ -638,7 +638,7 @@ phases:
   area: architecture
   dependencies: []
   priority: 5
-  status: pending
+  status: done
   actionable_steps:
     - Define entry point mechanism for persona plugins.
     - Load persona definitions dynamically at runtime.
