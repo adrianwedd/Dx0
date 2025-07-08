@@ -1,5 +1,11 @@
 # Release Notes
 
+## v0.3.0
+
+* Added a `WeightedVoter` that combines panel diagnoses using confidence
+  scores. Use the new `--vote-weights` CLI flag to supply run-specific
+  weights for ensemble mode.
+
 ## v0.2.0
 
 * Added `/case` endpoint delivering the case summary to the UI.
