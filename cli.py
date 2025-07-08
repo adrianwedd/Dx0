@@ -17,6 +17,8 @@ from sdb import (
     Orchestrator,
     Judge,
     Evaluator,
+    DiagnosisResult,
+    MetaPanel,
     batch_evaluate,
     run_pipeline,
     start_metrics_server,
@@ -29,6 +31,20 @@ from sdb import (
     bundle_to_case,
 )
 import csv
+
+
+def _load_weights(arg: str | None) -> dict[str, float] | None:
+    """Return a mapping from run ID to vote weight."""
+
+    if arg is None:
+        return None
+    try:
+        if os.path.exists(arg):
+            with open(arg, "r", encoding="utf-8") as fh:
+                return json.load(fh)
+        return json.loads(arg)
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"Invalid vote weights: {exc}") from exc
 
 
 def stats_main(argv: list[str]) -> None:
@@ -108,6 +124,13 @@ def batch_eval_main(argv: list[str]) -> None:
         choices=["unconstrained", "budgeted", "question-only", "instant"],
         default="unconstrained",
     )
+    parser.add_argument(
+        "--vote-weights",
+        default=None,
+        help=(
+            "JSON string or path with run ID weights for ensemble voting"
+        ),
+    )
     semantic = parser.add_mutually_exclusive_group()
     semantic.add_argument(
         "--semantic-retrieval",
@@ -128,6 +151,9 @@ def batch_eval_main(argv: list[str]) -> None:
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--quiet", action="store_true")
     args = parser.parse_args(argv)
+
+    vote_weights = _load_weights(args.vote_weights)
+    meta_panel = MetaPanel(weights=vote_weights)
 
     level = logging.INFO
     if args.verbose:
@@ -198,9 +224,15 @@ def batch_eval_main(argv: list[str]) -> None:
             orchestrator.run_turn("")
             turn += 1
 
+        diag_result = DiagnosisResult(
+            orchestrator.final_diagnosis or "",
+            1.0,
+            run_id=case_id,
+        )
+        final_diag = meta_panel.synthesize([diag_result])
         truth = db.get_case(case_id).summary
         result = evaluator.evaluate(
-            orchestrator.final_diagnosis or "",
+            final_diag,
             truth,
             orchestrator.ordered_tests,
             visits=turn,
@@ -432,12 +464,22 @@ def main() -> None:
         help="Run mode",
     )
     parser.add_argument(
+        "--vote-weights",
+        default=None,
+        help=(
+            "JSON string or path with run ID weights for ensemble voting"
+        ),
+    )
+    parser.add_argument(
         "--metrics-port",
         type=int,
         default=None,
         help="Port for Prometheus metrics server (default 8000)",
     )
     args = parser.parse_args()
+
+    vote_weights = _load_weights(args.vote_weights)
+    meta_panel = MetaPanel(weights=vote_weights)
 
     start_metrics_server(args.metrics_port)
 
@@ -528,16 +570,22 @@ def main() -> None:
         print(f"Turn {turn+1}: {response}")
         turn += 1
 
+    diag_result = DiagnosisResult(
+        orchestrator.final_diagnosis or "",
+        1.0,
+        run_id=args.case,
+    )
+    final_diag = meta_panel.synthesize([diag_result])
     truth = db.get_case(args.case).summary
     result = evaluator.evaluate(
-        orchestrator.final_diagnosis or "",
+        final_diag,
         truth,
         orchestrator.ordered_tests,
         visits=turn,
         duration=orchestrator.total_time,
     )
 
-    print(f"Final diagnosis: {orchestrator.final_diagnosis}")
+    print(f"Final diagnosis: {final_diag}")
     print(f"Total cost: ${result.total_cost:.2f}")
     print(f"Session score: {result.score}")
     print(f"Correct diagnosis: {result.correct}")
