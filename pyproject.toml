@@ -16,6 +16,7 @@ dependencies = [
     "prometheus_client",
     "numpy>=1.26.4",
     "sentence-transformers",
+    "structlog",
 ]
 
 [project.urls]

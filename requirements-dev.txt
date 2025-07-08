@@ -8,6 +8,7 @@ mypy
 pre-commit
 prometheus_client  # Metrics exposure for FastAPI app
 numpy>=1.26.4
+structlog
 fastapi
 uvicorn  # ASGI server for development
 sentence-transformers  # Embedding models for retrieval

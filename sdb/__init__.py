@@ -11,6 +11,7 @@ from .decision import DecisionEngine, RuleEngine, LLMEngine
 from .llm_client import LLMClient, OpenAIClient, OllamaClient
 from .orchestrator import Orchestrator
 from .evaluation import Evaluator, async_batch_evaluate, batch_evaluate
+from .logging_config import configure_logging
 from .ingest.convert import convert_directory
 from .ingest.pipeline import run_pipeline, update_dataset
 from .cpt_lookup import lookup_cpt
@@ -73,4 +74,5 @@ __all__ = [
     "bundle_to_case",
     "async_batch_evaluate",
     "batch_evaluate",
+    "configure_logging",
 ]

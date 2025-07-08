@@ -21,6 +21,7 @@ from sdb import (
     DiagnosisResult,
     MetaPanel,
     batch_evaluate,
+    configure_logging,
     run_pipeline,
     start_metrics_server,
     load_scores,
@@ -164,7 +165,7 @@ def batch_eval_main(argv: list[str]) -> None:
         level = logging.DEBUG
     elif args.quiet:
         level = logging.WARNING
-    logging.basicConfig(level=level, format="%(message)s")
+    configure_logging(level)
 
     if args.db is None and args.db_sqlite is None:
         parser.error("--db or --db-sqlite is required")
@@ -510,7 +511,7 @@ def main() -> None:
         level = logging.DEBUG
     elif args.quiet:
         level = logging.WARNING
-    logging.basicConfig(level=level, format="%(message)s")
+    configure_logging(level)
 
     if args.db_sqlite:
         db = load_from_sqlite(args.db_sqlite)

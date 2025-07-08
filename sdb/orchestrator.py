@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import json
-import logging
+import structlog
 import asyncio
 
 from .panel import VirtualPanel, PanelAction
@@ -13,7 +12,7 @@ from .cost_estimator import CostEstimator
 import time
 from .metrics import ORCHESTRATOR_TURNS, ORCHESTRATOR_LATENCY
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class Orchestrator:
@@ -59,14 +58,10 @@ class Orchestrator:
         action = self.panel.deliberate(case_info=case_info)
         ORCHESTRATOR_TURNS.inc()
         logger.info(
-            json.dumps(
-                {
-                    "event": "panel_action",
-                    "turn": getattr(self.panel, "turn", 0),
-                    "type": action.action_type.value,
-                    "content": action.content,
-                }
-            )
+            "panel_action",
+            turn=getattr(self.panel, "turn", 0),
+            type=action.action_type.value,
+            content=action.content,
         )
         if self.question_only and action.action_type == ActionType.TEST:
             action = PanelAction(ActionType.QUESTION, action.content)
@@ -74,7 +69,8 @@ class Orchestrator:
         xml = build_action(action.action_type, action.content)
         result = self.gatekeeper.answer_question(xml)
         logger.info(
-            json.dumps({"event": "gatekeeper_response", "synthetic": result.synthetic})
+            "gatekeeper_response",
+            synthetic=result.synthetic,
         )
 
         if action.action_type == ActionType.TEST:
@@ -83,18 +79,11 @@ class Orchestrator:
                 self.spent += self.cost_estimator.estimate_cost(action.content)
                 if self.budget is not None and self.spent >= self.budget:
                     self.finished = True
-        logger.info(json.dumps({"event": "spent", "amount": self.spent}))
+        logger.info("spent", amount=self.spent)
         if action.action_type == ActionType.DIAGNOSIS:
             self.finished = True
             self.final_diagnosis = action.content
-            logger.info(
-                json.dumps(
-                    {
-                        "event": "final_diagnosis",
-                        "diagnosis": action.content,
-                    }
-                )
-            )
+            logger.info("final_diagnosis", diagnosis=action.content)
 
         duration = time.perf_counter() - start
         self.total_time += duration
@@ -111,14 +100,10 @@ class Orchestrator:
             action = await asyncio.to_thread(self.panel.deliberate, case_info)
         ORCHESTRATOR_TURNS.inc()
         logger.info(
-            json.dumps(
-                {
-                    "event": "panel_action",
-                    "turn": getattr(self.panel, "turn", 0),
-                    "type": action.action_type.value,
-                    "content": action.content,
-                }
-            )
+            "panel_action",
+            turn=getattr(self.panel, "turn", 0),
+            type=action.action_type.value,
+            content=action.content,
         )
         if self.question_only and action.action_type == ActionType.TEST:
             action = PanelAction(ActionType.QUESTION, action.content)
@@ -126,7 +111,8 @@ class Orchestrator:
         xml = build_action(action.action_type, action.content)
         result = await asyncio.to_thread(self.gatekeeper.answer_question, xml)
         logger.info(
-            json.dumps({"event": "gatekeeper_response", "synthetic": result.synthetic})
+            "gatekeeper_response",
+            synthetic=result.synthetic,
         )
 
         if action.action_type == ActionType.TEST:
@@ -135,18 +121,11 @@ class Orchestrator:
                 self.spent += self.cost_estimator.estimate_cost(action.content)
                 if self.budget is not None and self.spent >= self.budget:
                     self.finished = True
-        logger.info(json.dumps({"event": "spent", "amount": self.spent}))
+        logger.info("spent", amount=self.spent)
         if action.action_type == ActionType.DIAGNOSIS:
             self.finished = True
             self.final_diagnosis = action.content
-            logger.info(
-                json.dumps(
-                    {
-                        "event": "final_diagnosis",
-                        "diagnosis": action.content,
-                    }
-                )
-            )
+            logger.info("final_diagnosis", diagnosis=action.content)
 
         duration = time.perf_counter() - start
         self.total_time += duration

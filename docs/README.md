@@ -43,3 +43,9 @@ flow while you chat with the Gatekeeper.
 See `weighted_voter.md` for an overview of how the `WeightedVoter` class
 combines multiple diagnoses using confidence scores and optional run-specific
 weights.
+
+## Structured Logging
+
+Logs are emitted in JSON format. Initialize logging with
+`sdb.configure_logging()` and refer to `logging.md` for examples of consuming
+the output.

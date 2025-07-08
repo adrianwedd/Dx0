@@ -4,8 +4,7 @@ from dataclasses import dataclass
 from typing import List, Set
 from abc import ABC, abstractmethod
 
-import json
-import logging
+import structlog
 import asyncio
 
 from .actions import PanelAction, parse_panel_action
@@ -13,7 +12,7 @@ from .protocol import ActionType
 from .prompt_loader import load_prompt
 from .llm_client import LLMClient, OpenAIClient, AsyncLLMClient
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 @dataclass
@@ -168,13 +167,9 @@ class LLMEngine(DecisionEngine):
         if action is None:
             return self.fallback.decide(context)
         logger.info(
-            json.dumps(
-                {
-                    "event": "llm_decision",
-                    "turn": context.turn,
-                    "type": action.action_type.value,
-                }
-            )
+            "llm_decision",
+            turn=context.turn,
+            type=action.action_type.value,
         )
         return action
 
@@ -195,12 +190,8 @@ class LLMEngine(DecisionEngine):
         if action is None:
             return await asyncio.to_thread(self.fallback.decide, context)
         logger.info(
-            json.dumps(
-                {
-                    "event": "llm_decision",
-                    "turn": context.turn,
-                    "type": action.action_type.value,
-                }
-            )
+            "llm_decision",
+            turn=context.turn,
+            type=action.action_type.value,
         )
         return action

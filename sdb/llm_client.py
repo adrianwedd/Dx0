@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import time
 import json
-import logging
+import structlog
 from abc import ABC, abstractmethod
 from typing import List, OrderedDict
 from .config import settings
@@ -23,7 +23,7 @@ except Exception:  # pragma: no cover - optional dependency
 import requests
 from .metrics import LLM_LATENCY, LLM_TOKENS
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class FileCache:
@@ -95,14 +95,10 @@ class LLMClient(ABC):
         if self.cache and reply is not None:
             self.cache.set(key, reply)
         logger.info(
-            json.dumps(
-                {
-                    "event": "llm_chat",
-                    "model": model,
-                    "latency": duration,
-                    "tokens": tokens,
-                }
-            )
+            "llm_chat",
+            model=model,
+            latency=duration,
+            tokens=tokens,
         )
         return reply
 
@@ -147,14 +143,10 @@ class AsyncLLMClient(ABC):
         if self.cache and reply is not None:
             self.cache.set(key, reply)
         logger.info(
-            json.dumps(
-                {
-                    "event": "llm_chat",
-                    "model": model,
-                    "latency": duration,
-                    "tokens": tokens,
-                }
-            )
+            "llm_chat",
+            model=model,
+            latency=duration,
+            tokens=tokens,
         )
         return reply
 
