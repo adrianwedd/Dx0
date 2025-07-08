@@ -119,6 +119,13 @@ To append newly released cases without re-downloading the entire corpus, run:
 python scripts/update_cases.py
 ```
 
+To convert a FHIR ``Bundle`` or ``DiagnosticReport`` into SDBench case JSON,
+use the `fhir-import` command:
+
+```bash
+python cli.py fhir-import report.json --case-id new_case > case.json
+```
+
 
 ### Physician UI
 
