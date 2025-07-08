@@ -4,6 +4,7 @@ import subprocess
 import sys
 
 import cli
+from pathlib import Path
 from sdb.llm_client import LLMClient
 
 
@@ -496,6 +497,74 @@ def test_batch_eval_ollama_base_url(monkeypatch, tmp_path):
     ]
     cli.batch_eval_main(argv)
     assert captured["url"] == "http://127.0.0.1:11434"
+
+
+def test_cli_vote_weights(monkeypatch, tmp_path, capsys):
+    cases = [{"id": "1", "summary": "s", "full_text": "t"}]
+    case_file = tmp_path / "cases.json"
+    with open(case_file, "w", encoding="utf-8") as f:
+        json.dump(cases, f)
+
+    rubric_file = tmp_path / "r.json"
+    with open(rubric_file, "w", encoding="utf-8") as f:
+        json.dump({}, f)
+
+    cost_file = tmp_path / "c.csv"
+    with open(cost_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f, fieldnames=["test_name", "cpt_code", "price"]
+        )
+        writer.writeheader()
+        writer.writerow({"test_name": "x", "cpt_code": "1", "price": "1"})
+
+    weights_path = Path(__file__).parent / "vote_weights.json"
+    with open(weights_path, "r", encoding="utf-8") as f:
+        weights = json.load(f)
+
+    captured: dict[str, object] = {}
+
+    class DummyMetaPanel:
+        def __init__(self, *args, **kwargs):
+            captured["weights"] = kwargs.get("weights")
+
+        def synthesize(self, results):
+            captured["results"] = results
+            return "weighted"
+
+    class DummyOrchestrator:
+        def __init__(self, *args, **kwargs):
+            self.finished = True
+            self.total_time = 0.0
+            self.final_diagnosis = ""
+            self.ordered_tests = []
+
+        def run_turn(self, *_args, **_kwargs):
+            return ""
+
+    monkeypatch.setattr(cli, "MetaPanel", DummyMetaPanel)
+    monkeypatch.setattr(cli, "Orchestrator", DummyOrchestrator)
+    monkeypatch.setattr(cli, "start_metrics_server", lambda *_: None)
+
+    argv = [
+        "cli.py",
+        "--db",
+        str(case_file),
+        "--case",
+        "1",
+        "--rubric",
+        str(rubric_file),
+        "--costs",
+        str(cost_file),
+        "--vote-weights",
+        str(weights_path),
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+    cli.main()
+
+    output = capsys.readouterr().out
+    assert "weighted" in output
+    assert captured["weights"] == weights
+    assert len(captured["results"]) == 1
 
 
 def test_fhir_export_command(tmp_path):
