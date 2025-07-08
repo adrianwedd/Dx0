@@ -25,6 +25,8 @@ from sdb import (
     load_from_sqlite,
     transcript_to_fhir,
     ordered_tests_to_fhir,
+    diagnostic_report_to_case,
+    bundle_to_case,
 )
 import csv
 
@@ -256,6 +258,40 @@ def fhir_export_main(argv: list[str]) -> None:
     bundle["entry"].extend(test_bundle["entry"])
 
     output = json.dumps(bundle, indent=2)
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as fh:
+            fh.write(output)
+    else:
+        print(output)
+
+
+def fhir_import_main(argv: list[str]) -> None:
+    """Convert a FHIR bundle or DiagnosticReport to case JSON."""
+
+    parser = argparse.ArgumentParser(description="Import case from FHIR")
+    parser.add_argument("input", help="Path to FHIR JSON file")
+    parser.add_argument(
+        "--case-id",
+        default="case_001",
+        help="Identifier for the generated case",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        default=None,
+        help="File path for the output case (defaults to stdout)",
+    )
+    args = parser.parse_args(argv)
+
+    with open(args.input, "r", encoding="utf-8") as fh:
+        data = json.load(fh)
+
+    if data.get("resourceType") == "Bundle":
+        case = bundle_to_case(data, case_id=args.case_id)
+    else:
+        case = diagnostic_report_to_case(data, case_id=args.case_id)
+
+    output = json.dumps(case, indent=2)
     if args.output:
         with open(args.output, "w", encoding="utf-8") as fh:
             fh.write(output)
@@ -515,5 +551,7 @@ if __name__ == "__main__":
         batch_eval_main(sys.argv[2:])
     elif len(sys.argv) > 1 and sys.argv[1] == "fhir-export":
         fhir_export_main(sys.argv[2:])
+    elif len(sys.argv) > 1 and sys.argv[1] == "fhir-import":
+        fhir_import_main(sys.argv[2:])
     else:
         main()

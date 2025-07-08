@@ -525,3 +525,63 @@ def test_fhir_export_command(tmp_path):
         entry["resource"]["resourceType"] == "ServiceRequest"
         for entry in data["entry"]
     )
+
+
+def test_fhir_import_command(tmp_path):
+    report = {
+        "resourceType": "DiagnosticReport",
+        "conclusion": "Summary",
+        "result": [{"reference": "#o1"}],
+        "contained": [
+            {"resourceType": "Observation", "id": "o1", "valueString": "step"}
+        ],
+    }
+    r_file = tmp_path / "report.json"
+    with open(r_file, "w", encoding="utf-8") as f:
+        json.dump(report, f)
+
+    cmd = [
+        sys.executable,
+        "cli.py",
+        "fhir-import",
+        str(r_file),
+        "--case-id",
+        "c1",
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0
+    data = json.loads(result.stdout)
+    assert data["id"] == "c1"
+    assert data["summary"] == "Summary"
+    assert data["steps"][0]["text"] == "step"
+
+
+def test_fhir_import_bundle_command(tmp_path):
+    report = {
+        "resourceType": "DiagnosticReport",
+        "conclusion": "sum",
+        "result": [{"reference": "Observation/o1"}],
+    }
+    bundle = {
+        "resourceType": "Bundle",
+        "entry": [
+            {"resource": report},
+            {
+                "resource": {
+                    "resourceType": "Observation",
+                    "id": "o1",
+                    "valueString": "foo",
+                }
+            },
+        ],
+    }
+    b_file = tmp_path / "bundle.json"
+    with open(b_file, "w", encoding="utf-8") as f:
+        json.dump(bundle, f)
+
+    cmd = [sys.executable, "cli.py", "fhir-import", str(b_file)]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0
+    data = json.loads(result.stdout)
+    assert data["summary"] == "sum"
+    assert data["steps"][0]["text"] == "foo"
