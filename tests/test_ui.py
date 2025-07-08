@@ -1,38 +1,55 @@
+import pytest
+import httpx
+import threading
+import uvicorn
+import asyncio
+from httpx_ws import aconnect_ws
 from starlette.testclient import TestClient
 
 from sdb.ui.app import app
 
 
-def test_websocket_chat():
-    client = TestClient(app)
-    res = client.post(
-        "/login",
-        json={"username": "physician", "password": "secret"},
-    )
-    assert res.status_code == 200
-    with client.websocket_connect("/ws") as ws:
-        ws.send_json({"action": "question", "content": "cough"})
-        parts = []
-        while True:
-            data = ws.receive_json()
-            parts.append(data["reply"])
-            if data["done"]:
-                assert data["total_spent"] == 0.0
-                assert data["ordered_tests"] == []
-                break
-        assert len(parts) > 1
+@pytest.mark.asyncio
+async def test_websocket_chat():
+    config = uvicorn.Config(app, host="127.0.0.1", port=8000, log_level="error")
+    server = uvicorn.Server(config)
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    while not server.started:
+        await asyncio.sleep(0.01)
 
-        ws.send_json({"action": "test", "content": "complete blood count"})
-        parts = []
-        while True:
-            data = ws.receive_json()
-            parts.append(data["reply"])
-            if data["done"]:
-                assert data["cost"] == 10.0
-                assert data["total_spent"] == 10.0
-                assert data["ordered_tests"] == ["complete blood count"]
-                break
-        assert len(parts) > 1
+    async with httpx.AsyncClient(base_url="http://127.0.0.1:8000") as client:
+        res = await client.post(
+            "/login",
+            json={"username": "physician", "password": "secret"},
+        )
+        assert res.status_code == 200
+        async with aconnect_ws("ws://127.0.0.1:8000/ws", client) as ws:
+            await ws.send_json({"action": "question", "content": "cough"})
+            parts = []
+            while True:
+                data = await ws.receive_json()
+                parts.append(data["reply"])
+                if data["done"]:
+                    assert data["total_spent"] == 0.0
+                    assert data["ordered_tests"] == []
+                    break
+            assert len(parts) > 1
+
+            await ws.send_json({"action": "test", "content": "complete blood count"})
+            parts = []
+            while True:
+                data = await ws.receive_json()
+                parts.append(data["reply"])
+                if data["done"]:
+                    assert data["cost"] == 10.0
+                    assert data["total_spent"] == 10.0
+                    assert data["ordered_tests"] == ["complete blood count"]
+                    break
+            assert len(parts) > 1
+
+    server.should_exit = True
+    thread.join()
 
 
 def test_index_layout():

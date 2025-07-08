@@ -1,7 +1,9 @@
 from dataclasses import dataclass
+import pytest
 
 import asyncio
 from sdb.evaluation import Evaluator, batch_evaluate
+from sdb.evaluation import async_batch_evaluate
 from sdb.judge import Judgement
 from sdb.llm_client import AsyncLLMClient
 from sdb.panel import VirtualPanel
@@ -110,3 +112,22 @@ async def async_run_case(cid: str) -> dict[str, str]:
 def test_async_batch_evaluate_async_client():
     result = batch_evaluate(["x", "y"], async_run_case, concurrency=2)
     assert [r["id"] for r in result] == ["x", "y"]
+
+
+@pytest.mark.asyncio
+async def test_async_batch_evaluate_concurrency_limit():
+    active = 0
+    max_active = 0
+
+    async def run_case(cid: str) -> dict[str, str]:
+        nonlocal active, max_active
+        active += 1
+        max_active = max(max_active, active)
+        await asyncio.sleep(0.01)
+        active -= 1
+        return {"id": cid}
+
+    ids = ["a", "b", "c", "d"]
+    result = await async_batch_evaluate(ids, run_case, concurrency=2)
+    assert [r["id"] for r in result] == ids
+    assert max_active <= 2
