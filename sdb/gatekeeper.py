@@ -7,6 +7,7 @@ import re
 import xml.etree.ElementTree as ET
 
 from .protocol import ActionType
+from .config import settings
 
 from .case_database import CaseDatabase
 from .retrieval import SentenceTransformerIndex
@@ -38,7 +39,7 @@ class Gatekeeper:
         self,
         db: CaseDatabase,
         case_id: str,
-        use_semantic_retrieval: bool = False,
+        use_semantic_retrieval: bool | None = None,
         cross_encoder_name: str | None = None,
     ):
         """Bind the gatekeeper to a case and set up test cache.
@@ -52,6 +53,11 @@ class Gatekeeper:
         cross_encoder_name:
             Optional cross-encoder model used to rerank retrieval results.
         """
+
+        if use_semantic_retrieval is None:
+            use_semantic_retrieval = settings.semantic_retrieval
+        if cross_encoder_name is None:
+            cross_encoder_name = settings.cross_encoder_model
 
         self.case = db.get_case(case_id)
         self.known_tests: Dict[str, str] = {}

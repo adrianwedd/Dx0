@@ -2,6 +2,7 @@
 
 import os
 from prometheus_client import Counter, Histogram, start_http_server
+from .config import settings
 
 ORCHESTRATOR_TURNS = Counter(
     "orchestrator_turns_total", "Number of orchestrator turns executed."
@@ -51,5 +52,8 @@ def start_metrics_server(port: int | None = None) -> None:
 
     if port is None:
         env = os.getenv("SDB_METRICS_PORT")
-        port = int(env) if env else 8000
+        if env:
+            port = int(env)
+        else:
+            port = settings.metrics_port
     start_http_server(port)

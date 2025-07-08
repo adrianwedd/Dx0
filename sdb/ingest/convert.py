@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 
 from ..prompt_loader import load_prompt
 from ..llm_client import OpenAIClient
+from ..config import settings
 
 
 SUMMARY_PROMPT = load_prompt("case_summary_system")
@@ -44,7 +45,7 @@ def _extract_abstract(text: str) -> Optional[str]:
     return None
 
 
-_openai_client = OpenAIClient()
+_openai_client = OpenAIClient(api_key=settings.openai_api_key)
 
 
 def _llm_summarize(text: str) -> Optional[str]:
@@ -55,7 +56,7 @@ def _llm_summarize(text: str) -> Optional[str]:
             {"role": "system", "content": SUMMARY_PROMPT},
             {"role": "user", "content": text[:4000]},
         ],
-        model=os.getenv("OPENAI_MODEL", "gpt-3.5-turbo"),
+        model=os.getenv("OPENAI_MODEL", settings.openai_model),
     )
     if reply:
         return reply.strip()
