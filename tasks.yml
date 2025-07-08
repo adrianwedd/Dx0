@@ -507,7 +507,7 @@ phases:
   area: security
   dependencies: []
   priority: 1
-  status: pending
+  status: done
   actionable_steps:
     - Remove the `USERS` dict from the codebase.
     - Load user credentials from a config file or environment variable.
