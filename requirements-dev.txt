@@ -16,4 +16,7 @@ httpx<0.28
 starlette
 pydantic
 
+# password hashing
+bcrypt
+
 dvc[s3]  # Dataset versioning tool with S3 remote

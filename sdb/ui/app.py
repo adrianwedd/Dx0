@@ -6,14 +6,14 @@ from __future__ import annotations
 
 import asyncio
 import os
-import time
+import yaml
+import bcrypt
 
 from fastapi import FastAPI, WebSocket, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from starlette.websockets import WebSocketDisconnect
 from pathlib import Path
-from uuid import uuid4
 
 from sdb.case_database import Case, CaseDatabase
 from sdb.cost_estimator import CostEstimator, CptCost
@@ -44,6 +44,23 @@ cost_table = {
 }
 
 cost_estimator = CostEstimator(cost_table)
+
+
+def load_user_credentials() -> dict[str, str]:
+    """Load user credential hashes from YAML configuration."""
+
+    path = os.environ.get(
+        "UI_USERS_FILE",
+        str(Path(__file__).with_name("users.yml")),
+    )
+    if not Path(path).exists():
+        return {}
+    with open(path, "r", encoding="utf-8") as fh:
+        data = yaml.safe_load(fh) or {}
+    return data.get("users", {})
+
+
+CREDENTIALS = load_user_credentials()
 
 
 async def stream_reply(
@@ -93,21 +110,6 @@ class UserPanel:
         return self.actions.get_nowait()
 
 
-USERS = {"physician": "secret"}
-
-# Token -> (username, timestamp) mapping
-TOKENS: dict[str, tuple[str, float]] = {}
-
-TOKEN_TIMEOUT = int(os.environ.get("TOKEN_TIMEOUT", "3600"))
-
-
-def purge_tokens() -> None:
-    """Remove expired tokens from the TOKENS store."""
-
-    cutoff = time.time() - TOKEN_TIMEOUT
-    for tok, (_, ts) in list(TOKENS.items()):
-        if ts < cutoff:
-            TOKENS.pop(tok, None)
 
 
 HTML_PATH = Path(__file__).with_name("templates").joinpath("index.html")
@@ -133,30 +135,15 @@ async def get_case() -> dict[str, str]:
 async def login(req: LoginRequest) -> dict[str, str]:
     """Authenticate a user and return a session token."""
 
-    purge_tokens()
-    if USERS.get(req.username) != req.password:
+    hashed = CREDENTIALS.get(req.username)
+    if not hashed or not bcrypt.checkpw(req.password.encode(), hashed.encode()):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    token = uuid4().hex
-    TOKENS[token] = (req.username, time.time())
-    return {"token": token}
+    return {"status": "ok"}
 
 
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket) -> None:
-    """Handle authenticated websocket chat with the Gatekeeper."""
-
-    token = ws.query_params.get("token")
-    purge_tokens()
-    info = TOKENS.get(token)
-    if info is None:
-        await ws.close(code=1008)
-        return
-
-    username, ts = info
-    if time.time() - ts > TOKEN_TIMEOUT:
-        TOKENS.pop(token, None)
-        await ws.close(code=1008)
-        return
+    """Handle websocket chat with the Gatekeeper."""
 
     await ws.accept()
     panel = UserPanel()
@@ -184,5 +171,4 @@ async def websocket_endpoint(ws: WebSocket) -> None:
                 orchestrator.ordered_tests,
             )
     except WebSocketDisconnect:
-        TOKENS.pop(token, None)
         return
