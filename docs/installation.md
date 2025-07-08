@@ -53,10 +53,10 @@ The archives will be written to the `dist/` directory as
 ## Development Dependencies
 
 To run the unit tests and other developer tools, install the additional
-requirements listed in `requirements-dev.txt`:
+requirements listed in `requirements.lock`:
 
 ```bash
-pip install -r requirements-dev.txt
+pip install -r requirements.lock
 ```
 
 The `pytest` suite relies on packages such as `numpy`, `httpx`,
@@ -81,7 +81,7 @@ Install the development dependencies to get `uvicorn` and the packages used by
 the small FastAPI demo:
 
 ```bash
-pip install -r requirements-dev.txt
+pip install -r requirements.lock
 ```
 
 Start the server and open `http://localhost:8000`:

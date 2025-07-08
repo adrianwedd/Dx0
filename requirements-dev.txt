@@ -1,19 +1,19 @@
 flake8
 pytest
-requests
-beautifulsoup4
+requests  # HTTP client used by update scripts
+beautifulsoup4  # HTML parsing for data scraping
 black
 isort
 mypy
 pre-commit
-prometheus_client
+prometheus_client  # Metrics exposure for FastAPI app
 numpy>=1.26.4
 fastapi
-uvicorn
-sentence-transformers
-tiktoken
+uvicorn  # ASGI server for development
+sentence-transformers  # Embedding models for retrieval
+tiktoken  # Token counting utility for LLM usage
 httpx<0.28
 starlette
 pydantic
 
-dvc[s3]
+dvc[s3]  # Dataset versioning tool with S3 remote
