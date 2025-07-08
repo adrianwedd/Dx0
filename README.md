@@ -83,6 +83,11 @@ python -m dx0.cli \
 The cross encoder re-scores the top semantic matches so the most relevant
 passages appear first, improving precision.
 
+For faster large-scale retrieval install the optional `faiss-cpu` package and
+run `scripts/migrate_to_faiss.py` to convert existing embeddings into a FAISS
+index. When `faiss` is available, semantic retrieval will automatically use the
+`FaissIndex` backend.
+
 
 To run models via a local Ollama server, specify `--llm-provider ollama` and
 optionally set `--ollama-base-url` if the server is not on the default port:

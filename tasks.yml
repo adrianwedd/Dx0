@@ -677,7 +677,7 @@ phases:
   area: performance
   dependencies: []
   priority: 4
-  status: pending
+  status: done
   actionable_steps:
     - Add FAISS as an optional dependency.
     - Implement FAISS-backed index class.

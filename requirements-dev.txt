@@ -12,6 +12,7 @@ structlog
 fastapi
 uvicorn  # ASGI server for development
 sentence-transformers  # Embedding models for retrieval
+faiss-cpu  # Optional fast vector search backend
 tiktoken  # Token counting utility for LLM usage
 httpx<0.28
 starlette

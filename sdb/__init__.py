@@ -18,6 +18,7 @@ from .cpt_lookup import lookup_cpt
 from .metrics import start_metrics_server
 from .retrieval import (
     SimpleEmbeddingIndex,
+    FaissIndex,
     SentenceTransformerIndex,
     CrossEncoderReranker,
 )
@@ -60,6 +61,7 @@ __all__ = [
     "save_to_sqlite",
     "start_metrics_server",
     "SimpleEmbeddingIndex",
+    "FaissIndex",
     "SentenceTransformerIndex",
     "CrossEncoderReranker",
     "load_scores",

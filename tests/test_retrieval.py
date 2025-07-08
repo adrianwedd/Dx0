@@ -1,7 +1,12 @@
-from sdb.retrieval import SimpleEmbeddingIndex, SentenceTransformerIndex
+from sdb.retrieval import (
+    SimpleEmbeddingIndex,
+    SentenceTransformerIndex,
+    FaissIndex,
+)
 from sdb.llm_client import LLMClient
 import numpy as np
 import pytest
+from types import SimpleNamespace
 
 
 class DummyClient(LLMClient):
@@ -98,3 +103,55 @@ def test_cross_encoder_reranking(monkeypatch):
     )
     results = index.query("cough", top_k=1)
     assert results[0][0] == "patient has cough"
+
+
+def test_faiss_index_requires_faiss(monkeypatch):
+    import sdb.retrieval as retrieval
+
+    monkeypatch.setattr(retrieval, "FAISS_AVAILABLE", False)
+    with pytest.raises(RuntimeError):
+        retrieval.FaissIndex(["doc"])  # type: ignore
+
+
+def test_faiss_index_query(monkeypatch):
+    import sdb.retrieval as retrieval
+
+    docs = ["patient denies cough", "patient has cough"]
+
+    class DummyModel:
+        def encode(self, texts, normalize_embeddings=True):
+            vecs = []
+            for t in texts:
+                if "denies" in t:
+                    vecs.append([1.0, 0.0])
+                elif "has cough" in t:
+                    vecs.append([0.9, 0.1])
+                else:  # query
+                    vecs.append([1.0, 0.0])
+            return np.array(vecs, dtype="float32")
+
+    class DummyIndex:
+        def __init__(self, dim):
+            self.vecs = []
+            self.dim = dim
+
+        def add(self, arr):
+            self.vecs.extend(arr)
+
+        def search(self, q, k):
+            vecs = np.vstack(self.vecs)
+            scores = vecs.dot(q.T)
+            idxs = np.argsort(scores)[::-1][:k]
+            return np.array([scores[idxs]]), np.array([idxs])
+
+    dummy_faiss = SimpleNamespace(IndexFlatIP=DummyIndex, write_index=lambda i, p: None)
+
+    monkeypatch.setattr(retrieval, "faiss", dummy_faiss)
+    monkeypatch.setattr(retrieval, "FAISS_AVAILABLE", True)
+    monkeypatch.setattr(retrieval, "SentenceTransformer", lambda n: DummyModel())
+    monkeypatch.setattr(retrieval, "TRANSFORMERS_AVAILABLE", True)
+
+    index = retrieval.FaissIndex(docs, model_name="dummy")
+    results = index.query("cough", top_k=1)
+    assert results[0][0] == "patient has cough"
+
