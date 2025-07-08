@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import asyncio
 from typing import List, Set
 
 from .actions import PanelAction
@@ -48,6 +49,35 @@ class VirtualPanel:
             triggered_keywords=self.triggered_keywords,
         )
         action = self.engine.decide(ctx)
+        PANEL_ACTIONS.labels(action.action_type.value).inc()
+        logger.info(
+            json.dumps(
+                {
+                    "event": "deliberate",
+                    "turn": self.turn,
+                    "type": action.action_type.value,
+                    "content": action.content,
+                }
+            )
+        )
+        return action
+
+    async def adeliberate(self, case_info: str) -> PanelAction:
+        """Asynchronous version of :meth:`deliberate`."""
+
+        self.last_case_info = case_info
+        self.past_infos.append(case_info)
+        self.turn += 1
+
+        ctx = Context(
+            turn=self.turn,
+            past_infos=self.past_infos,
+            triggered_keywords=self.triggered_keywords,
+        )
+        if hasattr(self.engine, "adecide"):
+            action = await self.engine.adecide(ctx)  # type: ignore[attr-defined]
+        else:
+            action = await asyncio.to_thread(self.engine.decide, ctx)
         PANEL_ACTIONS.labels(action.action_type.value).inc()
         logger.info(
             json.dumps(

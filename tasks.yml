@@ -520,6 +520,26 @@ phases:
   epic: Phase 5
   assigned_to: null
 
+- id: 55
+  title: Add Async LLM Client Support
+  description: >
+    Implement asynchronous LLM client and concurrency utilities for batch
+    evaluation.
+  component: backend
+  area: async
+  dependencies: []
+  priority: 4
+  status: done
+  actionable_steps:
+    - Provide `AsyncLLMClient` with async chat method.
+    - Allow `LLMEngine` and helpers to use async clients.
+    - Run LLM calls concurrently during batch evaluation.
+  acceptance_criteria:
+    - "Async batch evaluation functions handle coroutine case runners."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
 - id: 46
   title: Centralize Application Configuration
   description: >

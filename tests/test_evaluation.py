@@ -1,7 +1,18 @@
 from dataclasses import dataclass
 
+import asyncio
 from sdb.evaluation import Evaluator, batch_evaluate
 from sdb.judge import Judgement
+from sdb.llm_client import AsyncLLMClient
+from sdb.panel import VirtualPanel
+from sdb.orchestrator import Orchestrator
+from sdb.decision import LLMEngine
+
+
+@dataclass
+class DummyResult:
+    content: str
+    synthetic: bool = False
 
 
 @dataclass
@@ -76,3 +87,26 @@ def test_async_batch_evaluate():
     result = batch_evaluate(["a", "b", "c"], run_case, concurrency=2)
     assert len(result) == 3
     assert executed == ["a", "b", "c"]
+
+
+class DummyAsyncClient(AsyncLLMClient):
+    async def _chat(self, messages, model):
+        await asyncio.sleep(0)
+        return "ok"
+
+
+class AGatekeeper:
+    def answer_question(self, xml: str):
+        return DummyResult("ack")
+
+
+async def async_run_case(cid: str) -> dict[str, str]:
+    panel = VirtualPanel(decision_engine=LLMEngine(client=DummyAsyncClient()))
+    orch = Orchestrator(panel, AGatekeeper())
+    await orch.run_turn_async("info")
+    return {"id": cid}
+
+
+def test_async_batch_evaluate_async_client():
+    result = batch_evaluate(["x", "y"], async_run_case, concurrency=2)
+    assert [r["id"] for r in result] == ["x", "y"]

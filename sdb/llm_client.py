@@ -69,9 +69,7 @@ class FileCache:
 class LLMClient(ABC):
     """Generic interface for chat-based language models with metrics."""
 
-    def __init__(
-        self, cache_path: str | None = None, cache_size: int = 128
-    ) -> None:
+    def __init__(self, cache_path: str | None = None, cache_size: int = 128) -> None:
         self.cache = FileCache(cache_path, cache_size) if cache_path else None
 
     def chat(self, messages: List[dict], model: str) -> str | None:
@@ -92,9 +90,7 @@ class LLMClient(ABC):
         LLM_LATENCY.observe(duration)
         tokens = self._count_tokens(messages)
         if reply is not None:
-            tokens += self._count_tokens(
-                [{"role": "assistant", "content": reply}]
-            )
+            tokens += self._count_tokens([{"role": "assistant", "content": reply}])
         LLM_TOKENS.inc(tokens)
         if self.cache and reply is not None:
             self.cache.set(key, reply)
@@ -125,6 +121,49 @@ class LLMClient(ABC):
         return sum(len(m.get("content", "").split()) for m in messages)
 
 
+class AsyncLLMClient(ABC):
+    """Asynchronous interface for chat-based language models with metrics."""
+
+    def __init__(self, cache_path: str | None = None, cache_size: int = 128) -> None:
+        self.cache = FileCache(cache_path, cache_size) if cache_path else None
+
+    async def chat(self, messages: List[dict], model: str) -> str | None:
+        """Return the assistant reply and record latency and token metrics."""
+
+        key = json.dumps({"model": model, "messages": messages}, sort_keys=True)
+        if self.cache:
+            cached = self.cache.get(key)
+            if cached is not None:
+                return cached
+
+        start = time.perf_counter()
+        reply = await self._chat(messages, model)
+        duration = time.perf_counter() - start
+        LLM_LATENCY.observe(duration)
+        tokens = LLMClient._count_tokens(messages)
+        if reply is not None:
+            tokens += LLMClient._count_tokens([{"role": "assistant", "content": reply}])
+        LLM_TOKENS.inc(tokens)
+        if self.cache and reply is not None:
+            self.cache.set(key, reply)
+        logger.info(
+            json.dumps(
+                {
+                    "event": "llm_chat",
+                    "model": model,
+                    "latency": duration,
+                    "tokens": tokens,
+                }
+            )
+        )
+        return reply
+
+    @abstractmethod
+    async def _chat(self, messages: List[dict], model: str) -> str | None:
+        """Implement provider-specific async chat call."""
+        raise NotImplementedError
+
+
 class OpenAIClient(LLMClient):
     """Client for the OpenAI chat completion API."""
 
@@ -135,9 +174,7 @@ class OpenAIClient(LLMClient):
         cache_size: int = 128,
     ) -> None:
         super().__init__(cache_path=cache_path, cache_size=cache_size)
-        self.api_key = (
-            api_key or settings.openai_api_key or os.getenv("OPENAI_API_KEY")
-        )
+        self.api_key = api_key or settings.openai_api_key or os.getenv("OPENAI_API_KEY")
 
     def _chat(self, messages: List[dict], model: str) -> str | None:
         if openai is None or not self.api_key:
