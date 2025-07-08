@@ -71,9 +71,18 @@ def cost_adjusted_selection(
 class MetaPanel:
     """Synthesize a final diagnosis from multiple panel runs."""
 
-    def __init__(self, voter: WeightedVoter | None = None):
+    def __init__(
+        self,
+        voter: WeightedVoter | None = None,
+        *,
+        weights: Mapping[str, float] | None = None,
+    ) -> None:
+        """Create a meta panel with an optional voter and weight mapping."""
+
         self.voter = voter or WeightedVoter()
+        self.weights = weights
 
     def synthesize(self, results: Sequence[DiagnosisResult]) -> str:
         """Return the weighted-vote winner from ``results``."""
-        return self.voter.vote(results)
+
+        return self.voter.vote(results, weights=self.weights)
