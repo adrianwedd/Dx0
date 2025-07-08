@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict
 import json
-import logging
+import structlog
 import os
 import re
 import xml.etree.ElementTree as ET
@@ -13,7 +13,7 @@ from .config import settings
 from .case_database import CaseDatabase
 from .retrieval import SentenceTransformerIndex
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Load query schema for validating incoming requests
 _SCHEMA_PATH = os.path.join(os.path.dirname(__file__), "query_schema.xsd")
@@ -99,7 +99,7 @@ class Gatekeeper:
     def answer_question(self, query: str) -> QueryResult:
         """Return relevant snippet from case or synthetic result."""
 
-        logger.info(json.dumps({"event": "gatekeeper_query", "query": query}))
+        logger.info("gatekeeper_query", query=query)
 
         # Validate and parse the query against the XML schema
         try:
@@ -107,9 +107,7 @@ class Gatekeeper:
             root = ET.fromstring(query.strip())
         except (xmlschema.XMLSchemaException, ET.ParseError) as exc:
             result = QueryResult(f"Invalid query: {exc}", synthetic=True)
-            logger.info(
-                json.dumps({"event": "gatekeeper_result", "synthetic": True})
-            )
+            logger.info("gatekeeper_result", synthetic=True)
             return result
 
         tags = {el.tag for el in root.iter()}
@@ -121,9 +119,7 @@ class Gatekeeper:
                 "Cannot mix questions and tests in one request",
                 synthetic=True,
             )
-            logger.info(
-                json.dumps({"event": "gatekeeper_result", "synthetic": True})
-            )
+            logger.info("gatekeeper_result", synthetic=True)
             return result
 
         tag = root.tag
@@ -135,9 +131,7 @@ class Gatekeeper:
                 "Diagnosis queries are not allowed",
                 synthetic=True,
             )
-            logger.info(
-                json.dumps({"event": "gatekeeper_result", "synthetic": True})
-            )
+            logger.info("gatekeeper_result", synthetic=True)
             return result
 
         if tag == ActionType.QUESTION.value:
@@ -150,14 +144,7 @@ class Gatekeeper:
                     "I can only answer explicit questions about findings.",
                     synthetic=True,
                 )
-                logger.info(
-                    json.dumps(
-                        {
-                            "event": "gatekeeper_result",
-                            "synthetic": True,
-                        }
-                    )
-                )
+                logger.info("gatekeeper_result", synthetic=True)
                 return result
 
             if self.use_semantic_retrieval and self.index is not None:
@@ -166,14 +153,7 @@ class Gatekeeper:
                     context = " \n".join(r[0] for r in results)
                     prompt = f"Context: {context}\n\nQuestion: {text}"
                     result = QueryResult(content=prompt, synthetic=False)
-                    logger.info(
-                        json.dumps(
-                            {
-                                "event": "gatekeeper_result",
-                                "synthetic": False,
-                            }
-                        )
-                    )
+                    logger.info("gatekeeper_result", synthetic=False)
                     return result
 
             # Search summary and full text for the answer using
@@ -186,60 +166,25 @@ class Gatekeeper:
                     end = min(len(section), m.end() + 40)
                     snippet = section[start:end]
                     result = QueryResult(content=snippet, synthetic=False)
-                    logger.info(
-                        json.dumps(
-                            {
-                                "event": "gatekeeper_result",
-                                "synthetic": False,
-                            }
-                        )
-                    )
+                    logger.info("gatekeeper_result", synthetic=False)
                     return result
             result = QueryResult("No information available", synthetic=True)
-            logger.info(
-                json.dumps(
-                    {
-                        "event": "gatekeeper_result",
-                        "synthetic": True,
-                    }
-                )
-            )
+            logger.info("gatekeeper_result", synthetic=True)
             return result
 
         if tag == ActionType.TEST.value:
             result = self.known_tests.get(text.lower())
             if result:
                 result_obj = QueryResult(result, synthetic=False)
-                logger.info(
-                    json.dumps(
-                        {
-                            "event": "gatekeeper_result",
-                            "synthetic": False,
-                        }
-                    )
-                )
+                logger.info("gatekeeper_result", synthetic=False)
                 return result_obj
             result_obj = QueryResult(
                 "Synthetic result: normal",
                 synthetic=True,
             )
-            logger.info(
-                json.dumps(
-                    {
-                        "event": "gatekeeper_result",
-                        "synthetic": True,
-                    }
-                )
-            )
+            logger.info("gatekeeper_result", synthetic=True)
             return result_obj
 
         result = QueryResult("Unknown action", synthetic=True)
-        logger.info(
-            json.dumps(
-                {
-                    "event": "gatekeeper_result",
-                    "synthetic": True,
-                }
-            )
-        )
+        logger.info("gatekeeper_result", synthetic=True)
         return result
