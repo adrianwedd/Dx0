@@ -658,7 +658,7 @@ phases:
   area: testing
   dependencies: [47]
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
     - Use `httpx.AsyncClient` to test WebSocket flows.
     - Add tests validating concurrency limits in `async_batch_evaluate`.
