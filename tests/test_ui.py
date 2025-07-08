@@ -1,6 +1,10 @@
 from starlette.testclient import TestClient
 
 from sdb.ui.app import app
+import sdb.ui.app as app_module
+from starlette.websockets import WebSocketDisconnect
+import time
+import pytest
 
 
 def test_websocket_chat():
@@ -51,3 +55,39 @@ def test_case_summary():
     res = client.get("/case")
     assert res.status_code == 200
     assert res.json() == {"summary": "A 30 year old with cough"}
+
+
+def test_token_expiry(monkeypatch):
+    """Expired tokens are rejected for websocket connections."""
+
+    client = TestClient(app)
+    monkeypatch.setattr(app_module, "TOKEN_TIMEOUT", 0.1)
+    res = client.post(
+        "/login",
+        json={"username": "physician", "password": "secret"},
+    )
+    token = res.json()["token"]
+    time.sleep(0.2)
+    with pytest.raises(WebSocketDisconnect):
+        with client.websocket_connect(f"/ws?token={token}"):
+            pass
+
+
+def test_token_purged_on_login(monkeypatch):
+    """Login removes expired tokens from the store."""
+
+    client = TestClient(app)
+    monkeypatch.setattr(app_module, "TOKEN_TIMEOUT", 0.1)
+    res = client.post(
+        "/login",
+        json={"username": "physician", "password": "secret"},
+    )
+    token1 = res.json()["token"]
+    time.sleep(0.2)
+    res = client.post(
+        "/login",
+        json={"username": "physician", "password": "secret"},
+    )
+    token2 = res.json()["token"]
+    assert token1 != token2
+    assert len(app_module.TOKENS) == 1

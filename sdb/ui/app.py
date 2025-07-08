@@ -1,9 +1,12 @@
 """FastAPI server for chatting with the Gatekeeper."""
+
 # flake8: noqa
 
 from __future__ import annotations
 
 import asyncio
+import os
+import time
 
 from fastapi import FastAPI, WebSocket, HTTPException
 from fastapi.responses import HTMLResponse
@@ -91,7 +94,21 @@ class UserPanel:
 
 
 USERS = {"physician": "secret"}
-TOKENS: dict[str, str] = {}
+
+# Token -> (username, timestamp) mapping
+TOKENS: dict[str, tuple[str, float]] = {}
+
+TOKEN_TIMEOUT = int(os.environ.get("TOKEN_TIMEOUT", "3600"))
+
+
+def purge_tokens() -> None:
+    """Remove expired tokens from the TOKENS store."""
+
+    cutoff = time.time() - TOKEN_TIMEOUT
+    for tok, (_, ts) in list(TOKENS.items()):
+        if ts < cutoff:
+            TOKENS.pop(tok, None)
+
 
 HTML_PATH = Path(__file__).with_name("templates").joinpath("index.html")
 HTML = HTML_PATH.read_text(encoding="utf-8")
@@ -116,10 +133,11 @@ async def get_case() -> dict[str, str]:
 async def login(req: LoginRequest) -> dict[str, str]:
     """Authenticate a user and return a session token."""
 
+    purge_tokens()
     if USERS.get(req.username) != req.password:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = uuid4().hex
-    TOKENS[token] = req.username
+    TOKENS[token] = (req.username, time.time())
     return {"token": token}
 
 
@@ -128,7 +146,15 @@ async def websocket_endpoint(ws: WebSocket) -> None:
     """Handle authenticated websocket chat with the Gatekeeper."""
 
     token = ws.query_params.get("token")
-    if token not in TOKENS:
+    purge_tokens()
+    info = TOKENS.get(token)
+    if info is None:
+        await ws.close(code=1008)
+        return
+
+    username, ts = info
+    if time.time() - ts > TOKEN_TIMEOUT:
+        TOKENS.pop(token, None)
         await ws.close(code=1008)
         return
 
