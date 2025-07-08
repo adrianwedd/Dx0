@@ -44,7 +44,7 @@ git clone https://github.com/adrianwedd/Dx0.git
 cd clinical-ai-suite
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.lock
 ```
 
 *(Optional)* Docker build:
@@ -132,7 +132,7 @@ python cli.py fhir-import report.json --case-id new_case > case.json
 Install the development requirements first (provides `uvicorn` and other packages):
 
 ```bash
-pip install -r requirements-dev.txt
+pip install -r requirements.lock
 ```
 
 Then start the demo web interface to chat with the Gatekeeper and view running cost estimates:
@@ -185,7 +185,7 @@ The test suite depends on additional packages such as `httpx`,
 `starlette`, and `pydantic`. Install the development requirements first:
 
 ```bash
-pip install -r requirements-dev.txt
+pip install -r requirements.lock
 pytest -q
 ```
 
