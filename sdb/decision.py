@@ -6,11 +6,12 @@ from abc import ABC, abstractmethod
 
 import json
 import logging
+import asyncio
 
 from .actions import PanelAction, parse_panel_action
 from .protocol import ActionType
 from .prompt_loader import load_prompt
-from .llm_client import LLMClient, OpenAIClient
+from .llm_client import LLMClient, OpenAIClient, AsyncLLMClient
 
 logger = logging.getLogger(__name__)
 
@@ -82,9 +83,7 @@ class RuleEngine(DecisionEngine):
     def __init__(
         self,
         keyword_actions: dict | None = None,
-        combo_actions: (
-            dict[frozenset[str], tuple[ActionType, str]] | None
-        ) = None,
+        combo_actions: dict[frozenset[str], tuple[ActionType, str]] | None = None,
     ) -> None:
         self.keyword_actions = keyword_actions or self.DEFAULT_KEYWORD_ACTIONS
         self.combo_actions = combo_actions or self.DEFAULT_COMBO_ACTIONS
@@ -128,7 +127,11 @@ class LLMEngine(DecisionEngine):
         "checklist_system",
     ]
 
-    def __init__(self, model: str = "gpt-4", client: LLMClient | None = None):
+    def __init__(
+        self,
+        model: str = "gpt-4",
+        client: LLMClient | AsyncLLMClient | None = None,
+    ) -> None:
         self.model = model
         self.client = client or OpenAIClient()
         self.fallback = RuleEngine()
@@ -139,6 +142,11 @@ class LLMEngine(DecisionEngine):
 
     def _chat(self, messages: list[dict]) -> str | None:
         return self.client.chat(messages, self.model)
+
+    async def _achat(self, messages: list[dict]) -> str | None:
+        if isinstance(self.client, AsyncLLMClient):
+            return await self.client.chat(messages, self.model)
+        return await asyncio.to_thread(self.client.chat, messages, self.model)
 
     def decide(self, context: Context) -> PanelAction:
         """Return the next panel action from the LLM persona chain.
@@ -159,6 +167,33 @@ class LLMEngine(DecisionEngine):
         action = parse_panel_action(messages[-1]["content"])
         if action is None:
             return self.fallback.decide(context)
+        logger.info(
+            json.dumps(
+                {
+                    "event": "llm_decision",
+                    "turn": context.turn,
+                    "type": action.action_type.value,
+                }
+            )
+        )
+        return action
+
+    async def adecide(self, context: Context) -> PanelAction:
+        """Asynchronous version of :meth:`decide`."""
+
+        conversation = "\n".join(context.past_infos)
+        messages = []
+        for name in self.PERSONAS:
+            system = {"role": "system", "content": self.prompts[name]}
+            user = {"role": "user", "content": conversation}
+            messages.extend([system, user])
+            reply = await self._achat(messages)
+            if reply is None:
+                return await asyncio.to_thread(self.fallback.decide, context)
+            messages.append({"role": "assistant", "content": reply})
+        action = parse_panel_action(messages[-1]["content"])
+        if action is None:
+            return await asyncio.to_thread(self.fallback.decide, context)
         logger.info(
             json.dumps(
                 {

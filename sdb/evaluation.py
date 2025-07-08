@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from .cost_estimator import CostEstimator
 from .judge import Judge
-from typing import Iterable, Callable
+from typing import Iterable, Callable, Awaitable
 import asyncio
 
 
@@ -95,7 +95,9 @@ class Evaluator:
 
 async def async_batch_evaluate(
     case_ids: Iterable[str],
-    run_case: Callable[[str], dict[str, str]],
+    run_case: (
+        Callable[[str], dict[str, str]] | Callable[[str], Awaitable[dict[str, str]]]
+    ),
     *,
     concurrency: int = 2,
 ) -> list[dict[str, str]]:
@@ -106,7 +108,8 @@ async def async_batch_evaluate(
     case_ids:
         Iterable of case identifiers to evaluate.
     run_case:
-        Function that executes a single case and returns a result ``dict``.
+        Callable executed for each case ID. May be a standard function or an
+        ``async`` function returning a result ``dict``.
     concurrency:
         Maximum number of concurrent evaluations.
 
@@ -120,6 +123,8 @@ async def async_batch_evaluate(
 
     async def run_one(cid: str) -> dict[str, str]:
         async with sem:
+            if asyncio.iscoroutinefunction(run_case):
+                return await run_case(cid)  # type: ignore[misc]
             return await asyncio.to_thread(run_case, cid)
 
     tasks = [asyncio.create_task(run_one(cid)) for cid in case_ids]
@@ -133,7 +138,9 @@ async def async_batch_evaluate(
 
 def batch_evaluate(
     case_ids: Iterable[str],
-    run_case: Callable[[str], dict[str, str]],
+    run_case: (
+        Callable[[str], dict[str, str]] | Callable[[str], Awaitable[dict[str, str]]]
+    ),
     *,
     concurrency: int = 2,
 ) -> list[dict[str, str]]:
