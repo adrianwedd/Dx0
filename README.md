@@ -215,6 +215,7 @@ Equivalent functionality is available via the CLI subcommand:
 python cli.py batch-eval --db cases.json --rubric rubric.json \
     --costs costs.csv --output results.csv --concurrency 4
 ```
+If using --llm-provider ollama, set --ollama-base-url to your server URL.
 
 ### FHIR Session Export
 
