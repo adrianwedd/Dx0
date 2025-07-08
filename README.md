@@ -72,6 +72,17 @@ Add `--cache` to reuse previous LLM responses and reduce API calls:
 python -m dx0.cli --cache ...
 ```
 
+To retrieve documents semantically and rerank them with a cross encoder, use
+`--semantic-retrieval` together with `--cross-encoder-model`:
+
+```bash
+python -m dx0.cli \
+  --semantic-retrieval \
+  --cross-encoder-model cross-encoder/ms-marco-MiniLM-L-6-v2 ...
+```
+The cross encoder re-scores the top semantic matches so the most relevant
+passages appear first, improving precision.
+
 ### SDBench CLI
 
 ```bash
