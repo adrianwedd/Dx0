@@ -37,3 +37,9 @@ The React demo arranges four panels in a two-column grid:
 
 Together these panels provide an overview of the ordered tests and reasoning
 flow while you chat with the Gatekeeper.
+
+## Weighted Voting
+
+See `weighted_voter.md` for an overview of how the `WeightedVoter` class
+combines multiple diagnoses using confidence scores and optional run-specific
+weights.
