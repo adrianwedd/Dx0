@@ -379,7 +379,10 @@ def test_cli_ollama_base_url(monkeypatch, tmp_path):
 
     class DummyOllamaClient(LLMClient):
         def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
+            super().__init__(
+                cache_path=kwargs.get("cache_path"),
+                cache_size=kwargs.get("cache_size"),
+            )
             captured["url"] = kwargs.get("base_url")
 
         def _chat(self, messages, model):
@@ -419,6 +422,79 @@ def test_cli_ollama_base_url(monkeypatch, tmp_path):
     ]
     monkeypatch.setattr(sys, "argv", argv)
     cli.main()
+    assert captured["url"] == "http://127.0.0.1:11434"
+
+
+def test_batch_eval_ollama_base_url(monkeypatch, tmp_path):
+    cases = [{"id": "1", "summary": "s", "full_text": "t"}]
+    case_file = tmp_path / "cases.json"
+    with open(case_file, "w", encoding="utf-8") as f:
+        json.dump(cases, f)
+
+    rubric_file = tmp_path / "r.json"
+    with open(rubric_file, "w", encoding="utf-8") as f:
+        json.dump({}, f)
+
+    cost_file = tmp_path / "c.csv"
+    with open(cost_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=["test_name", "cpt_code", "price"],
+        )
+        writer.writeheader()
+        writer.writerow({"test_name": "x", "cpt_code": "1", "price": "1"})
+
+    out_file = tmp_path / "out.csv"
+
+    captured: dict[str, str | None] = {}
+
+    class DummyOllamaClient(LLMClient):
+        def __init__(self, *args, **kwargs):
+            super().__init__(
+                cache_path=kwargs.get("cache_path"),
+                cache_size=kwargs.get("cache_size"),
+            )
+            captured["url"] = kwargs.get("base_url")
+
+        def _chat(self, messages, model):
+            return None
+
+    def dummy_batch_eval(cases, run_case, concurrency=1):
+        return [run_case(cid) for cid in cases]
+
+    monkeypatch.setattr(cli, "OllamaClient", DummyOllamaClient)
+    monkeypatch.setattr(cli, "batch_evaluate", dummy_batch_eval)
+    monkeypatch.setattr(cli, "start_metrics_server", lambda *_: None)
+
+    class DummyOrchestrator:
+        def __init__(self, *args, **kwargs):
+            self.finished = True
+            self.total_time = 0.0
+            self.final_diagnosis = ""
+            self.ordered_tests = []
+
+        def run_turn(self, *_args, **_kwargs):
+            return ""
+
+    monkeypatch.setattr(cli, "Orchestrator", DummyOrchestrator)
+
+    argv = [
+        "--db",
+        str(case_file),
+        "--rubric",
+        str(rubric_file),
+        "--costs",
+        str(cost_file),
+        "--output",
+        str(out_file),
+        "--panel-engine",
+        "llm",
+        "--llm-provider",
+        "ollama",
+        "--ollama-base-url",
+        "http://127.0.0.1:11434",
+    ]
+    cli.batch_eval_main(argv)
     assert captured["url"] == "http://127.0.0.1:11434"
 
 
