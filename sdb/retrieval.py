@@ -16,6 +16,13 @@ except Exception:  # pragma: no cover - dependency missing
     SentenceTransformer = None  # type: ignore
     TRANSFORMERS_AVAILABLE = False
 
+try:  # pragma: no cover - optional dependency
+    import faiss
+    FAISS_AVAILABLE = True
+except Exception:  # pragma: no cover - dependency missing
+    faiss = None  # type: ignore
+    FAISS_AVAILABLE = False
+
 
 def _tokenize(text: str) -> List[str]:
     """Simple whitespace and punctuation tokenizer."""
@@ -124,6 +131,72 @@ class CrossEncoderReranker:
         scores = self.model.predict(pairs)
         ranking = sorted(zip(docs, scores), key=lambda x: x[1], reverse=True)
         return [(doc, float(score)) for doc, score in ranking]
+
+
+class FaissIndex:
+    """Embedding index backed by FAISS for fast similarity search."""
+
+    def __init__(
+        self,
+        documents: List[str],
+        model_name: str = "all-MiniLM-L6-v2",
+        *,
+        cross_encoder_name: Optional[str] = None,
+        rerank_k: int = 5,
+    ) -> None:
+        self.documents = documents
+        self.model_name = model_name
+        self.reranker: Optional[CrossEncoderReranker] = None
+        self.rerank_k = rerank_k
+
+        if not NUMPY_AVAILABLE or not FAISS_AVAILABLE:
+            raise RuntimeError("FaissIndex requires numpy and faiss")
+
+        try:
+            if TRANSFORMERS_AVAILABLE:
+                self.model = SentenceTransformer(model_name)
+                embeddings = self.model.encode(documents, normalize_embeddings=True)
+                self.embeddings = np.array(embeddings, dtype="float32")
+                dim = self.embeddings.shape[1]
+                self.index = faiss.IndexFlatIP(dim)
+                self.index.add(self.embeddings)
+                self.fallback = None
+            else:
+                raise RuntimeError()
+        except Exception:
+            self.model = None
+            self.embeddings = None
+            self.index = None
+            self.fallback = SimpleEmbeddingIndex(documents)
+
+        if cross_encoder_name:
+            try:
+                self.reranker = CrossEncoderReranker(cross_encoder_name)
+            except Exception:  # pragma: no cover - fallback
+                self.reranker = None
+
+    def query(self, text: str, top_k: int = 1) -> List[Tuple[str, float]]:
+        if self.index is None or self.model is None:
+            return self.fallback.query(text, top_k=top_k)
+
+        qvec = self.model.encode([text], normalize_embeddings=True)[0].astype(
+            "float32"
+        )
+        prelim_k = top_k
+        if self.reranker is not None:
+            prelim_k = max(top_k * self.rerank_k, top_k)
+        scores, indices = self.index.search(qvec.reshape(1, -1), prelim_k)
+
+        docs = [self.documents[i] for i in indices[0] if i != -1]
+        scores_list = [float(s) for s in scores[0][: len(docs)]]
+        results = list(zip(docs, scores_list))
+
+        if self.reranker is not None:
+            results = self.reranker.rerank(text, docs)[:top_k]
+        else:
+            results = results[:top_k]
+
+        return results
 
 
 class SentenceTransformerIndex:
