@@ -283,6 +283,7 @@ clinical-ai-suite/
 * **CONTRIBUTING.md**: Issue reporting, pull request process, coding standards.
 * **PULL_REQUEST_TEMPLATE.md**, **ISSUE_TEMPLATE/**: Guidance for contributors.
 * **CODE_OF_CONDUCT.md**: Community norms and reporting procedures.
+* **docs/persona_plugins.md**: How to create and install persona plugins.
 
 ---
 

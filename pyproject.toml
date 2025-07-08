@@ -30,5 +30,8 @@ cli = ["httpx"]
 sdb-cli = "cli:main"
 
 [tool.setuptools]
-packages = ["sdb"]
+packages = ["sdb", "sdb.ingest", "sdb.ui", "sdb.plugins"]
 py-modules = ["cli"]
+
+[project.entry-points."dx0.personas"]
+optimist = "sdb.plugins.optimist_plugin:optimistic_chain"
