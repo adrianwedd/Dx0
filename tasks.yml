@@ -524,6 +524,26 @@ phases:
   epic: Phase 5
   assigned_to: null
 
+- id: 75
+  title: Provide Case Translation Utility
+  description: >
+    Add a script to translate case JSON files using an LLM and store localized
+    versions with language suffixes.
+  component: ingestion
+  area: localization
+  dependencies: []
+  priority: 3
+  status: done
+  actionable_steps:
+    - Create `sdb.ingest.translate` with helper functions.
+    - Write translated files alongside originals like `case_001_es.json`.
+    - Allow `CaseDatabase.load_from_directory` to select files by locale.
+  acceptance_criteria:
+    - "Translations can be generated and loaded by specifying a locale."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
 - id: 76
   title: Support Persona-Specific Models
   description: >

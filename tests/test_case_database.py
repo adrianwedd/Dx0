@@ -42,6 +42,20 @@ def test_load_from_directory(tmp_path):
     assert db.get_case("4").full_text == "ff"
 
 
+def test_load_from_directory_locale(tmp_path):
+    case_dir = tmp_path / "5"
+    case_dir.mkdir()
+    (case_dir / "summary.txt").write_text("eng")
+    (case_dir / "full.txt").write_text("engf")
+    (case_dir / "summary_es.txt").write_text("esp")
+    (case_dir / "full_es.txt").write_text("espf")
+
+    db = CaseDatabase.load_from_directory(tmp_path, locale="es")
+    case = db.get_case("5")
+    assert case.summary == "esp"
+    assert case.full_text == "espf"
+
+
 def test_load_from_sqlite_lazy(tmp_path):
     path = tmp_path / "cases.db"
     cases = [{"id": "5", "summary": "s", "full_text": "f"}]

@@ -100,17 +100,19 @@ class CaseDatabase:
         return CaseDatabase(cases)
 
     @staticmethod
-    def load_from_directory(path: str) -> "CaseDatabase":
+    def load_from_directory(path: str, locale: str | None = None) -> "CaseDatabase":
         """Load cases from a directory of text files.
 
-        Each subdirectory should contain ``summary.txt`` and ``full.txt``
-        files. The subdirectory name is used as the case ``id``.
+        Each subdirectory should contain ``summary.txt`` and ``full.txt`` files.
+        Localized variants can be named ``summary_<lang>.txt`` and
+        ``full_<lang>.txt``. The subdirectory name is used as the case ``id``.
         """
         cases = []
+        suffix = f"_{locale}" if locale else ""
         for case_id in sorted(os.listdir(path)):
             case_dir = os.path.join(path, case_id)
-            summary_file = os.path.join(case_dir, "summary.txt")
-            full_file = os.path.join(case_dir, "full.txt")
+            summary_file = os.path.join(case_dir, f"summary{suffix}.txt")
+            full_file = os.path.join(case_dir, f"full{suffix}.txt")
             if (
                 not os.path.isfile(summary_file)
                 or not os.path.isfile(full_file)
