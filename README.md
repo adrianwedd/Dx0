@@ -131,7 +131,16 @@ python -m sdbench.cli \
 
 The repository includes the 304 NEJM CPC cases in `data/sdbench/cases/`.
 These files are for research use only and may not be redistributed without
-permission from NEJM. To refresh the dataset or fetch updates, run the
+permission from NEJM.
+
+#### Dataset Usage Restrictions
+
+The case text originates from the *Case Records of the Massachusetts General Hospital* series and
+is provided solely for non&#8209;commercial research. Do not share or incorporate the
+full case files into any commercial product without first obtaining written permission
+from NEJM. When in doubt, consult your institution's legal counsel.
+
+To refresh the dataset or fetch updates, run the
 ingestion pipeline:
 
 ```bash
