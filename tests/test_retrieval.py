@@ -1,8 +1,4 @@
-from sdb.retrieval import (
-    SimpleEmbeddingIndex,
-    SentenceTransformerIndex,
-    FaissIndex,
-)
+import sdb.retrieval as retrieval
 from sdb.llm_client import LLMClient
 import numpy as np
 import pytest
@@ -16,7 +12,7 @@ class DummyClient(LLMClient):
 
 def test_simple_embedding_index_returns_match():
     docs = ["patient has a cough", "chest pain"]
-    index = SimpleEmbeddingIndex(docs)
+    index = retrieval.SimpleEmbeddingIndex(docs)
     results = index.query("cough")
     assert results
     assert results[0][0] == "patient has a cough"
@@ -38,7 +34,7 @@ def test_simple_embedding_index_without_numpy(monkeypatch):
 def test_sentence_transformer_index_fallback():
     """SentenceTransformerIndex should fall back when model is unavailable."""
     docs = ["patient has a cough", "chest pain"]
-    index = SentenceTransformerIndex(docs, model_name="all-MiniLM-L6-v2")
+    index = retrieval.SentenceTransformerIndex(docs, model_name="all-MiniLM-L6-v2")
     results = index.query("cough")
     assert results
 
@@ -154,4 +150,3 @@ def test_faiss_index_query(monkeypatch):
     index = retrieval.FaissIndex(docs, model_name="dummy")
     results = index.query("cough", top_k=1)
     assert results[0][0] == "patient has cough"
-
