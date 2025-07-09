@@ -8,6 +8,7 @@ import json
 import structlog
 from abc import ABC, abstractmethod
 from typing import List, OrderedDict
+from filelock import FileLock
 from .config import settings
 
 try:
@@ -32,23 +33,26 @@ class FileCache:
     def __init__(self, path: str, max_size: int = 128) -> None:
         self.path = path
         self.max_size = max_size
+        self.lock = FileLock(self.path + ".lock")
         self.data: OrderedDict[str, str] = OrderedDict()
         if os.path.exists(path):
             try:
-                with open(path, "r", encoding="utf-8") as fh:
-                    for line in fh:
-                        item = json.loads(line)
-                        self.data[item["key"]] = item["value"]
+                with self.lock:
+                    with open(path, "r", encoding="utf-8") as fh:
+                        for line in fh:
+                            item = json.loads(line)
+                            self.data[item["key"]] = item["value"]
             except Exception:  # pragma: no cover - corrupt cache
                 self.data.clear()
 
     def get(self, key: str) -> str | None:
-        value = self.data.get(key)
-        if value is not None:
-            # refresh position for LRU
-            self.data.pop(key)
-            self.data[key] = value
-        return value
+        with self.lock:
+            value = self.data.get(key)
+            if value is not None:
+                # refresh position for LRU
+                self.data.pop(key)
+                self.data[key] = value
+            return value
 
     def set(self, key: str, value: str) -> None:
         if key in self.data:
@@ -60,10 +64,11 @@ class FileCache:
 
     def _write(self) -> None:
         tmp = self.path + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as fh:
-            for k, v in self.data.items():
-                fh.write(json.dumps({"key": k, "value": v}) + "\n")
-        os.replace(tmp, self.path)
+        with self.lock:
+            with open(tmp, "w", encoding="utf-8") as fh:
+                for k, v in self.data.items():
+                    fh.write(json.dumps({"key": k, "value": v}) + "\n")
+            os.replace(tmp, self.path)
 
 
 class LLMClient(ABC):

@@ -17,6 +17,7 @@ dependencies = [
     "numpy>=1.26.4",
     "sentence-transformers",
     "structlog",
+    "filelock",
 ]
 
 [project.urls]
