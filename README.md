@@ -24,6 +24,14 @@ This repository contains two integrated projects for advancing sequential clinic
 * **Cost Estimator**: Maps tests to CPT codes and CMS prices, maintaining cumulative cost tracking.
 * **Evaluation Modes**: Modes for exploring different cost-accuracy scenarios: Instant Answer, Question-Only, Budgeted, Unconstrained Budget, and Ensemble.
 
+### BudgetManager
+
+The ``BudgetManager`` service keeps a running total of ordered test costs and
+optionally stops a session once spending exceeds a configurable limit.  It
+relies on a ``CostEstimator`` to translate test names into prices and can be
+passed to :class:`Orchestrator` or created automatically when the CLI runs in
+``budgeted`` mode.
+
 ---
 
 ## SDBench: Sequential Diagnosis Benchmark
@@ -70,6 +78,7 @@ python -m dx0.cli \
   --budget 1000 \
   --output results/dx0_case_001.json
 ```
+Budget enforcement is handled by the ``BudgetManager`` service created by the CLI.
 Add `--cache` to reuse previous LLM responses and reduce API calls:
 
 ```bash
@@ -204,11 +213,15 @@ base64 -d docs/images/ui.png.b64 > ui.png
 
 ```python
 from dx0 import DxOrchestrator
-from sdbench import Benchmark, Settings
+from sdbench import Benchmark, Settings, CostEstimator, BudgetManager
 
 # Dx0 run
-dx_settings = Settings(mode="unconstrained", model="gpt-4")
-orc = DxOrchestrator(dx_settings)
+dx_settings = Settings(mode="budgeted", model="gpt-4")
+costs = CostEstimator.load_from_csv("data/sdbench/costs.csv")
+orc = DxOrchestrator(
+    dx_settings,
+    budget_manager=BudgetManager(costs, budget=1000),
+)
 res = orc.run(case_path="data/sdbench/cases/case_001.json")
 print(res.diagnosis, res.total_cost)
 
