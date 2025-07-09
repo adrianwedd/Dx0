@@ -929,9 +929,9 @@ phases:
   area: security
   dependencies: [45]
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
-    - Store issue time for each token in `SESSIONS`.
+    - Store issue time for each token in a persistent SQLite DB.
     - Reject tokens older than a configurable TTL.
     - Provide a `/logout` endpoint to invalidate a token.
     - Add unit tests covering expiration and logout.
