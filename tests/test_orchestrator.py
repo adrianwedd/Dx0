@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import pytest
 
 from sdb.orchestrator import Orchestrator
+from sdb.budget import BudgetTracker
 from sdb.panel import VirtualPanel
 from sdb.actions import PanelAction
 from sdb.protocol import ActionType
@@ -73,11 +74,11 @@ def test_orchestrator_budget_stops_session():
         PanelAction(ActionType.DIAGNOSIS, "flu"),
     ]
     panel = StubPanel(actions)
+    tracker = BudgetTracker(DummyCostEstimator(), budget=7.0)
     orch = Orchestrator(
         panel,
         DummyGatekeeper(),
-        cost_estimator=DummyCostEstimator(),
-        budget=7.0,
+        budget_tracker=tracker,
     )
 
     orch.run_turn("1")

@@ -23,6 +23,7 @@ from sdb.case_database import Case, CaseDatabase
 from sdb.cost_estimator import CostEstimator, CptCost
 from sdb.gatekeeper import Gatekeeper
 from sdb.orchestrator import Orchestrator
+from sdb.budget import BudgetTracker
 from sdb.panel import PanelAction
 from sdb.protocol import ActionType
 from sdb.ui.session_db import SessionDB
@@ -251,7 +252,11 @@ async def websocket_endpoint(ws: WebSocket) -> None:
         return
     await ws.accept()
     panel = UserPanel()
-    orchestrator = Orchestrator(panel, gatekeeper, cost_estimator=cost_estimator)
+    orchestrator = Orchestrator(
+        panel,
+        gatekeeper,
+        budget_tracker=BudgetTracker(cost_estimator),
+    )
     try:
         while True:
             try:
