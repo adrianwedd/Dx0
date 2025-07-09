@@ -8,8 +8,7 @@ import asyncio
 from .panel import VirtualPanel, PanelAction
 from .gatekeeper import Gatekeeper
 from .protocol import build_action, ActionType
-from .budget import BudgetTracker
-from .services import ResultAggregator
+from .services import BudgetManager, ResultAggregator
 import time
 from .metrics import ORCHESTRATOR_TURNS, ORCHESTRATOR_LATENCY
 
@@ -23,7 +22,7 @@ class Orchestrator:
         gatekeeper: Gatekeeper,
         question_only: bool = False,
         *,
-        budget_tracker: BudgetTracker | None = None,
+        budget_manager: BudgetManager | None = None,
         result_aggregator: ResultAggregator | None = None,
     ):
         """Coordinate panel actions and track test spending.
@@ -36,14 +35,14 @@ class Orchestrator:
             Interface used to obtain answers from the case.
         question_only:
             If ``True``, convert test requests into questions.
-        budget_tracker:
-            Optional :class:`BudgetTracker` tracking test costs.
+        budget_manager:
+            Optional :class:`BudgetManager` tracking test costs.
         """
 
         self.panel = panel
         self.gatekeeper = gatekeeper
         self.question_only = question_only
-        self.budget_tracker = budget_tracker or BudgetTracker()
+        self.budget_manager = budget_manager or BudgetManager()
         self.results = result_aggregator or ResultAggregator()
         self.total_time = 0.0
 
@@ -51,7 +50,7 @@ class Orchestrator:
     def spent(self) -> float:
         """Total money spent on ordered tests."""
 
-        return self.budget_tracker.spent
+        return self.budget_manager.spent
 
     @property
     def ordered_tests(self) -> list[str]:
@@ -69,7 +68,7 @@ class Orchestrator:
     def finished(self) -> bool:
         """Whether the session has concluded."""
 
-        return self.results.finished or self.budget_tracker.over_budget()
+        return self.results.finished or self.budget_manager.over_budget()
 
     def run_turn(self, case_info: str) -> str:
         """Process a single interaction turn with the panel."""
@@ -95,8 +94,8 @@ class Orchestrator:
 
         if action.action_type == ActionType.TEST:
             self.results.record_test(action.content)
-            self.budget_tracker.add(action.content)
-            if self.budget_tracker.over_budget():
+            self.budget_manager.add_test(action.content)
+            if self.budget_manager.over_budget():
                 self.results.finished = True
         logger.info("spent", amount=self.spent)
         if action.action_type == ActionType.DIAGNOSIS:
@@ -135,8 +134,8 @@ class Orchestrator:
 
         if action.action_type == ActionType.TEST:
             self.results.record_test(action.content)
-            self.budget_tracker.add(action.content)
-            if self.budget_tracker.over_budget():
+            self.budget_manager.add_test(action.content)
+            if self.budget_manager.over_budget():
                 self.results.finished = True
         logger.info("spent", amount=self.spent)
         if action.action_type == ActionType.DIAGNOSIS:
