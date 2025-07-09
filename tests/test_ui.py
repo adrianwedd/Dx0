@@ -135,3 +135,57 @@ async def test_ws_schema_validation():
 
     server.should_exit = True
     thread.join()
+
+
+@pytest.mark.asyncio
+async def test_ws_missing_field():
+    """WebSocket closes when required fields are missing."""
+    config = uvicorn.Config(app, host="127.0.0.1", port=8003, log_level="error")
+    server = uvicorn.Server(config)
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    while not server.started:
+        await asyncio.sleep(0.01)
+
+    async with httpx.AsyncClient(base_url="http://127.0.0.1:8003") as client:
+        res = await client.post(
+            "/api/v1/login",
+            json={"username": "physician", "password": "secret"},
+        )
+        token = res.json()["token"]
+        async with aconnect_ws(
+            f"ws://127.0.0.1:8003/api/v1/ws?token={token}", client
+        ) as ws:
+            await ws.send_json({"action": "question"})
+            with pytest.raises(WebSocketDisconnect):
+                await ws.receive_json()
+
+    server.should_exit = True
+    thread.join()
+
+
+@pytest.mark.asyncio
+async def test_ws_invalid_action():
+    """WebSocket closes when an unknown action is provided."""
+    config = uvicorn.Config(app, host="127.0.0.1", port=8004, log_level="error")
+    server = uvicorn.Server(config)
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    while not server.started:
+        await asyncio.sleep(0.01)
+
+    async with httpx.AsyncClient(base_url="http://127.0.0.1:8004") as client:
+        res = await client.post(
+            "/api/v1/login",
+            json={"username": "physician", "password": "secret"},
+        )
+        token = res.json()["token"]
+        async with aconnect_ws(
+            f"ws://127.0.0.1:8004/api/v1/ws?token={token}", client
+        ) as ws:
+            await ws.send_json({"action": "invalid", "content": "hi"})
+            with pytest.raises(WebSocketDisconnect):
+                await ws.receive_json()
+
+    server.should_exit = True
+    thread.join()
