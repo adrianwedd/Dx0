@@ -7,10 +7,12 @@ from __future__ import annotations
 import asyncio
 import os
 import secrets
+import time
 import yaml
 import bcrypt
 
 from fastapi import FastAPI, WebSocket, HTTPException
+from collections import defaultdict
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ValidationError
@@ -71,6 +73,11 @@ CREDENTIALS = load_user_credentials()
 SESSION_TTL = int(os.environ.get("UI_TOKEN_TTL", "3600"))
 SESSION_DB_PATH = os.environ.get("SESSIONS_DB", "sessions.db")
 SESSION_DB = SessionDB(SESSION_DB_PATH, ttl=SESSION_TTL)
+
+# Failed login tracking configuration
+FAILED_LOGIN_LIMIT = int(os.environ.get("FAILED_LOGIN_LIMIT", "5"))
+FAILED_LOGIN_COOLDOWN = int(os.environ.get("FAILED_LOGIN_COOLDOWN", "300"))
+FAILED_LOGINS: dict[str, list[float]] = defaultdict(list)
 
 
 async def stream_reply(
@@ -211,9 +218,19 @@ async def get_tests() -> TestList:
 async def login(req: LoginRequest) -> TokenResponse:
     """Authenticate a user and return a session token."""
 
+    now = time.time()
+    attempts = FAILED_LOGINS.get(req.username, [])
+    attempts = [ts for ts in attempts if now - ts < FAILED_LOGIN_COOLDOWN]
+    if len(attempts) >= FAILED_LOGIN_LIMIT:
+        raise HTTPException(status_code=429, detail="Too many failed login attempts")
+
     hashed = CREDENTIALS.get(req.username)
     if not hashed or not bcrypt.checkpw(req.password.encode(), hashed.encode()):
+        attempts.append(now)
+        FAILED_LOGINS[req.username] = attempts
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    FAILED_LOGINS.pop(req.username, None)
     token = secrets.token_hex(16)
     SESSION_DB.add(token, req.username)
     return TokenResponse(token=token)

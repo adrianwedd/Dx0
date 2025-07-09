@@ -3,6 +3,7 @@ import httpx
 import threading
 import uvicorn
 import asyncio
+import time
 from httpx_ws import aconnect_ws, WebSocketUpgradeError, WebSocketDisconnect
 from starlette.testclient import TestClient
 
@@ -94,6 +95,32 @@ def test_login_failure():
         json={"username": "physician", "password": "wrong"},
     )
     assert res.status_code == 401
+
+
+def test_login_lockout(monkeypatch):
+    monkeypatch.setattr(ui_app, "FAILED_LOGIN_LIMIT", 2)
+    monkeypatch.setattr(ui_app, "FAILED_LOGIN_COOLDOWN", 1)
+    ui_app.FAILED_LOGINS.clear()
+    client = TestClient(app)
+    for _ in range(2):
+        res = client.post(
+            "/api/v1/login",
+            json={"username": "physician", "password": "wrong"},
+        )
+        assert res.status_code == 401
+
+    res = client.post(
+        "/api/v1/login",
+        json={"username": "physician", "password": "wrong"},
+    )
+    assert res.status_code == 429
+
+    time.sleep(1.1)
+    res = client.post(
+        "/api/v1/login",
+        json={"username": "physician", "password": "secret"},
+    )
+    assert res.status_code == 200
 
 
 @pytest.mark.asyncio
