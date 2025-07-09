@@ -11,6 +11,25 @@
     #layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     #chat-panel { grid-column: span 2; border: 1px solid #ccc; padding: 0.5rem; height: 300px; overflow-y: auto; }
     #summary-panel, #tests-panel, #flow-panel { border: 1px solid #ccc; padding: 0.5rem; }
+    .spinner {
+      border: 4px solid #ccc;
+      border-top: 4px solid #333;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    #toast {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      background: #f44336;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
