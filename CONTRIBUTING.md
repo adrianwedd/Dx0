@@ -5,9 +5,10 @@ Thank you for wanting to contribute! This project uses several development tools
 ## Setup
 
 1. Create a Python virtual environment and activate it.
-2. Install development dependencies (requires Make):
+2. Install the pinned dependencies and development tools:
 
    ```bash
+   pip install -r requirements.lock
    make install-dev
    ```
 
@@ -16,6 +17,12 @@ Thank you for wanting to contribute! This project uses several development tools
    ```bash
    pre-commit install
    ```
+
+## Testing requirements
+
+Install **all** packages listed in `requirements.lock` before running the
+test suite. The `make install-dev` target installs additional developer
+tools, including `pytest`.
 
 ## Development workflow
 
