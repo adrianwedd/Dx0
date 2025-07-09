@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import datetime
 import io
 import os
 import zipfile
@@ -11,10 +12,17 @@ from typing import Dict
 
 import requests
 
-DEFAULT_URL = os.getenv(
-    "CMS_PRICING_URL",
-    "https://download.cms.gov/MedicareClinicalLabFeeSched/20CLAB.zip",
-)
+
+def default_cms_url() -> str:
+    """Return the CMS pricing ZIP URL for the current year."""
+    year = datetime.date.today().year
+    return (
+        "https://download.cms.gov/MedicareClinicalLabFeeSched/"
+        f"{str(year)[-2:]}CLAB.zip"
+    )
+
+
+DEFAULT_URL = os.getenv("CMS_PRICING_URL", default_cms_url())
 DEFAULT_PATH = os.path.join("data", "cpt_lookup.csv")
 
 
