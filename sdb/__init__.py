@@ -14,6 +14,7 @@ from .evaluation import Evaluator, async_batch_evaluate, batch_evaluate
 from .logging_config import configure_logging
 from .ingest.convert import convert_directory
 from .ingest.pipeline import run_pipeline, update_dataset
+from .ingest.translate import translate_directory
 from .cpt_lookup import lookup_cpt
 from .metrics import start_metrics_server
 from .retrieval import (
@@ -59,6 +60,7 @@ __all__ = [
     "ResultAggregator",
     "Evaluator",
     "convert_directory",
+    "translate_directory",
     "lookup_cpt",
     "run_pipeline",
     "update_dataset",
