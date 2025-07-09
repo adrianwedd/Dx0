@@ -28,8 +28,8 @@ class Judge:
         self.client = client or OpenAIClient()
         self.prompt = load_prompt("judge_system")
 
-    def _llm_score(self, diagnosis: str, truth: str) -> int | None:
-        """Return a Likert score from the LLM or ``None`` on failure."""
+    def _llm_score(self, diagnosis: str, truth: str) -> int:
+        """Return a Likert score from the LLM."""
 
         messages = [
             {"role": "system", "content": self.prompt},
@@ -40,18 +40,19 @@ class Judge:
         ]
         reply = self.client.chat(messages, self.model)
         if reply is None:
-            return None
+            raise RuntimeError("LLM returned no reply")
         match = re.search(r"[1-5]", reply)
-        if match:
-            return int(match.group(0))
-        return None
+        if match is None:
+            raise ValueError("LLM reply missing score")
+        return int(match.group(0))
 
     def evaluate(self, diagnosis: str, truth: str) -> Judgement:
         """Score the diagnosis against the truth and return judgement."""
         d = diagnosis.strip()
         t = truth.strip()
-        score = self._llm_score(d, t)
-        if score is None:
+        try:
+            score = self._llm_score(d, t)
+        except Exception:
             score = 1
 
         explanations = {

@@ -19,6 +19,16 @@ class DummyClient:
         return "1"
 
 
+class FailingClient:
+    def chat(self, messages, model):
+        return None
+
+
+class BadResponseClient:
+    def chat(self, messages, model):
+        return "no score"
+
+
 def test_judge_llm_synonyms():
     j = Judge({}, client=DummyClient())
     res = j.evaluate("heart attack", "myocardial infarction")
@@ -40,4 +50,16 @@ def test_judge_nuanced_synonyms():
 def test_judge_misdiagnosis():
     j = Judge({}, client=DummyClient())
     res = j.evaluate("Gastritis", "Myocardial infarction")
+    assert res.score == 1
+
+
+def test_judge_llm_failure():
+    j = Judge({}, client=FailingClient())
+    res = j.evaluate("foo", "bar")
+    assert res.score == 1
+
+
+def test_judge_bad_response():
+    j = Judge({}, client=BadResponseClient())
+    res = j.evaluate("foo", "bar")
     assert res.score == 1
