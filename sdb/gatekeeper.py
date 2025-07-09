@@ -4,6 +4,7 @@ import json
 import structlog
 import os
 import re
+from opentelemetry import trace
 import xml.etree.ElementTree as ET
 import xmlschema
 
@@ -14,6 +15,7 @@ from .case_database import CaseDatabase
 from .retrieval import SentenceTransformerIndex
 
 logger = structlog.get_logger(__name__)
+tracer = trace.get_tracer(__name__)
 
 # Load query schema for validating incoming requests
 _SCHEMA_PATH = os.path.join(os.path.dirname(__file__), "query_schema.xsd")
@@ -113,17 +115,17 @@ class Gatekeeper:
 
     def answer_question(self, query: str) -> QueryResult:
         """Return relevant snippet from case or synthetic result."""
+        with tracer.start_as_current_span("gatekeeper.answer_question"):
+            logger.info("gatekeeper_query", query=query)
 
-        logger.info("gatekeeper_query", query=query)
-
-        # Validate and parse the query against the XML schema
-        try:
-            QUERY_SCHEMA.validate(query)
-            root = ET.fromstring(query.strip())
-        except (xmlschema.XMLSchemaException, ET.ParseError) as exc:
-            result = QueryResult(f"Invalid query: {exc}", synthetic=True)
-            logger.info("gatekeeper_result", synthetic=True)
-            return result
+            # Validate and parse the query against the XML schema
+            try:
+                QUERY_SCHEMA.validate(query)
+                root = ET.fromstring(query.strip())
+            except (xmlschema.XMLSchemaException, ET.ParseError) as exc:
+                result = QueryResult(f"Invalid query: {exc}", synthetic=True)
+                logger.info("gatekeeper_result", synthetic=True)
+                return result
 
         tags = {el.tag for el in root.iter()}
         if (

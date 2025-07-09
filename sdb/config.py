@@ -18,6 +18,9 @@ class Settings(BaseModel):
     case_db: Optional[str] = None
     case_db_sqlite: Optional[str] = None
     parallel_personas: bool = False
+    tracing: bool = False
+    tracing_host: str = "localhost"
+    tracing_port: int = 6831
 
     @field_validator("metrics_port")
     @classmethod
@@ -25,6 +28,14 @@ class Settings(BaseModel):
         """Ensure the metrics port is within the valid TCP range."""
         if not (1 <= value <= 65535):
             raise ValueError("metrics_port must be between 1 and 65535")
+        return value
+
+    @field_validator("tracing_port")
+    @classmethod
+    def _check_tracing_port(cls, value: int) -> int:
+        """Validate that the Jaeger port is in the valid range."""
+        if not (1 <= value <= 65535):
+            raise ValueError("tracing_port must be between 1 and 65535")
         return value
 
 
@@ -53,6 +64,15 @@ def load_settings(path: str | None = None) -> Settings:
         data["case_db_sqlite"] = env("SDB_CASE_DB_SQLITE")
     if "parallel_personas" not in data and env("SDB_PARALLEL_PERSONAS"):
         data["parallel_personas"] = env("SDB_PARALLEL_PERSONAS").lower() == "true"
+    if "tracing" not in data and env("SDB_TRACING_ENABLED"):
+        data["tracing"] = env("SDB_TRACING_ENABLED").lower() == "true"
+    if "tracing_host" not in data and env("SDB_TRACING_HOST"):
+        data["tracing_host"] = env("SDB_TRACING_HOST")
+    if "tracing_port" not in data and env("SDB_TRACING_PORT"):
+        try:
+            data["tracing_port"] = int(env("SDB_TRACING_PORT"))
+        except ValueError:
+            pass
     try:
         settings_obj = Settings.model_validate(data)
     except ValidationError as exc:
@@ -63,3 +83,30 @@ def load_settings(path: str | None = None) -> Settings:
 
 # Global settings instance used by the package
 settings = load_settings()
+
+
+def configure_tracing() -> None:
+    """Initialize Jaeger tracing if enabled."""
+
+    if not settings.tracing:
+        return
+    try:
+        from opentelemetry import trace
+        from opentelemetry.sdk.resources import Resource
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor
+        from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+    except Exception:  # pragma: no cover - optional dependency
+        return
+
+    resource = Resource.create({"service.name": "sdb"})
+    provider = TracerProvider(resource=resource)
+    exporter = JaegerExporter(
+        agent_host_name=settings.tracing_host,
+        agent_port=settings.tracing_port,
+    )
+    provider.add_span_processor(BatchSpanProcessor(exporter))
+    trace.set_tracer_provider(provider)
+
+
+configure_tracing()
