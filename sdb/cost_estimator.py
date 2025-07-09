@@ -78,7 +78,12 @@ class CostEstimator:
                     name = row["test_name"].strip().lower()
                     cpt = row["cpt_code"].strip()
                     price = float(row["price"])
-                    category = row.get("category", "unknown").strip().lower() or "unknown"
+                    category = (
+                        row.get("category", "unknown")
+                        .strip()
+                        .lower()
+                        or "unknown"
+                    )
                 except Exception:
                     continue
                 if name and cpt:
