@@ -18,6 +18,24 @@ Developers working from a cloned repository can install in editable mode:
 pip install -e .
 ```
 
+## Usage Examples
+
+Run the CLI on a single case in budgeted mode:
+
+```bash
+python -m dx0.cli \
+  --mode budgeted \
+  --case-file data/sdbench/cases/case_001.json \
+  --budget 1000 \
+  --output results/case_001.json
+```
+
+To start the demo web UI locally:
+
+```bash
+uvicorn sdb.ui.app:app --reload
+```
+
 ## Environment Setup
 
 ### Using the OpenAI API

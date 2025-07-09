@@ -23,4 +23,16 @@ Initial public release of the SDB package and Dx0 demo. Highlights:
 - CLI for running sessions and significance tests.
 - Simple FastAPI UI with Prometheus metrics and Grafana dashboard.
 
+## Release Procedure
+
+1. Update the version and changelog sections above.
+2. Ensure all tests pass and the `dist/` directory is clean.
+3. Build the wheel and source archives:
+
+   ```bash
+   python -m build
+   ```
+
+4. Tag the commit and push the archives to your package index.
+
 

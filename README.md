@@ -39,6 +39,9 @@ This repository contains two integrated projects for advancing sequential clinic
 
 ## Installation
 
+Full setup instructions are provided in [docs/installation.md](docs/installation.md).
+The short version is:
+
 ```bash
 git clone https://github.com/adrianwedd/Dx0.git
 cd clinical-ai-suite
@@ -47,10 +50,8 @@ source venv/bin/activate
 pip install -r requirements.lock
 ```
 
-See [Dependency Management](docs/dependency_updates.md) for instructions on
-updating and auditing requirements.
-
-*(Optional)* Docker build:
+See [Dependency Management](docs/dependency_updates.md) for details on
+updating and auditing requirements. You can also build a Docker image with:
 
 ```bash
 docker build -t clinical-ai-suite .
