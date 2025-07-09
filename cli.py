@@ -232,6 +232,11 @@ def batch_eval_main(argv: list[str]) -> None:
         default=None,
         help="Cross-encoder model name for semantic retrieval",
     )
+    parser.add_argument(
+        "--retrieval-backend",
+        default=None,
+        help="Retrieval plugin name to use when semantic retrieval is enabled",
+    )
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--quiet", action="store_true")
     args = parser.parse_args(argv)
@@ -239,6 +244,8 @@ def batch_eval_main(argv: list[str]) -> None:
     if args.db is None and args.db_sqlite is None:
         args.db = cfg.case_db
         args.db_sqlite = cfg.case_db_sqlite
+    if args.retrieval_backend is None:
+        args.retrieval_backend = cfg.retrieval_backend
 
     vote_weights = _load_weights_file(args.weights_file)
     if vote_weights is None:
@@ -282,6 +289,7 @@ def batch_eval_main(argv: list[str]) -> None:
             case_id,
             use_semantic_retrieval=args.semantic,
             cross_encoder_name=args.cross_encoder_model,
+            retrieval_backend=args.retrieval_backend,
         )
         if args.panel_engine == "rule":
             engine = RuleEngine()
@@ -796,6 +804,7 @@ def main() -> None:
         args.case,
         use_semantic_retrieval=args.semantic,
         cross_encoder_name=args.cross_encoder_model,
+        retrieval_backend=args.retrieval_backend,
     )
     gatekeeper.register_test_result("complete blood count", "normal")
 

@@ -2,6 +2,8 @@ import re
 from typing import Dict, List, Tuple, Optional, Type, Protocol
 from importlib import metadata
 
+from .config import settings
+
 try:  # pragma: no cover - trivial import handling
     import numpy as np
 
@@ -294,3 +296,19 @@ def get_retrieval_plugin(name: str) -> Type[BaseRetrievalIndex]:
             cls = ep.load()
             return cls
     raise ValueError(f"Retrieval plugin '{name}' not found")
+
+
+def load_retrieval_index(
+    documents: List[str],
+    *,
+    plugin_name: Optional[str] = None,
+    **kwargs: object,
+) -> BaseRetrievalIndex:
+    """Instantiate the retrieval index specified by configuration."""
+
+    if plugin_name is None:
+        plugin_name = settings.retrieval_backend
+    if plugin_name is None:
+        plugin_name = "faiss" if FAISS_AVAILABLE else "sentence-transformer"
+    index_cls = get_retrieval_plugin(plugin_name)
+    return index_cls(documents, **kwargs)
