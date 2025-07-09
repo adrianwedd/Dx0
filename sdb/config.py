@@ -18,6 +18,7 @@ class Settings(BaseModel):
     case_db: Optional[str] = None
     case_db_sqlite: Optional[str] = None
     parallel_personas: bool = False
+    persona_models: dict[str, str] = {}
     tracing: bool = False
     tracing_host: str = "localhost"
     tracing_port: int = 6831

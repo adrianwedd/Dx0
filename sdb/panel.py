@@ -21,6 +21,7 @@ class VirtualPanel:
         self,
         decision_engine: DecisionEngine | None = None,
         persona_chain: str | None = None,
+        persona_models: dict[str, str] | None = None,
     ):
         """Initialize the panel and underlying decision engine.
 
@@ -32,6 +33,9 @@ class VirtualPanel:
         persona_chain:
             Name of an installed persona plugin to load. Ignored when
             ``decision_engine`` is supplied.
+        persona_models:
+            Optional mapping from persona prompt name to model name. Used when
+            the panel creates an :class:`LLMEngine` internally.
 
         The panel starts with no previous case information, zero turn count
         and an empty set of triggered keywords.
@@ -45,7 +49,7 @@ class VirtualPanel:
             self.engine = decision_engine
         elif persona_chain is not None:
             chain = self._load_persona_chain(persona_chain)
-            self.engine = LLMEngine(personas=chain)
+            self.engine = LLMEngine(personas=chain, persona_models=persona_models)
         else:
             self.engine = RuleEngine()
 

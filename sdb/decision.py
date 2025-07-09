@@ -133,14 +133,32 @@ class LLMEngine(DecisionEngine):
         client: LLMClient | AsyncLLMClient | None = None,
         personas: list[str] | None = None,
         *,
+        persona_models: dict[str, str] | None = None,
         parallel_personas: bool | None = None,
     ) -> None:
-        """Create an LLM engine with optional parallel persona execution."""
+        """Create an LLM engine with optional parallel persona execution.
+
+        Parameters
+        ----------
+        model:
+            Default model used when ``persona_models`` does not specify a
+            persona-specific override.
+        client:
+            LLM client instance used to send chat messages.
+        personas:
+            Ordered list of persona prompt names.
+        persona_models:
+            Mapping from persona prompt name to model name.
+        parallel_personas:
+            Run personas concurrently when an :class:`AsyncLLMClient` is
+            provided.
+        """
 
         self.model = model
         self.client = client or OpenAIClient()
         self.fallback = RuleEngine()
         self.personas = personas or self.DEFAULT_PERSONAS
+        self.persona_models = persona_models or {}
         self.parallel_personas = (
             settings.parallel_personas
             if parallel_personas is None
@@ -151,13 +169,17 @@ class LLMEngine(DecisionEngine):
             if not text.strip():
                 raise ValueError(f"Prompt {name} is empty")
 
-    def _chat(self, messages: list[dict]) -> str | None:
-        return self.client.chat(messages, self.model)
+    def _chat(self, messages: list[dict], model: str) -> str | None:
+        """Return a chat completion for ``model`` via the configured client."""
 
-    async def _achat(self, messages: list[dict]) -> str | None:
+        return self.client.chat(messages, model)
+
+    async def _achat(self, messages: list[dict], model: str) -> str | None:
+        """Asynchronous helper for chatting with ``model``."""
+
         if isinstance(self.client, AsyncLLMClient):
-            return await self.client.chat(messages, self.model)
-        return await asyncio.to_thread(self.client.chat, messages, self.model)
+            return await self.client.chat(messages, model)
+        return await asyncio.to_thread(self.client.chat, messages, model)
 
     def decide(self, context: Context) -> PanelAction:
         """Return the next panel action from the LLM persona chain.
@@ -171,7 +193,8 @@ class LLMEngine(DecisionEngine):
             system = {"role": "system", "content": self.prompts[name]}
             user = {"role": "user", "content": conversation}
             messages.extend([system, user])
-            reply = self._chat(messages)
+            model = self.persona_models.get(name, self.model)
+            reply = self._chat(messages, model)
             if reply is None:
                 return self.fallback.decide(context)
             messages.append({"role": "assistant", "content": reply})
@@ -194,7 +217,8 @@ class LLMEngine(DecisionEngine):
             async def run_persona(name: str) -> tuple[dict, dict, str | None]:
                 system = {"role": "system", "content": self.prompts[name]}
                 user = {"role": "user", "content": conversation}
-                reply = await self._achat([system, user])
+                model = self.persona_models.get(name, self.model)
+                reply = await self._achat([system, user], model)
                 return system, user, reply
 
             tasks = [run_persona(name) for name in self.personas]
@@ -209,7 +233,8 @@ class LLMEngine(DecisionEngine):
                 system = {"role": "system", "content": self.prompts[name]}
                 user = {"role": "user", "content": conversation}
                 messages.extend([system, user])
-                reply = await self._achat(messages)
+                model = self.persona_models.get(name, self.model)
+                reply = await self._achat(messages, model)
                 if reply is None:
                     return await asyncio.to_thread(self.fallback.decide, context)
                 messages.append({"role": "assistant", "content": reply})

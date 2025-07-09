@@ -49,6 +49,20 @@ def _load_weights(arg: str | None) -> dict[str, float] | None:
         raise SystemExit(f"Invalid vote weights: {exc}") from exc
 
 
+def _load_persona_models(arg: str | None) -> dict[str, str] | None:
+    """Return a mapping from persona name to model."""
+
+    if arg is None:
+        return None
+    try:
+        if os.path.exists(arg):
+            with open(arg, "r", encoding="utf-8") as fh:
+                return json.load(fh)
+        return json.loads(arg)
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"Invalid persona models: {exc}") from exc
+
+
 def stats_main(argv: list[str]) -> None:
     """Run a permutation test on two result CSV files."""
 
@@ -108,6 +122,11 @@ def batch_eval_main(argv: list[str]) -> None:
     )
     parser.add_argument("--llm-model", default="gpt-4")
     parser.add_argument(
+        "--persona-models",
+        default=None,
+        help="JSON string or file with persona to model mapping",
+    )
+    parser.add_argument(
         "--ollama-base-url",
         default="http://localhost:11434",
         help="Base URL for the Ollama server",
@@ -163,6 +182,7 @@ def batch_eval_main(argv: list[str]) -> None:
 
     vote_weights = _load_weights(args.vote_weights)
     meta_panel = MetaPanel(weights=vote_weights)
+    persona_models = _load_persona_models(args.persona_models) or cfg.persona_models
 
     level = logging.INFO
     if args.verbose:
@@ -216,7 +236,11 @@ def batch_eval_main(argv: list[str]) -> None:
                     cache_path=cache_path,
                     cache_size=args.cache_size,
                 )
-            engine = LLMEngine(model=args.llm_model, client=client)
+            engine = LLMEngine(
+                model=args.llm_model,
+                client=client,
+                persona_models=persona_models,
+            )
 
         panel = VirtualPanel(decision_engine=engine)
         orch_kwargs = {}
@@ -386,6 +410,11 @@ def main() -> None:
         "--llm-model",
         default="gpt-4",
         help="Model name for LLM engine",
+    )
+    parser.add_argument(
+        "--persona-models",
+        default=None,
+        help="JSON string or file with persona to model mapping",
     )
     parser.add_argument(
         "--ollama-base-url",
@@ -564,7 +593,11 @@ def main() -> None:
                 cache_path=cache_path,
                 cache_size=args.cache_size,
             )
-        engine = LLMEngine(model=args.llm_model, client=client)
+        engine = LLMEngine(
+            model=args.llm_model,
+            client=client,
+            persona_models=persona_models,
+        )
 
     panel = VirtualPanel(decision_engine=engine)
 

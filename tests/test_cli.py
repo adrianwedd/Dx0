@@ -426,6 +426,66 @@ def test_cli_ollama_base_url(monkeypatch, tmp_path):
     assert captured["url"] == "http://127.0.0.1:11434"
 
 
+def test_cli_persona_models(monkeypatch, tmp_path):
+    cases = [{"id": "1", "summary": "s", "full_text": "t"}]
+    case_file = tmp_path / "cases.json"
+    with open(case_file, "w", encoding="utf-8") as f:
+        json.dump(cases, f)
+
+    rubric_file = tmp_path / "r.json"
+    with open(rubric_file, "w", encoding="utf-8") as f:
+        json.dump({}, f)
+
+    cost_file = tmp_path / "c.csv"
+    with open(cost_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=["test_name", "cpt_code", "price"],
+        )
+        writer.writeheader()
+        writer.writerow({"test_name": "x", "cpt_code": "1", "price": "1"})
+
+    captured: dict[str, dict] = {}
+
+    class DummyLLMEngine:
+        def __init__(self, *args, **kwargs):
+            captured["models"] = kwargs.get("persona_models")
+
+    monkeypatch.setattr(cli, "LLMEngine", DummyLLMEngine)
+    monkeypatch.setattr(cli, "start_metrics_server", lambda *_: None)
+
+    class DummyOrchestrator:
+        def __init__(self, *args, **kwargs):
+            self.finished = True
+            self.total_time = 0.0
+            self.final_diagnosis = ""
+            self.ordered_tests = []
+
+        def run_turn(self, *_args, **_kwargs):
+            return ""
+
+    monkeypatch.setattr(cli, "Orchestrator", DummyOrchestrator)
+
+    argv = [
+        "cli.py",
+        "--db",
+        str(case_file),
+        "--case",
+        "1",
+        "--rubric",
+        str(rubric_file),
+        "--costs",
+        str(cost_file),
+        "--panel-engine",
+        "llm",
+        "--persona-models",
+        '{"hypothesis_system": "gpt-4"}',
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+    cli.main()
+    assert captured["models"] == {"hypothesis_system": "gpt-4"}
+
+
 def test_batch_eval_ollama_base_url(monkeypatch, tmp_path):
     cases = [{"id": "1", "summary": "s", "full_text": "t"}]
     case_file = tmp_path / "cases.json"

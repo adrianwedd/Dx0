@@ -524,6 +524,16 @@ phases:
   epic: Phase 5
   assigned_to: null
 
+- id: 76
+  title: Support Persona-Specific Models
+  description: >
+    Allow each persona in the virtual panel to run with a different LLM model
+    specified via the CLI or settings file.
+  component: panel
+  area: configuration
+  priority: 2
+  status: done
+
 - id: 75
   title: Extract Budget Management Service
   description: >
