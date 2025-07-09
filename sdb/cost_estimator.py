@@ -1,17 +1,19 @@
 import csv
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 from .cpt_lookup import lookup_cpt
 
 
 @dataclass
 class CptCost:
-    """Mapping between a CPT code and its price."""
+    """Mapping between a CPT code, price, and category."""
 
     cpt_code: str
 
     price: float
+
+    category: str = "unknown"
 
 
 class CostEstimator:
@@ -76,10 +78,11 @@ class CostEstimator:
                     name = row["test_name"].strip().lower()
                     cpt = row["cpt_code"].strip()
                     price = float(row["price"])
+                    category = row.get("category", "unknown").strip().lower() or "unknown"
                 except Exception:
                     continue
                 if name and cpt:
-                    table[name] = CptCost(cpt_code=cpt, price=price)
+                    table[name] = CptCost(cpt_code=cpt, price=price, category=category)
 
         estimator = CostEstimator(table)
 
@@ -170,6 +173,19 @@ class CostEstimator:
                 if not alias or not canonical:
                     continue
                 self.aliases[alias] = canonical
+
+    def estimate(self, test_name: str) -> Tuple[float, str]:
+        """Return ``(price, category)`` for ``test_name``."""
+
+        try:
+            tc = self.lookup_cost(test_name)
+        except KeyError:
+            tc = None
+        if tc:
+            return tc.price, tc.category
+
+        price = self.estimate_cost(test_name)
+        return price, "unknown"
 
     def estimate_cost(self, test_name: str) -> float:
         """Return the price for ``test_name`` or infer it via an LLM lookup."""
