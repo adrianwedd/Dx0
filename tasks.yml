@@ -748,6 +748,7 @@ phases:
   epic: User Experience (UX) & Accessibility
   assigned_to: null
 
+
 - id: 57
   title: Introduce Guided Actions for Questions and Tests
   description: >
@@ -810,6 +811,70 @@ phases:
     - "Visual elements follow a consistent style guide."
     - "Accessibility audit reports no critical WCAG 2.1 violations."
     - "All interactive elements are keyboard accessible."
+  command: null
+  epic: User Experience (UX) & Accessibility
+  assigned_to: null
+- id: 60
+  title: Add Help Panel and Session Status
+  description: >
+    Display inline usage hints and show the logged-in user with a logout
+    button so clinicians understand available commands and their session
+    state.
+  component: ui
+  area: usability
+  dependencies: [56]
+  priority: 2
+  status: pending
+  actionable_steps:
+    - Add a collapsible help panel listing supported chat commands.
+    - Show the current username in the header.
+    - Provide a logout button that ends the session cleanly.
+  acceptance_criteria:
+    - "Users can view command hints without leaving the chat UI."
+    - "Session status displays the active account and allows logout."
+  command: null
+  epic: User Experience (UX) & Accessibility
+  assigned_to: null
+
+- id: 61
+  title: Ensure Responsive and Accessible Layout
+  description: >
+    Improve styling for tablets and add screen reader labels to meet WCAG
+    AA color contrast and accessibility guidelines.
+  component: ui
+  area: accessibility
+  dependencies: [59]
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Refactor the grid layout to adapt to tablet viewports.
+    - Adjust the color palette to satisfy contrast ratios.
+    - Label form controls with appropriate ARIA attributes.
+  acceptance_criteria:
+    - "The UI passes WCAG AA contrast checks on tablet screens."
+    - "Screen readers announce labels for all form fields."
+  command: null
+  epic: User Experience (UX) & Accessibility
+  assigned_to: null
+
+- id: 62
+  title: Migrate UI to React with Collapsible Panels
+  description: >
+    Replace the minimal HTML interface with a React front end using a
+    component library and collapsible sections for the case summary and
+    results panels.
+  component: ui
+  area: design
+  dependencies: [56, 59]
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Scaffold a React application (e.g., with Vite).
+    - Implement chat, summary, and results panels as collapsible components.
+    - Connect WebSocket communication to the FastAPI backend.
+  acceptance_criteria:
+    - "Clinicians can toggle panels while chatting with the Gatekeeper."
+    - "Build passes lint and unit tests for React components."
   command: null
   epic: User Experience (UX) & Accessibility
   assigned_to: null
