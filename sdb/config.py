@@ -15,6 +15,8 @@ class Settings:
     metrics_port: int = 8000
     semantic_retrieval: bool = False
     cross_encoder_model: Optional[str] = None
+    case_db: Optional[str] = None
+    case_db_sqlite: Optional[str] = None
 
 
 def load_settings(path: str | None = None) -> Settings:
@@ -36,7 +38,13 @@ def load_settings(path: str | None = None) -> Settings:
             data["metrics_port"] = int(env("SDB_METRICS_PORT"))
         except ValueError:
             pass
-    return Settings(**data)
+    if "case_db" not in data and env("SDB_CASE_DB"):
+        data["case_db"] = env("SDB_CASE_DB")
+    if "case_db_sqlite" not in data and env("SDB_CASE_DB_SQLITE"):
+        data["case_db_sqlite"] = env("SDB_CASE_DB_SQLITE")
+    settings_obj = Settings(**data)
+    globals()["settings"] = settings_obj
+    return settings_obj
 
 
 # Global settings instance used by the package

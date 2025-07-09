@@ -156,6 +156,10 @@ def batch_eval_main(argv: list[str]) -> None:
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--quiet", action="store_true")
     args = parser.parse_args(argv)
+    cfg = load_settings(args.config)
+    if args.db is None and args.db_sqlite is None:
+        args.db = cfg.case_db
+        args.db_sqlite = cfg.case_db_sqlite
 
     vote_weights = _load_weights(args.vote_weights)
     meta_panel = MetaPanel(weights=vote_weights)
@@ -483,7 +487,10 @@ def main() -> None:
         help="Port for Prometheus metrics server (default 8000)",
     )
     args = parser.parse_args()
-    load_settings(args.config)
+    cfg = load_settings(args.config)
+    if args.db is None and args.db_sqlite is None:
+        args.db = cfg.case_db
+        args.db_sqlite = cfg.case_db_sqlite
 
     vote_weights = _load_weights(args.vote_weights)
     meta_panel = MetaPanel(weights=vote_weights)
