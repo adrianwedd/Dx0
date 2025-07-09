@@ -102,7 +102,15 @@ class LoginRequest(BaseModel):
 
 
 class ChatMessage(BaseModel):
-    """Incoming websocket message from the UI."""
+    """Incoming websocket message from the UI.
+
+    Parameters
+    ----------
+    action: ActionType
+        The user intent, one of ``question``, ``test``, or ``diagnosis``.
+    content: str
+        Free form user text for the selected ``action``.
+    """
 
     action: ActionType = ActionType.QUESTION
     content: str
@@ -207,7 +215,7 @@ async def websocket_endpoint(ws: WebSocket) -> None:
         while True:
             try:
                 data = await ws.receive_json()
-                msg = ChatMessage.model_validate(data)
+                msg = ChatMessage.parse_obj(data)
             except (ValueError, ValidationError):
                 await ws.close(code=1003)
                 return
