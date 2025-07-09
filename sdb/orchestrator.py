@@ -8,8 +8,8 @@ import asyncio
 from .panel import VirtualPanel, PanelAction
 from .gatekeeper import Gatekeeper
 from .protocol import build_action, ActionType
-from .cost_estimator import CostEstimator
-from .services import BudgetManager, ResultAggregator
+from .budget import BudgetTracker
+from .services import ResultAggregator
 import time
 from .metrics import ORCHESTRATOR_TURNS, ORCHESTRATOR_LATENCY
 
@@ -21,11 +21,9 @@ class Orchestrator:
         self,
         panel: VirtualPanel,
         gatekeeper: Gatekeeper,
-        cost_estimator: CostEstimator | None = None,
-        budget: float | None = None,
         question_only: bool = False,
         *,
-        budget_manager: BudgetManager | None = None,
+        budget_tracker: BudgetTracker | None = None,
         result_aggregator: ResultAggregator | None = None,
     ):
         """Coordinate panel actions and track test spending.
@@ -36,20 +34,16 @@ class Orchestrator:
             :class:`VirtualPanel` generating actions.
         gatekeeper:
             Interface used to obtain answers from the case.
-        cost_estimator:
-            Optional :class:`CostEstimator` for test pricing.
-        budget:
-            Optional maximum spend allowed for tests.
         question_only:
             If ``True``, convert test requests into questions.
+        budget_tracker:
+            Optional :class:`BudgetTracker` tracking test costs.
         """
 
         self.panel = panel
         self.gatekeeper = gatekeeper
         self.question_only = question_only
-        self.budget_manager = budget_manager or BudgetManager(
-            cost_estimator, budget
-        )
+        self.budget_tracker = budget_tracker or BudgetTracker()
         self.results = result_aggregator or ResultAggregator()
         self.total_time = 0.0
 
@@ -57,7 +51,7 @@ class Orchestrator:
     def spent(self) -> float:
         """Total money spent on ordered tests."""
 
-        return self.budget_manager.spent
+        return self.budget_tracker.spent
 
     @property
     def ordered_tests(self) -> list[str]:
@@ -75,7 +69,7 @@ class Orchestrator:
     def finished(self) -> bool:
         """Whether the session has concluded."""
 
-        return self.results.finished or self.budget_manager.over_budget()
+        return self.results.finished or self.budget_tracker.over_budget()
 
     def run_turn(self, case_info: str) -> str:
         """Process a single interaction turn with the panel."""
@@ -101,8 +95,8 @@ class Orchestrator:
 
         if action.action_type == ActionType.TEST:
             self.results.record_test(action.content)
-            self.budget_manager.add_test(action.content)
-            if self.budget_manager.over_budget():
+            self.budget_tracker.add(action.content)
+            if self.budget_tracker.over_budget():
                 self.results.finished = True
         logger.info("spent", amount=self.spent)
         if action.action_type == ActionType.DIAGNOSIS:
@@ -141,8 +135,8 @@ class Orchestrator:
 
         if action.action_type == ActionType.TEST:
             self.results.record_test(action.content)
-            self.budget_manager.add_test(action.content)
-            if self.budget_manager.over_budget():
+            self.budget_tracker.add(action.content)
+            if self.budget_tracker.over_budget():
                 self.results.finished = True
         logger.info("spent", amount=self.spent)
         if action.action_type == ActionType.DIAGNOSIS:
