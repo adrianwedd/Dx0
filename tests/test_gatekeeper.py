@@ -1,4 +1,5 @@
 import json
+import pytest
 
 from sdb.case_database import Case, CaseDatabase
 from sdb.gatekeeper import Gatekeeper
@@ -38,10 +39,8 @@ def test_missing_fixture_file(tmp_path):
     case = Case(id="1", summary="s", full_text="f")
     db = CaseDatabase([case])
     gk = Gatekeeper(db, "1")
-    gk.load_results_from_json(str(tmp_path / "missing.json"))
-    q = build_action(ActionType.TEST, "cbc")
-    res = gk.answer_question(q)
-    assert res.synthetic is True
+    with pytest.raises(FileNotFoundError):
+        gk.load_results_from_json(str(tmp_path / "missing.json"))
 
 
 def test_question():
@@ -127,7 +126,7 @@ def test_unknown_xml_tag():
 
 
 def test_load_results_from_invalid_json(tmp_path):
-    """Malformed JSON fixtures should be ignored without crashing."""
+    """Malformed JSON fixtures should raise a ``ValueError``."""
     case = Case(id="1", summary="s", full_text="f")
     db = CaseDatabase([case])
     gk = Gatekeeper(db, "1")
@@ -135,9 +134,8 @@ def test_load_results_from_invalid_json(tmp_path):
     path = tmp_path / "bad.json"
     path.write_text("{invalid}", encoding="utf-8")
 
-    gk.load_results_from_json(str(path))
-    res = gk.answer_question(build_action(ActionType.TEST, "cbc"))
-    assert res.synthetic is True
+    with pytest.raises(ValueError):
+        gk.load_results_from_json(str(path))
 
 
 def test_unexpected_nested_xml():

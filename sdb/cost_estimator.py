@@ -121,11 +121,32 @@ class CostEstimator:
 
         return estimator
 
-    def lookup_cost(self, test_name: str) -> Optional[CptCost]:
+    def lookup_cost(self, test_name: str) -> CptCost:
+        """Return CPT pricing information for ``test_name``.
+
+        Parameters
+        ----------
+        test_name:
+            Name of the requested test.
+
+        Returns
+        -------
+        CptCost
+            Pricing entry for the test.
+
+        Raises
+        ------
+        KeyError
+            If ``test_name`` is not found in the pricing table or aliases.
+        """
+
         key = test_name.strip().lower()
         if key in self.aliases:
             key = self.aliases[key]
-        return self.cost_table.get(key)
+        try:
+            return self.cost_table[key]
+        except KeyError as exc:
+            raise KeyError(f"Unknown test name: {test_name}") from exc
 
     def add_aliases(self, mapping: Dict[str, str]):
         """Register mapping of free text requests to canonical test names."""
@@ -153,7 +174,10 @@ class CostEstimator:
     def estimate_cost(self, test_name: str) -> float:
         """Return the price for ``test_name`` or infer it via an LLM lookup."""
 
-        tc = self.lookup_cost(test_name)
+        try:
+            tc = self.lookup_cost(test_name)
+        except KeyError:
+            tc = None
         if tc:
             return tc.price
 
