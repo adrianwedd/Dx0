@@ -878,3 +878,43 @@ phases:
   command: null
   epic: User Experience (UX) & Accessibility
   assigned_to: null
+
+- id: 63
+  title: Expire and Revoke Web UI Session Tokens
+  description: >
+    Add expiration timestamps and logout support for tokens issued by the FastAPI UI. Expired tokens should be purged periodically to prevent unlimited access.
+  component: ui
+  area: security
+  dependencies: [45]
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Store issue time for each token in `SESSIONS`.
+    - Reject tokens older than a configurable TTL.
+    - Provide a `/logout` endpoint to invalidate a token.
+    - Add unit tests covering expiration and logout.
+  acceptance_criteria:
+    - "Tokens expire after the configured TTL."
+    - "Logout removes the token and prevents further WebSocket access."
+  command: null
+  epic: User Experience (UX) & Accessibility
+  assigned_to: null
+
+- id: 64
+  title: Test CI on Multiple Python Versions
+  description: >
+    Update GitHub Actions to run the test suite on Python 3.11 and 3.12 to ensure compatibility across supported interpreters.
+  component: ci
+  area: testing
+  dependencies: [53]
+  priority: 2
+  status: pending
+  actionable_steps:
+    - Modify `.github/workflows/ci.yml` to include a matrix of Python versions.
+    - Ensure dependency installation succeeds on each version.
+    - Update documentation to list supported Python versions.
+  acceptance_criteria:
+    - "CI passes on both Python 3.11 and 3.12."
+  command: null
+  epic: Phase 5
+  assigned_to: null
