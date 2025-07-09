@@ -1,7 +1,6 @@
-import difflib
 import re
 from dataclasses import dataclass
-from typing import Dict, Any
+from typing import Any, Dict
 
 from .prompt_loader import load_prompt
 from .llm_client import LLMClient, OpenAIClient
@@ -28,8 +27,6 @@ class Judge:
         self.model = model
         self.client = client or OpenAIClient()
         self.prompt = load_prompt("judge_system")
-        self.exact_threshold = float(rubric.get("exact_threshold", 0.9))
-        self.partial_threshold = float(rubric.get("partial_threshold", 0.6))
 
     def _llm_score(self, diagnosis: str, truth: str) -> int | None:
         """Return a Likert score from the LLM or ``None`` on failure."""
@@ -54,21 +51,8 @@ class Judge:
         d = diagnosis.strip()
         t = truth.strip()
         score = self._llm_score(d, t)
-
         if score is None:
-            ratio = difflib.SequenceMatcher(None, d.lower(), t.lower()).ratio()
-            if ratio >= self.exact_threshold:
-                score = 5
-            elif ratio >= self.partial_threshold:
-                score = 4
-            elif d and t and (
-                d.lower() in t.lower() or t.lower() in d.lower()
-            ):
-                score = 3
-            elif ratio > 0.3:
-                score = 2
-            else:
-                score = 1
+            score = 1
 
         explanations = {
             5: "Exact or near exact match",
