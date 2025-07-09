@@ -28,3 +28,17 @@ python cli.py batch-eval --db-sqlite cases.db --rubric rubric.json \
     --costs costs.csv --output results.csv --concurrency 4
 ```
 
+## Filtering Cases
+
+Use the `filter-cases` command to create a smaller dataset before running
+evaluations. Cases can be selected by keywords found in the summary or full
+text, or by matching metadata fields.
+
+```bash
+python cli.py filter-cases --db cases.json --keywords fever,cough \
+    --output subset.json
+
+python cli.py filter-cases --db cases.json --metadata '{"tag": "respiratory"}' \
+    --output subset.csv
+```
+

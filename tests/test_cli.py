@@ -20,9 +20,7 @@ def test_cli_outputs_final_results(tmp_path):
 
     cost_file = tmp_path / "costs.csv"
     with open(cost_file, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(
-            f, fieldnames=["test_name", "cpt_code", "price"]
-        )
+        writer = csv.DictWriter(f, fieldnames=["test_name", "cpt_code", "price"])
         writer.writeheader()
         writer.writerow(
             {
@@ -68,9 +66,7 @@ def test_cli_flag_parsing(tmp_path):
 
     cost_file = tmp_path / "c.csv"
     with open(cost_file, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(
-            f, fieldnames=["test_name", "cpt_code", "price"]
-        )
+        writer = csv.DictWriter(f, fieldnames=["test_name", "cpt_code", "price"])
         writer.writeheader()
         writer.writerow(
             {
@@ -143,9 +139,7 @@ def test_cli_with_sqlite(tmp_path):
 
     cost_file = tmp_path / "c.csv"
     with open(cost_file, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(
-            f, fieldnames=["test_name", "cpt_code", "price"]
-        )
+        writer = csv.DictWriter(f, fieldnames=["test_name", "cpt_code", "price"])
         writer.writeheader()
         writer.writerow({"test_name": "x", "cpt_code": "1", "price": "1"})
 
@@ -184,9 +178,7 @@ def test_batch_eval_command(tmp_path):
 
     cost_file = tmp_path / "c.csv"
     with open(cost_file, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(
-            f, fieldnames=["test_name", "cpt_code", "price"]
-        )
+        writer = csv.DictWriter(f, fieldnames=["test_name", "cpt_code", "price"])
         writer.writeheader()
         writer.writerow(
             {
@@ -571,9 +563,7 @@ def test_cli_vote_weights(monkeypatch, tmp_path, capsys):
 
     cost_file = tmp_path / "c.csv"
     with open(cost_file, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(
-            f, fieldnames=["test_name", "cpt_code", "price"]
-        )
+        writer = csv.DictWriter(f, fieldnames=["test_name", "cpt_code", "price"])
         writer.writeheader()
         writer.writerow({"test_name": "x", "cpt_code": "1", "price": "1"})
 
@@ -651,8 +641,7 @@ def test_fhir_export_command(tmp_path):
     data = json.loads(result.stdout)
     assert data["resourceType"] == "Bundle"
     assert any(
-        entry["resource"]["resourceType"] == "ServiceRequest"
-        for entry in data["entry"]
+        entry["resource"]["resourceType"] == "ServiceRequest" for entry in data["entry"]
     )
 
 
@@ -751,3 +740,60 @@ def test_annotate_case_command(tmp_path):
     assert data["id"] == "1"
     assert data["notes"] == "note"
     assert data["test_mappings"] == mapping
+
+
+def test_filter_cases_command(tmp_path):
+    cases = [
+        {
+            "id": "1",
+            "summary": "fever and cough",
+            "full_text": "cough",
+            "tag": "respiratory",
+        },
+        {"id": "2", "summary": "abdominal pain", "full_text": "pain", "tag": "gi"},
+    ]
+    case_file = tmp_path / "cases.json"
+    with open(case_file, "w", encoding="utf-8") as f:
+        json.dump(cases, f)
+
+    out_json = tmp_path / "subset.json"
+    cmd = [
+        sys.executable,
+        "cli.py",
+        "filter-cases",
+        "--db",
+        str(case_file),
+        "--keywords",
+        "cough",
+        "--output",
+        str(out_json),
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0
+    with open(out_json, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    assert len(data) == 1
+    assert data[0]["id"] == "1"
+
+    meta_file = tmp_path / "meta.json"
+    with open(meta_file, "w", encoding="utf-8") as f:
+        json.dump({"tag": "gi"}, f)
+
+    out_csv = tmp_path / "subset.csv"
+    cmd = [
+        sys.executable,
+        "cli.py",
+        "filter-cases",
+        "--db",
+        str(case_file),
+        "--metadata",
+        str(meta_file),
+        "--output",
+        str(out_csv),
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0
+    with open(out_csv, newline="", encoding="utf-8") as fh:
+        rows = list(csv.DictReader(fh))
+    assert len(rows) == 1
+    assert rows[0]["id"] == "2"
