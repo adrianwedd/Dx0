@@ -23,7 +23,7 @@ function App() {
 
   React.useEffect(() => {
     if (token) {
-      fetch('/tests')
+      fetch('/api/v1/tests')
         .then(res => res.ok ? res.json() : {tests: []})
         .then(data => setAvailableTests(data.tests || []))
         .catch(() => setAvailableTests([]));
@@ -34,7 +34,7 @@ function App() {
     e.preventDefault();
     const user = e.target.user.value;
     const pass = e.target.pass.value;
-    const res = await fetch('/login', {
+    const res = await fetch('/api/v1/login', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({username: user, password: pass})
@@ -44,7 +44,7 @@ function App() {
       setToken(data.token);
       try {
         setLoadingCase(true);
-        const caseRes = await fetch('/case');
+        const caseRes = await fetch('/api/v1/case');
         if (caseRes.ok) {
           const caseData = await caseRes.json();
           setSummary(caseData.summary);
@@ -59,7 +59,7 @@ function App() {
       } finally {
         setLoadingCase(false);
       }
-      const socket = new WebSocket(`ws://${location.host}/ws?token=${data.token}`);
+      const socket = new WebSocket(`ws://${location.host}/api/v1/ws?token=${data.token}`);
       socket.onmessage = (ev) => {
         const d = JSON.parse(ev.data);
         let msgText = '';

@@ -13,7 +13,7 @@ import bcrypt
 from fastapi import FastAPI, WebSocket, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from starlette.websockets import WebSocketDisconnect
 from pathlib import Path
 
@@ -83,12 +83,14 @@ async def stream_reply(
 
     for start in range(0, len(text), chunk_size):
         done = start + chunk_size >= len(text)
-        payload = {"reply": text[start : start + chunk_size], "done": done}
-        if done:
-            payload["cost"] = cost
-            payload["total_spent"] = total
-            payload["ordered_tests"] = tests or []
-        await ws.send_json(payload)
+        payload = ChatResponse(
+            reply=text[start : start + chunk_size],
+            done=done,
+            cost=cost if done else None,
+            total_spent=total if done else None,
+            ordered_tests=(tests or []) if done else None,
+        )
+        await ws.send_json(payload.model_dump(exclude_none=True))
         await asyncio.sleep(0)
 
 
@@ -97,6 +99,41 @@ class LoginRequest(BaseModel):
 
     username: str
     password: str
+
+
+class ChatMessage(BaseModel):
+    """Incoming websocket message from the UI."""
+
+    action: ActionType = ActionType.QUESTION
+    content: str
+
+
+class ChatResponse(BaseModel):
+    """Outgoing websocket payload."""
+
+    reply: str
+    done: bool
+    cost: float | None = None
+    total_spent: float | None = None
+    ordered_tests: list[str] | None = None
+
+
+class TokenResponse(BaseModel):
+    """Session token returned after login."""
+
+    token: str
+
+
+class CaseSummary(BaseModel):
+    """Response model for case summary."""
+
+    summary: str
+
+
+class TestList(BaseModel):
+    """Response model for available tests."""
+
+    tests: list[str]
 
 
 class UserPanel:
@@ -118,8 +155,6 @@ class UserPanel:
         return self.actions.get_nowait()
 
 
-
-
 HTML_PATH = Path(__file__).with_name("templates").joinpath("template.html")
 HTML = HTML_PATH.read_text(encoding="utf-8")
 
@@ -131,23 +166,23 @@ async def index() -> HTMLResponse:
     return HTMLResponse(HTML)
 
 
-@app.get("/case")
-async def get_case() -> dict[str, str]:
+@app.get("/api/v1/case", response_model=CaseSummary)
+async def get_case() -> CaseSummary:
     """Return the demo case summary."""
 
     case = demo_case.get_case("demo")
-    return {"summary": case.summary}
+    return CaseSummary(summary=case.summary)
 
 
-@app.get("/tests")
-async def get_tests() -> dict[str, list[str]]:
+@app.get("/api/v1/tests", response_model=TestList)
+async def get_tests() -> TestList:
     """Return available test names."""
 
-    return {"tests": sorted(cost_table.keys())}
+    return TestList(tests=sorted(cost_table.keys()))
 
 
-@app.post("/login")
-async def login(req: LoginRequest) -> dict[str, str]:
+@app.post("/api/v1/login", response_model=TokenResponse)
+async def login(req: LoginRequest) -> TokenResponse:
     """Authenticate a user and return a session token."""
 
     hashed = CREDENTIALS.get(req.username)
@@ -155,10 +190,10 @@ async def login(req: LoginRequest) -> dict[str, str]:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = secrets.token_hex(16)
     SESSIONS[token] = req.username
-    return {"token": token}
+    return TokenResponse(token=token)
 
 
-@app.websocket("/ws")
+@app.websocket("/api/v1/ws")
 async def websocket_endpoint(ws: WebSocket) -> None:
     """Handle websocket chat with the Gatekeeper."""
     token = ws.query_params.get("token")
@@ -170,12 +205,16 @@ async def websocket_endpoint(ws: WebSocket) -> None:
     orchestrator = Orchestrator(panel, gatekeeper, cost_estimator=cost_estimator)
     try:
         while True:
-            data = await ws.receive_json()
-            action = data.get("action", "question").lower()
-            content = data.get("content", "")
-            if action == "test":
+            try:
+                data = await ws.receive_json()
+                msg = ChatMessage.model_validate(data)
+            except (ValueError, ValidationError):
+                await ws.close(code=1003)
+                return
+            content = msg.content
+            if msg.action == ActionType.TEST:
                 panel.add_action(PanelAction(ActionType.TEST, content))
-            elif action == "diagnosis":
+            elif msg.action == ActionType.DIAGNOSIS:
                 panel.add_action(PanelAction(ActionType.DIAGNOSIS, content))
             else:
                 panel.add_action(PanelAction(ActionType.QUESTION, content))
