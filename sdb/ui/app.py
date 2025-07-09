@@ -23,6 +23,7 @@ from sdb.gatekeeper import Gatekeeper
 from sdb.orchestrator import Orchestrator
 from sdb.panel import PanelAction
 from sdb.protocol import ActionType
+from sdb.ui.session_db import SessionDB
 
 app = FastAPI(title="SDBench Physician UI")
 static_dir = Path(__file__).with_name("static")
@@ -67,8 +68,9 @@ def load_user_credentials() -> dict[str, str]:
 
 CREDENTIALS = load_user_credentials()
 
-# Session tokens issued to authenticated users
-SESSIONS: dict[str, str] = {}
+SESSION_TTL = int(os.environ.get("UI_TOKEN_TTL", "3600"))
+SESSION_DB_PATH = os.environ.get("SESSIONS_DB", "sessions.db")
+SESSION_DB = SessionDB(SESSION_DB_PATH, ttl=SESSION_TTL)
 
 
 async def stream_reply(
@@ -132,6 +134,12 @@ class TokenResponse(BaseModel):
     token: str
 
 
+class LogoutRequest(BaseModel):
+    """Request body for logout."""
+
+    token: str
+
+
 class CaseSummary(BaseModel):
     """Response model for case summary."""
 
@@ -167,6 +175,16 @@ HTML_PATH = Path(__file__).with_name("templates").joinpath("template.html")
 HTML = HTML_PATH.read_text(encoding="utf-8")
 
 
+@app.on_event("startup")
+async def start_cleanup() -> None:
+    async def _loop() -> None:
+        while True:
+            SESSION_DB.cleanup()
+            await asyncio.sleep(SESSION_TTL)
+
+    asyncio.create_task(_loop())
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index() -> HTMLResponse:
     """Return the React chat application."""
@@ -197,15 +215,21 @@ async def login(req: LoginRequest) -> TokenResponse:
     if not hashed or not bcrypt.checkpw(req.password.encode(), hashed.encode()):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = secrets.token_hex(16)
-    SESSIONS[token] = req.username
+    SESSION_DB.add(token, req.username)
     return TokenResponse(token=token)
+
+
+@app.post("/api/v1/logout")
+async def logout(req: LogoutRequest) -> None:
+    """Invalidate a session token."""
+    SESSION_DB.remove(req.token)
 
 
 @app.websocket("/api/v1/ws")
 async def websocket_endpoint(ws: WebSocket) -> None:
     """Handle websocket chat with the Gatekeeper."""
     token = ws.query_params.get("token")
-    if not token or token not in SESSIONS:
+    if not token or SESSION_DB.get(token) is None:
         await ws.close(code=1008)
         return
     await ws.accept()

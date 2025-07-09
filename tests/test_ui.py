@@ -6,7 +6,11 @@ import asyncio
 from httpx_ws import aconnect_ws, WebSocketUpgradeError, WebSocketDisconnect
 from starlette.testclient import TestClient
 
-from sdb.ui.app import app
+import sdb.ui.app as ui_app
+
+app = ui_app.app
+SessionDB = ui_app.SessionDB
+SESSION_DB = ui_app.SESSION_DB
 
 
 @pytest.mark.asyncio
@@ -189,3 +193,61 @@ async def test_ws_invalid_action():
 
     server.should_exit = True
     thread.join()
+
+
+@pytest.mark.asyncio
+async def test_token_persistence(tmp_path):
+    path = tmp_path / "sessions.db"
+    ui_app.SESSION_DB.path = str(path)
+    ui_app.SESSION_DB._init_db()
+    ui_app.SESSION_DB.ttl = 10
+
+    config = uvicorn.Config(app, host="127.0.0.1", port=8010, log_level="error")
+    server = uvicorn.Server(config)
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    while not server.started:
+        await asyncio.sleep(0.01)
+
+    async with httpx.AsyncClient(base_url="http://127.0.0.1:8010") as client:
+        res = await client.post(
+            "/api/v1/login",
+            json={"username": "physician", "password": "secret"},
+        )
+        token = res.json()["token"]
+
+    server.should_exit = True
+    thread.join()
+
+    ui_app.SESSION_DB = SessionDB(str(path), ttl=10)
+    # restart server
+    config = uvicorn.Config(app, host="127.0.0.1", port=8011, log_level="error")
+    server = uvicorn.Server(config)
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    while not server.started:
+        await asyncio.sleep(0.01)
+
+    async with httpx.AsyncClient(base_url="http://127.0.0.1:8011") as client:
+        async with aconnect_ws(
+            f"ws://127.0.0.1:8011/api/v1/ws?token={token}", client
+        ) as ws:
+            await ws.send_json({"action": "question", "content": "hi"})
+            while True:
+                data = await ws.receive_json()
+                if data["done"]:
+                    break
+
+    server.should_exit = True
+    thread.join()
+
+
+@pytest.mark.asyncio
+async def test_token_cleanup(tmp_path):
+    path = tmp_path / "sessions.db"
+    store = SessionDB(str(path), ttl=1)
+    store.add("tok", "user")
+    await asyncio.sleep(1.2)
+    store.cleanup()
+    assert store.get("tok") is None
+
