@@ -10,7 +10,7 @@ def test_roles_and_focus_styles():
     """Static assets include ARIA roles and focus styling."""
 
     client = TestClient(app)
-    res = client.get("/")
+    res = client.get("/api/v1")
     html = res.text
     assert ":focus" in html
     js_path = Path("sdb/ui/static/main.js")

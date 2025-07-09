@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
-from typing import Dict, Iterable, Iterator, List
+from typing import Dict, Iterable, Iterator
 
 from .case_database import Case, CaseDatabase, SQLiteCaseDatabase
 
