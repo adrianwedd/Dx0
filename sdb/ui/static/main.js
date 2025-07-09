@@ -118,25 +118,40 @@ function App() {
 
   if (!token) {
     return (
-      <form onSubmit={login}>
-        <input name='user' placeholder='Username'/>
-        <input name='pass' type='password' placeholder='Password'/>
-        <button type='submit'>Login</button>
+      <form onSubmit={login} className='m-3' role='form'>
+        <div className='mb-2'>
+          <input
+            name='user'
+            className='form-control'
+            placeholder='Username'
+            aria-label='Username'
+          />
+        </div>
+        <div className='mb-2'>
+          <input
+            name='pass'
+            type='password'
+            className='form-control'
+            placeholder='Password'
+            aria-label='Password'
+          />
+        </div>
+        <button type='submit' className='btn btn-primary'>Login</button>
       </form>
     );
   }
 
   return (
     <div id='layout'>
-      <div id='summary-panel'>
+      <div id='summary-panel' role='region' aria-label='Case Summary'>
         <h3>Case Summary</h3>
         <div>{loadingCase ? <span className='spinner'></span> : summary}</div>
       </div>
-      <div id='tests-panel'>
+      <div id='tests-panel' role='region' aria-label='Ordered Tests'>
         <h3>Ordered Tests</h3>
         <ul>{tests.map((t, i) => <li key={i}>{t}</li>)}</ul>
       </div>
-      <div id='chat-panel'>
+      <div id='chat-panel' role='region' aria-label='Chat Panel'>
         <h2>SDBench Physician Chat</h2>
         <div>Step Cost: ${stepCost.toFixed(2)} | Total Cost: ${cost.toFixed(2)}</div>
         <div id='log'>
@@ -144,7 +159,12 @@ function App() {
           {loadingReply && <span className='spinner'></span>}
         </div>
         <div>
-          <select value={action} onChange={e => setAction(e.target.value)}>
+          <select
+            value={action}
+            onChange={e => setAction(e.target.value)}
+            className='form-select mb-2'
+            aria-label='Action Select'
+          >
             <option value='question'>Ask Question</option>
             <option value='test'>Order Test</option>
             <option value='diagnosis'>Provide Diagnosis</option>
@@ -155,14 +175,16 @@ function App() {
             size='80'
             list={action === 'test' ? 'tests-list' : undefined}
             placeholder={action === 'test' ? 'Search tests' : ''}
+            className='form-control mb-2'
+            aria-label='Message Input'
           />
           <datalist id='tests-list'>
             {availableTests.map((t, i) => <option key={i} value={t} />)}
           </datalist>
-          <button onClick={send}>Send</button>
+          <button onClick={send} className='btn btn-primary'>Send</button>
         </div>
       </div>
-      <div id='flow-panel'>
+      <div id='flow-panel' role='region' aria-label='Diagnostic Flow'>
         <h3>Diagnostic Flow</h3>
         <ol>{flow.map((m, i) => <li key={i}>{m.sender}: {m.text}</li>)}</ol>
       </div>

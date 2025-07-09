@@ -120,7 +120,7 @@ class UserPanel:
 
 
 
-HTML_PATH = Path(__file__).with_name("templates").joinpath("index.html")
+HTML_PATH = Path(__file__).with_name("templates").joinpath("template.html")
 HTML = HTML_PATH.read_text(encoding="utf-8")
 
 
