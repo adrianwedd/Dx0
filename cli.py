@@ -175,7 +175,7 @@ def batch_eval_main(argv: list[str]) -> None:
         parser.error("--db or --db-sqlite is required")
 
     if args.db_sqlite:
-        db = load_from_sqlite(args.db_sqlite)
+        db = load_from_sqlite(args.db_sqlite, lazy=True)
     elif os.path.isdir(args.db):
         db = CaseDatabase.load_from_directory(args.db)
     elif args.db.endswith(".csv"):
@@ -521,7 +521,7 @@ def main() -> None:
     configure_logging(level)
 
     if args.db_sqlite:
-        db = load_from_sqlite(args.db_sqlite)
+        db = load_from_sqlite(args.db_sqlite, lazy=True)
     elif os.path.isdir(args.db):
         db = CaseDatabase.load_from_directory(args.db)
     elif args.db.endswith(".csv"):

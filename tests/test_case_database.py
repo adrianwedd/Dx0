@@ -2,6 +2,8 @@ import csv
 import json
 import tempfile
 
+from sdb.sqlite_db import save_to_sqlite
+
 from sdb.case_database import CaseDatabase
 
 
@@ -38,3 +40,12 @@ def test_load_from_directory(tmp_path):
     (case_dir / "full.txt").write_text("ff")
     db = CaseDatabase.load_from_directory(tmp_path)
     assert db.get_case("4").full_text == "ff"
+
+
+def test_load_from_sqlite_lazy(tmp_path):
+    path = tmp_path / "cases.db"
+    cases = [{"id": "5", "summary": "s", "full_text": "f"}]
+    save_to_sqlite(str(path), cases)
+    db = CaseDatabase.load_from_sqlite(str(path), lazy=True)
+    assert db.get_case("5").summary == "s"
+    assert "cases" not in db.__dict__
