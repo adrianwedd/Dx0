@@ -157,6 +157,7 @@ phases:
           Coordinate with legal to ensure the public release complies with
           NEJM permissions and licensing requirements.
         labels: [legal, compliance, project-management]
+        done: true
 
   - name: "Phase 1: SDBench Framework and Environment Setup"
     tasks:
@@ -211,6 +212,7 @@ phases:
       - id: 13
         title: "Define correct threshold"
         description: "Treat scores \u22654 from the judge as correct diagnoses."
+        done: true
 
   - name: "Phase 2: MAI-DxO Agent Implementation and Execution"
     tasks:
@@ -343,6 +345,7 @@ phases:
           - "Write comprehensive user documentation detailing how to set up the environment for both OpenAI and local Ollama usage."
           - "Create a `pyproject.toml` file and ensure the project can be cleanly packaged into a wheel (`.whl`) and source distribution (`.tar.gz`)."
           - "Perform a final review of the README, CONTRIBUTING, and LICENSE files to ensure they are clear and complete."
+        done: true
 
       - id: "T30"
         title: "Refactor Judge Agent for Robustness"
@@ -353,6 +356,7 @@ phases:
           - "Replace the `difflib.SequenceMatcher` in the `Judge` class with a call to a configured LLM."
           - "Develop a precise prompt for the Judge LLM that instructs it to compare the candidate and ground-truth diagnoses based on clinical substance, not just lexical similarity, using the 5-point rubric."
           - "Add unit tests to `test_judge.py` to validate the new LLM-based evaluation logic with a variety of clinically similar but lexically different diagnostic pairs."
+        done: true
 
       - id: "T31"
         title: "Automate Case Updates"
