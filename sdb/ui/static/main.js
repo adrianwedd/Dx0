@@ -6,9 +6,20 @@ function App() {
   const [action, setAction] = React.useState('question');
   const [ws, setWs] = React.useState(null);
   const [cost, setCost] = React.useState(0);
+  const [stepCost, setStepCost] = React.useState(0);
   const [tests, setTests] = React.useState([]);
   const [flow, setFlow] = React.useState([]);
   const [availableTests, setAvailableTests] = React.useState([]);
+  const [loadingCase, setLoadingCase] = React.useState(false);
+  const [loadingReply, setLoadingReply] = React.useState(false);
+  const [toast, setToast] = React.useState('');
+
+  React.useEffect(() => {
+    if (toast) {
+      const id = setTimeout(() => setToast(''), 3000);
+      return () => clearTimeout(id);
+    }
+  }, [toast]);
 
   React.useEffect(() => {
     if (token) {
@@ -32,16 +43,21 @@ function App() {
       const data = await res.json();
       setToken(data.token);
       try {
+        setLoadingCase(true);
         const caseRes = await fetch('/case');
         if (caseRes.ok) {
           const caseData = await caseRes.json();
           setSummary(caseData.summary);
         } else {
           setSummary('Unable to load case summary.');
+          setToast('Failed to load case data');
         }
       } catch (err) {
         console.error('Failed to fetch case:', err);
+        setToast('Failed to load case data');
         setSummary('Unable to load case summary.');
+      } finally {
+        setLoadingCase(false);
       }
       const socket = new WebSocket(`ws://${location.host}/ws?token=${data.token}`);
       socket.onmessage = (ev) => {
@@ -68,13 +84,24 @@ function App() {
         });
         if (d.done) {
           setCost(d.total_spent);
+          setStepCost(d.cost || 0);
           if (d.ordered_tests) setTests(d.ordered_tests);
           setFlow(f => [...f, {sender: 'Gatekeeper', text: msgText}]);
+          setLoadingReply(false);
         }
+      };
+      socket.onclose = () => {
+        setToast('WebSocket disconnected');
+        setWs(null);
       };
       setWs(socket);
     } else {
-      alert('Login failed');
+      let text = 'Login failed';
+      try {
+        const data = await res.json();
+        if (data.detail) text += `: ${data.detail}`;
+      } catch {}
+      setToast(text);
     }
   };
 
@@ -85,6 +112,8 @@ function App() {
     setFlow(f => [...f, {sender: 'You', text: content}]);
     ws.send(JSON.stringify({action, content}));
     setMsg('');
+    setStepCost(0);
+    setLoadingReply(true);
   };
 
   if (!token) {
@@ -101,7 +130,7 @@ function App() {
     <div id='layout'>
       <div id='summary-panel'>
         <h3>Case Summary</h3>
-        <div>{summary}</div>
+        <div>{loadingCase ? <span className='spinner'></span> : summary}</div>
       </div>
       <div id='tests-panel'>
         <h3>Ordered Tests</h3>
@@ -109,9 +138,10 @@ function App() {
       </div>
       <div id='chat-panel'>
         <h2>SDBench Physician Chat</h2>
-        <div>Running Cost: ${cost.toFixed(2)}</div>
+        <div>Step Cost: ${stepCost.toFixed(2)} | Total Cost: ${cost.toFixed(2)}</div>
         <div id='log'>
           {log.map((m, i) => <div key={i}><b>{m.sender}:</b> {m.text}</div>)}
+          {loadingReply && <span className='spinner'></span>}
         </div>
         <div>
           <select value={action} onChange={e => setAction(e.target.value)}>
@@ -136,6 +166,7 @@ function App() {
         <h3>Diagnostic Flow</h3>
         <ol>{flow.map((m, i) => <li key={i}>{m.sender}: {m.text}</li>)}</ol>
       </div>
+      {toast && <div id='toast'>{toast}</div>}
     </div>
   );
 }
