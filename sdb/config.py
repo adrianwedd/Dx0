@@ -1,23 +1,31 @@
-from dataclasses import dataclass
 from typing import Optional
+
+from pydantic import BaseModel, ValidationError, HttpUrl, field_validator
 
 import os
 import yaml
 
 
-@dataclass
-class Settings:
+class Settings(BaseModel):
     """Configuration options loaded from YAML or environment variables."""
 
     openai_api_key: Optional[str] = None
     openai_model: str = "gpt-4"
-    ollama_base_url: str = "http://localhost:11434"
+    ollama_base_url: HttpUrl = "http://localhost:11434"
     metrics_port: int = 8000
     semantic_retrieval: bool = False
     cross_encoder_model: Optional[str] = None
     case_db: Optional[str] = None
     case_db_sqlite: Optional[str] = None
     parallel_personas: bool = False
+
+    @field_validator("metrics_port")
+    @classmethod
+    def _check_port(cls, value: int) -> int:
+        """Ensure the metrics port is within the valid TCP range."""
+        if not (1 <= value <= 65535):
+            raise ValueError("metrics_port must be between 1 and 65535")
+        return value
 
 
 def load_settings(path: str | None = None) -> Settings:
@@ -45,7 +53,10 @@ def load_settings(path: str | None = None) -> Settings:
         data["case_db_sqlite"] = env("SDB_CASE_DB_SQLITE")
     if "parallel_personas" not in data and env("SDB_PARALLEL_PERSONAS"):
         data["parallel_personas"] = env("SDB_PARALLEL_PERSONAS").lower() == "true"
-    settings_obj = Settings(**data)
+    try:
+        settings_obj = Settings.model_validate(data)
+    except ValidationError as exc:
+        raise ValueError(f"Invalid configuration: {exc}") from exc
     globals()["settings"] = settings_obj
     return settings_obj
 
