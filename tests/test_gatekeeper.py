@@ -96,7 +96,7 @@ def test_cross_encoder_name_passed(monkeypatch):
         ):
             captured["name"] = cross_encoder_name
 
-    monkeypatch.setattr(gatekeeper, "SentenceTransformerIndex", DummyIndex)
+    monkeypatch.setattr(gatekeeper, "get_retrieval_plugin", lambda name: DummyIndex)
 
     case = Case(id="1", summary="s", full_text="t")
     db = CaseDatabase([case])

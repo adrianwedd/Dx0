@@ -12,7 +12,7 @@ from .protocol import ActionType
 from .config import settings
 
 from .case_database import CaseDatabase
-from .retrieval import SentenceTransformerIndex
+from .retrieval import FAISS_AVAILABLE, get_retrieval_plugin
 
 logger = structlog.get_logger(__name__)
 tracer = trace.get_tracer(__name__)
@@ -77,9 +77,9 @@ class Gatekeeper:
                     docs.extend(
                         [p.strip() for p in text.split("\n") if p.strip()]
                     )
-            self.index = SentenceTransformerIndex(
-                docs, cross_encoder_name=cross_encoder_name
-            )
+            plugin_name = "faiss" if FAISS_AVAILABLE else "sentence-transformer"
+            index_cls = get_retrieval_plugin(plugin_name)
+            self.index = index_cls(docs, cross_encoder_name=cross_encoder_name)
 
     def load_results_from_json(self, path: str) -> None:
         """Load test result fixtures from a JSON file.

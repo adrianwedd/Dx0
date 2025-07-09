@@ -1,5 +1,6 @@
 import re
-from typing import List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Type, Protocol
+from importlib import metadata
 
 try:  # pragma: no cover - trivial import handling
     import numpy as np
@@ -25,6 +26,16 @@ try:  # pragma: no cover - optional dependency
 except Exception:  # pragma: no cover - dependency missing
     faiss = None  # type: ignore
     FAISS_AVAILABLE = False
+
+
+class BaseRetrievalIndex(Protocol):
+    """Protocol for retrieval index implementations."""
+
+    def query(self, text: str, top_k: int = 1) -> List[Tuple[str, float]]:
+        ...
+
+
+_BUILTIN_PLUGINS: Dict[str, Type[BaseRetrievalIndex]] = {}
 
 
 def _tokenize(text: str) -> List[str]:
@@ -263,3 +274,23 @@ class SentenceTransformerIndex:
             if scores[i] > 0:
                 results.append((self.documents[i], float(scores[i])))
         return results
+
+
+_BUILTIN_PLUGINS.update(
+    {
+        "sentence-transformer": SentenceTransformerIndex,
+        "faiss": FaissIndex,
+    }
+)
+
+
+def get_retrieval_plugin(name: str) -> Type[BaseRetrievalIndex]:
+    """Return the retrieval index class registered under ``name``."""
+
+    if name in _BUILTIN_PLUGINS:
+        return _BUILTIN_PLUGINS[name]
+    for ep in metadata.entry_points(group="sdb.retrieval_plugins"):
+        if ep.name == name:
+            cls = ep.load()
+            return cls
+    raise ValueError(f"Retrieval plugin '{name}' not found")

@@ -525,6 +525,26 @@ phases:
   assigned_to: null
 
 - id: 75
+  title: Enable Pluggable Retrieval Indexes
+  description: >
+    Allow third-party retrieval backends to register via entry points so
+    alternative index implementations can be swapped in without modifying
+    the core code base.
+  component: retrieval
+  area: extensibility
+  dependencies: []
+  priority: 3
+  status: done
+  actionable_steps:
+    - Define `sdb.retrieval_plugins` entry point group.
+    - Refactor built-in indexes as plugins and update documentation.
+  acceptance_criteria:
+    - "Custom retrieval index packages can be discovered and used by Gatekeeper."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
+- id: 75
   title: Provide Case Translation Utility
   description: >
     Add a script to translate case JSON files using an LLM and store localized

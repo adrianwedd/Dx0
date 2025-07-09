@@ -22,6 +22,7 @@ from .retrieval import (
     FaissIndex,
     SentenceTransformerIndex,
     CrossEncoderReranker,
+    get_retrieval_plugin,
 )
 from .services import BudgetManager, BudgetStore, ResultAggregator
 from .statistics import load_scores, permutation_test
@@ -71,6 +72,7 @@ __all__ = [
     "FaissIndex",
     "SentenceTransformerIndex",
     "CrossEncoderReranker",
+    "get_retrieval_plugin",
     "load_scores",
     "permutation_test",
     "DiagnosisResult",
