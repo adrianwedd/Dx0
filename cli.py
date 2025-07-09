@@ -63,6 +63,46 @@ def _load_persona_models(arg: str | None) -> dict[str, str] | None:
         raise SystemExit(f"Invalid persona models: {exc}") from exc
 
 
+def _load_json_or_path(arg: str | None) -> dict[str, object] | None:
+    """Return a dictionary loaded from ``arg`` if provided."""
+
+    if arg is None:
+        return None
+    try:
+        if os.path.exists(arg):
+            with open(arg, "r", encoding="utf-8") as fh:
+                return json.load(fh)
+        return json.loads(arg)
+    except json.JSONDecodeError as exc:  # pragma: no cover - arg validated
+        raise SystemExit(f"Invalid metadata: {exc}") from exc
+
+
+def _load_case_dicts(path: str) -> list[dict[str, object]]:
+    """Return a list of case dicts from ``path``."""
+
+    if os.path.isdir(path):
+        cases = []
+        for cid in sorted(os.listdir(path)):
+            summary_file = os.path.join(path, cid, "summary.txt")
+            full_file = os.path.join(path, cid, "full.txt")
+            if not os.path.isfile(summary_file) or not os.path.isfile(full_file):
+                continue
+            with open(summary_file, "r", encoding="utf-8") as sf:
+                summary = sf.read().strip()
+            with open(full_file, "r", encoding="utf-8") as ff:
+                full = ff.read().strip()
+            cases.append({"id": cid, "summary": summary, "full_text": full})
+        return cases
+    if path.endswith(".csv"):
+        with open(path, newline="", encoding="utf-8") as fh:
+            return list(csv.DictReader(fh))
+    with open(path, "r", encoding="utf-8") as fh:
+        data = json.load(fh)
+    if isinstance(data, dict):
+        return list(data.values())
+    return data
+
+
 def stats_main(argv: list[str]) -> None:
     """Run a permutation test on two result CSV files."""
 
@@ -151,9 +191,7 @@ def batch_eval_main(argv: list[str]) -> None:
     parser.add_argument(
         "--vote-weights",
         default=None,
-        help=(
-            "JSON string or path with run ID weights for ensemble voting"
-        ),
+        help=("JSON string or path with run ID weights for ensemble voting"),
     )
     semantic = parser.add_mutually_exclusive_group()
     semantic.add_argument(
@@ -386,9 +424,7 @@ def annotate_case_main(argv: list[str]) -> None:
         "-o",
         "--output",
         default=None,
-        help=(
-            "Destination for the annotated case (defaults to annotations/<id>.json)"
-        ),
+        help=("Destination for the annotated case (defaults to annotations/<id>.json)"),
     )
     args = parser.parse_args(argv)
 
@@ -427,6 +463,74 @@ def annotate_case_main(argv: list[str]) -> None:
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as fh:
         json.dump(data, fh, indent=2)
+
+
+def filter_cases_main(argv: list[str]) -> None:
+    """Select cases by keywords or metadata."""
+
+    parser = argparse.ArgumentParser(description="Filter cases")
+    parser.add_argument("--config", default=None, help="YAML settings file")
+    parser.add_argument("--db", help="Path to case JSON or CSV file")
+    parser.add_argument("--db-sqlite", help="Path to case SQLite database")
+    parser.add_argument(
+        "--keywords", default=None, help="Comma separated keywords to match"
+    )
+    parser.add_argument(
+        "--metadata",
+        default=None,
+        help="JSON string or file with key/value filters",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        required=True,
+        help="Destination JSON or CSV file for the filtered cases",
+    )
+    args = parser.parse_args(argv)
+
+    cfg = load_settings(args.config)
+    if args.db is None and args.db_sqlite is None:
+        args.db = cfg.case_db
+        args.db_sqlite = cfg.case_db_sqlite
+
+    if args.db_sqlite:
+        db = load_from_sqlite(args.db_sqlite)
+        cases = [c.__dict__ for c in db.cases.values()]
+    else:
+        cases = _load_case_dicts(args.db)
+
+    keywords = []
+    if args.keywords:
+        keywords = [kw.strip().lower() for kw in args.keywords.split(",") if kw.strip()]
+
+    meta_filter = _load_json_or_path(args.metadata) or {}
+
+    selected: list[dict[str, object]] = []
+    for case in cases:
+        text = f"{case.get('summary', '')} {case.get('full_text', '')}".lower()
+        if keywords and not any(kw in text for kw in keywords):
+            continue
+        match = True
+        for key, val in meta_filter.items():
+            if str(case.get(key)) != str(val):
+                match = False
+                break
+        if match:
+            selected.append(case)
+
+    if args.output.endswith(".csv"):
+        fieldnames: list[str] = []
+        for item in selected:
+            for name in item.keys():
+                if name not in fieldnames:
+                    fieldnames.append(name)
+        with open(args.output, "w", newline="", encoding="utf-8") as fh:
+            writer = csv.DictWriter(fh, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(selected)
+    else:
+        with open(args.output, "w", encoding="utf-8") as fh:
+            json.dump(selected, fh, indent=2)
 
 
 def main() -> None:
@@ -570,9 +674,7 @@ def main() -> None:
     parser.add_argument(
         "--vote-weights",
         default=None,
-        help=(
-            "JSON string or path with run ID weights for ensemble voting"
-        ),
+        help=("JSON string or path with run ID weights for ensemble voting"),
     )
     parser.add_argument(
         "--metrics-port",
@@ -716,5 +818,7 @@ if __name__ == "__main__":
         fhir_import_main(sys.argv[2:])
     elif len(sys.argv) > 1 and sys.argv[1] == "annotate-case":
         annotate_case_main(sys.argv[2:])
+    elif len(sys.argv) > 1 and sys.argv[1] == "filter-cases":
+        filter_cases_main(sys.argv[2:])
     else:
         main()
