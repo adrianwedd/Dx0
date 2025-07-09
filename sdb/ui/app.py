@@ -12,6 +12,7 @@ import bcrypt
 
 from fastapi import FastAPI, WebSocket, HTTPException
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.websockets import WebSocketDisconnect
 from pathlib import Path
@@ -24,6 +25,9 @@ from sdb.panel import PanelAction
 from sdb.protocol import ActionType
 
 app = FastAPI(title="SDBench Physician UI")
+static_dir = Path(__file__).with_name("static")
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Load a small demo case database and cost table
 demo_case = CaseDatabase(
@@ -133,6 +137,13 @@ async def get_case() -> dict[str, str]:
 
     case = demo_case.get_case("demo")
     return {"summary": case.summary}
+
+
+@app.get("/tests")
+async def get_tests() -> dict[str, list[str]]:
+    """Return available test names."""
+
+    return {"tests": sorted(cost_table.keys())}
 
 
 @app.post("/login")
