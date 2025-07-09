@@ -66,6 +66,9 @@ class DummyCostEstimator:
     def estimate_cost(self, test_name: str) -> float:
         return 5.0
 
+    def estimate(self, test_name: str) -> tuple[float, str]:
+        return 5.0, "labs"
+
 
 def test_orchestrator_budget_stops_session():
     actions = [
@@ -82,6 +85,23 @@ def test_orchestrator_budget_stops_session():
     )
 
     orch.run_turn("1")
+    orch.run_turn("2")
+    assert orch.finished is True
+    assert orch.final_diagnosis is None
+
+
+def test_category_limit_stops_session():
+    actions = [
+        PanelAction(ActionType.TEST, "cbc"),
+        PanelAction(ActionType.TEST, "bmp"),
+        PanelAction(ActionType.DIAGNOSIS, "flu"),
+    ]
+    panel = StubPanel(actions)
+    tracker = BudgetManager(DummyCostEstimator(), category_limits={"labs": 7.0})
+    orch = Orchestrator(panel, DummyGatekeeper(), budget_manager=tracker)
+
+    orch.run_turn("1")
+    assert orch.finished is False
     orch.run_turn("2")
     assert orch.finished is True
     assert orch.final_diagnosis is None

@@ -5,14 +5,19 @@ class DummyEstimator:
     def estimate_cost(self, _name: str) -> float:
         return 5.0
 
+    def estimate(self, _name: str) -> tuple[float, str]:
+        return 5.0, "labs"
+
 
 def test_budget_manager_over_budget():
     bm = BudgetManager(DummyEstimator(), budget=9.0)
     bm.add_test("cbc")
     assert bm.spent == 5.0
+    assert bm.spent_by_category["labs"] == 5.0
     assert not bm.over_budget()
     bm.add_test("bmp")
     assert bm.spent == 10.0
+    assert bm.spent_by_category["labs"] == 10.0
     assert bm.over_budget()
 
 

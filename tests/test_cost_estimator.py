@@ -7,12 +7,12 @@ from sdb import cost_estimator as ce_mod
 
 def test_lookup_and_estimate(monkeypatch):
     data = [
-        {"test_name": "cbc", "cpt_code": "100", "price": "10"},
-        {"test_name": "bmp", "cpt_code": "101", "price": "20"},
+        {"test_name": "cbc", "cpt_code": "100", "price": "10", "category": "labs"},
+        {"test_name": "bmp", "cpt_code": "101", "price": "20", "category": "imaging"},
     ]
     with tempfile.NamedTemporaryFile("w", newline="", delete=False) as f:
         writer = csv.DictWriter(
-            f, fieldnames=["test_name", "cpt_code", "price"]
+            f, fieldnames=["test_name", "cpt_code", "price", "category"]
         )
         writer.writeheader()
         writer.writerows(data)
@@ -23,8 +23,10 @@ def test_lookup_and_estimate(monkeypatch):
     monkeypatch.setattr(ce_mod, "lookup_cpt", lambda name: "101")
 
     assert ce.lookup_cost("cbc").price == 10.0
+    assert ce.lookup_cost("cbc").category == "labs"
     assert ce.lookup_cost("basic metabolic panel").cpt_code == "101"
     assert ce.estimate_cost("unknown") == 20.0
+    assert ce.estimate("unknown") == (20.0, "imaging")
     assert ce.aliases["unknown"] == "bmp"
     # Second call should use cached alias and avoid LLM lookup
     monkeypatch.setattr(
