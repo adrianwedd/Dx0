@@ -3,7 +3,7 @@ import httpx
 import threading
 import uvicorn
 import asyncio
-from httpx_ws import aconnect_ws
+from httpx_ws import aconnect_ws, WebSocketUpgradeError
 from starlette.testclient import TestClient
 
 from sdb.ui.app import app
@@ -24,7 +24,8 @@ async def test_websocket_chat():
             json={"username": "physician", "password": "secret"},
         )
         assert res.status_code == 200
-        async with aconnect_ws("ws://127.0.0.1:8000/ws", client) as ws:
+        token = res.json()["token"]
+        async with aconnect_ws(f"ws://127.0.0.1:8000/ws?token={token}", client) as ws:
             await ws.send_json({"action": "question", "content": "cough"})
             parts = []
             while True:
@@ -77,7 +78,7 @@ def test_login_success():
         json={"username": "physician", "password": "secret"},
     )
     assert res.status_code == 200
-    assert res.json()["status"] == "ok"
+    assert "token" in res.json()
 
 
 def test_login_failure():
@@ -87,3 +88,21 @@ def test_login_failure():
         json={"username": "physician", "password": "wrong"},
     )
     assert res.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_ws_requires_token():
+    config = uvicorn.Config(app, host="127.0.0.1", port=8001, log_level="error")
+    server = uvicorn.Server(config)
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    while not server.started:
+        await asyncio.sleep(0.01)
+
+    async with httpx.AsyncClient(base_url="http://127.0.0.1:8001") as client:
+        with pytest.raises(WebSocketUpgradeError):
+            async with aconnect_ws("ws://127.0.0.1:8001/ws", client):
+                pass
+
+    server.should_exit = True
+    thread.join()
