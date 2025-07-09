@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import secrets
 import yaml
 import bcrypt
 
@@ -61,6 +62,9 @@ def load_user_credentials() -> dict[str, str]:
 
 
 CREDENTIALS = load_user_credentials()
+
+# Session tokens issued to authenticated users
+SESSIONS: dict[str, str] = {}
 
 
 async def stream_reply(
@@ -138,13 +142,18 @@ async def login(req: LoginRequest) -> dict[str, str]:
     hashed = CREDENTIALS.get(req.username)
     if not hashed or not bcrypt.checkpw(req.password.encode(), hashed.encode()):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    return {"status": "ok"}
+    token = secrets.token_hex(16)
+    SESSIONS[token] = req.username
+    return {"token": token}
 
 
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket) -> None:
     """Handle websocket chat with the Gatekeeper."""
-
+    token = ws.query_params.get("token")
+    if not token or token not in SESSIONS:
+        await ws.close(code=1008)
+        return
     await ws.accept()
     panel = UserPanel()
     orchestrator = Orchestrator(panel, gatekeeper, cost_estimator=cost_estimator)
