@@ -392,6 +392,40 @@ def fhir_export_main(argv: list[str]) -> None:
         print(output)
 
 
+def export_fhir_main(argv: list[str]) -> None:
+    """Convert a saved transcript to a FHIR bundle file."""
+
+    parser = argparse.ArgumentParser(description="Export a transcript to FHIR")
+    parser.add_argument("transcript", help="Path to JSON transcript file")
+    parser.add_argument(
+        "--case-id",
+        default="case_001",
+        help="Identifier for the session/case",
+    )
+    parser.add_argument(
+        "--patient-id",
+        default="example",
+        help="Patient identifier used in references",
+    )
+    parser.add_argument(
+        "-o",
+        "--output-dir",
+        default="fhir",
+        help="Directory for the generated bundle",
+    )
+    args = parser.parse_args(argv)
+
+    with open(args.transcript, "r", encoding="utf-8") as fh:
+        transcript = json.load(fh)
+
+    bundle = transcript_to_fhir(transcript, patient_id=args.patient_id)
+
+    os.makedirs(args.output_dir, exist_ok=True)
+    out_path = os.path.join(args.output_dir, f"{args.case_id}.json")
+    with open(out_path, "w", encoding="utf-8") as fh:
+        json.dump(bundle, fh, indent=2)
+
+
 def fhir_import_main(argv: list[str]) -> None:
     """Convert a FHIR bundle or DiagnosticReport to case JSON."""
 
@@ -847,6 +881,8 @@ if __name__ == "__main__":
         fhir_export_main(sys.argv[2:])
     elif len(sys.argv) > 1 and sys.argv[1] == "fhir-import":
         fhir_import_main(sys.argv[2:])
+    elif len(sys.argv) > 1 and sys.argv[1] == "export-fhir":
+        export_fhir_main(sys.argv[2:])
     elif len(sys.argv) > 1 and sys.argv[1] == "annotate-case":
         annotate_case_main(sys.argv[2:])
     elif len(sys.argv) > 1 and sys.argv[1] == "filter-cases":
