@@ -874,3 +874,29 @@ def test_filter_cases_command(tmp_path):
         rows = list(csv.DictReader(fh))
     assert len(rows) == 1
     assert rows[0]["id"] == "2"
+
+
+def test_export_fhir_command(tmp_path):
+    transcript = [["panel", "hello"], ["gatekeeper", "hi"]]
+    t_file = tmp_path / "t.json"
+    with open(t_file, "w", encoding="utf-8") as f:
+        json.dump(transcript, f)
+
+    out_dir = tmp_path / "out"
+    cmd = [
+        sys.executable,
+        "cli.py",
+        "export-fhir",
+        str(t_file),
+        "--case-id",
+        "c1",
+        "--output-dir",
+        str(out_dir),
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0
+    out_file = out_dir / "c1.json"
+    with open(out_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    assert data["resourceType"] == "Bundle"
+    assert data["entry"][0]["resource"]["sender"]["display"] == "panel"

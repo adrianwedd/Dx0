@@ -36,6 +36,12 @@ To start the demo web UI locally:
 uvicorn sdb.ui.app:app --reload
 ```
 
+Export a saved transcript to a FHIR bundle:
+
+```bash
+python cli.py export-fhir session.json --case-id case_001 --output-dir fhir
+```
+
 ## Environment Setup
 
 ### Using the OpenAI API
