@@ -15,6 +15,7 @@ class Settings(BaseModel):
     metrics_port: int = 8000
     semantic_retrieval: bool = False
     cross_encoder_model: Optional[str] = None
+    retrieval_backend: Optional[str] = None
     case_db: Optional[str] = None
     case_db_sqlite: Optional[str] = None
     parallel_personas: bool = False
@@ -65,6 +66,8 @@ def load_settings(path: str | None = None) -> Settings:
         data["case_db_sqlite"] = env("SDB_CASE_DB_SQLITE")
     if "parallel_personas" not in data and env("SDB_PARALLEL_PERSONAS"):
         data["parallel_personas"] = env("SDB_PARALLEL_PERSONAS").lower() == "true"
+    if "retrieval_backend" not in data and env("SDB_RETRIEVAL_BACKEND"):
+        data["retrieval_backend"] = env("SDB_RETRIEVAL_BACKEND")
     if "tracing" not in data and env("SDB_TRACING_ENABLED"):
         data["tracing"] = env("SDB_TRACING_ENABLED").lower() == "true"
     if "tracing_host" not in data and env("SDB_TRACING_HOST"):

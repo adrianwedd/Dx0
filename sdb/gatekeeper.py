@@ -12,7 +12,7 @@ from .protocol import ActionType
 from .config import settings
 
 from .case_database import CaseDatabase
-from .retrieval import FAISS_AVAILABLE, get_retrieval_plugin
+from .retrieval import load_retrieval_index
 
 logger = structlog.get_logger(__name__)
 tracer = trace.get_tracer(__name__)
@@ -48,6 +48,7 @@ class Gatekeeper:
         case_id: str,
         use_semantic_retrieval: bool | None = None,
         cross_encoder_name: str | None = None,
+        retrieval_backend: str | None = None,
     ):
         """Bind the gatekeeper to a case and set up test cache.
 
@@ -59,12 +60,17 @@ class Gatekeeper:
             Identifier of the case the gatekeeper will manage.
         cross_encoder_name:
             Optional cross-encoder model used to rerank retrieval results.
+        retrieval_backend:
+            Name of retrieval plugin to instantiate. Defaults to
+            ``settings.retrieval_backend``.
         """
 
         if use_semantic_retrieval is None:
             use_semantic_retrieval = settings.semantic_retrieval
         if cross_encoder_name is None:
             cross_encoder_name = settings.cross_encoder_model
+        if retrieval_backend is None:
+            retrieval_backend = settings.retrieval_backend
 
         self.case = db.get_case(case_id)
         self.known_tests: Dict[str, str] = {}
@@ -77,9 +83,11 @@ class Gatekeeper:
                     docs.extend(
                         [p.strip() for p in text.split("\n") if p.strip()]
                     )
-            plugin_name = "faiss" if FAISS_AVAILABLE else "sentence-transformer"
-            index_cls = get_retrieval_plugin(plugin_name)
-            self.index = index_cls(docs, cross_encoder_name=cross_encoder_name)
+            self.index = load_retrieval_index(
+                docs,
+                plugin_name=retrieval_backend,
+                cross_encoder_name=cross_encoder_name,
+            )
 
     def load_results_from_json(self, path: str) -> None:
         """Load test result fixtures from a JSON file.

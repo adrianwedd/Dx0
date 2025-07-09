@@ -98,7 +98,8 @@ my-index = "my_package.module:MyIndex"
 ```
 
 After installing the package with `pip`, the gatekeeper can load your plugin
-instead of the built-in backends.
+instead of the built-in backends. Set `retrieval_backend` in `settings.yaml`
+or the `SDB_RETRIEVAL_BACKEND` environment variable to select the plugin.
 
 ## Data Versioning with DVC
 
