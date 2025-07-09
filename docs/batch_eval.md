@@ -22,5 +22,9 @@ You can achieve the same via the CLI:
 ```bash
 python cli.py batch-eval --db cases.json --rubric rubric.json \
     --costs costs.csv --output results.csv --concurrency 4
+
+# or with a SQLite database
+python cli.py batch-eval --db-sqlite cases.db --rubric rubric.json \
+    --costs costs.csv --output results.csv --concurrency 4
 ```
 

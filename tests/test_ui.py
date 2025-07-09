@@ -277,4 +277,3 @@ async def test_token_cleanup(tmp_path):
     await asyncio.sleep(1.2)
     store.cleanup()
     assert store.get("tok") is None
-

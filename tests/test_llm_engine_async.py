@@ -53,5 +53,3 @@ async def test_parallel_personas_order():
     action = await engine.adecide(ctx)
     assert action.action_type == ActionType.TEST
     assert action.content == "5"
-
-

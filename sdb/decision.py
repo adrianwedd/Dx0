@@ -142,7 +142,9 @@ class LLMEngine(DecisionEngine):
         self.fallback = RuleEngine()
         self.personas = personas or self.DEFAULT_PERSONAS
         self.parallel_personas = (
-            settings.parallel_personas if parallel_personas is None else parallel_personas
+            settings.parallel_personas
+            if parallel_personas is None
+            else parallel_personas
         )
         self.prompts = {name: load_prompt(name) for name in self.personas}
         for name, text in self.prompts.items():
