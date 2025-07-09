@@ -524,6 +524,27 @@ phases:
   epic: Phase 5
   assigned_to: null
 
+- id: 75
+  title: Extract Budget Management Service
+  description: >
+    Move budgeting logic out of the Orchestrator into a dedicated service
+    responsible for tracking spend and applying limits.
+  component: orchestrator
+  area: refactor
+  dependencies: [19]
+  priority: 3
+  status: done
+  actionable_steps:
+    - Create a `BudgetManager` class with methods for tracking cost and enforcing limits.
+    - Inject `BudgetManager` into `Orchestrator` and remove inline budgeting logic.
+    - Update unit tests to cover the new service.
+  acceptance_criteria:
+    - "Budget enforcement works consistently across all modes."
+    - "Orchestrator tests do not reference budgeting internals."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
 - id: 65
   title: Parallel Persona Execution in LLM Engine
   description: >
