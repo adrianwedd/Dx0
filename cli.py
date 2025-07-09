@@ -364,6 +364,71 @@ def fhir_import_main(argv: list[str]) -> None:
         print(output)
 
 
+def annotate_case_main(argv: list[str]) -> None:
+    """Add notes or test mappings to a case JSON file."""
+
+    parser = argparse.ArgumentParser(description="Annotate a case")
+    parser.add_argument("--config", default=None, help="YAML settings file")
+    parser.add_argument("--db", help="Path to case JSON, CSV or directory")
+    parser.add_argument("--db-sqlite", help="Path to case SQLite database")
+    parser.add_argument("--case", required=True, help="Case identifier")
+    parser.add_argument(
+        "--notes",
+        default=None,
+        help="Free text notes or path to a text file",
+    )
+    parser.add_argument(
+        "--test-mapping",
+        default=None,
+        help="JSON file mapping aliases to canonical test names",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        default=None,
+        help=(
+            "Destination for the annotated case (defaults to annotations/<id>.json)"
+        ),
+    )
+    args = parser.parse_args(argv)
+
+    cfg = load_settings(args.config)
+    if args.db is None and args.db_sqlite is None:
+        args.db = cfg.case_db
+        args.db_sqlite = cfg.case_db_sqlite
+
+    if args.db_sqlite:
+        db = load_from_sqlite(args.db_sqlite)
+    elif os.path.isdir(args.db):
+        db = CaseDatabase.load_from_directory(args.db)
+    elif args.db.endswith(".csv"):
+        db = CaseDatabase.load_from_csv(args.db)
+    else:
+        db = CaseDatabase.load_from_json(args.db)
+
+    case = db.get_case(args.case)
+    data = {"id": case.id, "summary": case.summary, "full_text": case.full_text}
+
+    if args.notes:
+        if os.path.exists(args.notes):
+            with open(args.notes, "r", encoding="utf-8") as fh:
+                data["notes"] = fh.read().strip()
+        else:
+            data["notes"] = args.notes
+
+    if args.test_mapping:
+        with open(args.test_mapping, "r", encoding="utf-8") as fh:
+            data["test_mappings"] = json.load(fh)
+
+    out_dir = "annotations"
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = args.output or os.path.join(out_dir, f"{case.id}.json")
+    if args.output:
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2)
+
+
 def main() -> None:
     """Run a demo diagnostic session using the virtual panel."""
 
@@ -523,6 +588,7 @@ def main() -> None:
 
     vote_weights = _load_weights(args.vote_weights)
     meta_panel = MetaPanel(weights=vote_weights)
+    persona_models = _load_persona_models(args.persona_models) or cfg.persona_models
 
     start_metrics_server(args.metrics_port)
 
@@ -648,5 +714,7 @@ if __name__ == "__main__":
         fhir_export_main(sys.argv[2:])
     elif len(sys.argv) > 1 and sys.argv[1] == "fhir-import":
         fhir_import_main(sys.argv[2:])
+    elif len(sys.argv) > 1 and sys.argv[1] == "annotate-case":
+        annotate_case_main(sys.argv[2:])
     else:
         main()

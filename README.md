@@ -289,6 +289,16 @@ The command reads the JSON transcript (list of `[speaker, text]` pairs) and test
 list, then writes a combined FHIR ``Bundle`` to ``stdout`` or the optional
 ``--output`` path.
 
+### Case Annotation
+
+Use the ``annotate-case`` command to add notes or correct test aliases for a
+single case. By default the annotated JSON is written to ``annotations/<id>.json``.
+
+```bash
+python cli.py annotate-case --db cases.json --case 1 \
+    --notes "Review" --test-mapping mapping.json
+```
+
 ---
 
 ## Repository Structure
