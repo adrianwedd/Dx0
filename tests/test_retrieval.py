@@ -150,3 +150,13 @@ def test_faiss_index_query(monkeypatch):
     index = retrieval.FaissIndex(docs, model_name="dummy")
     results = index.query("cough", top_k=1)
     assert results[0][0] == "patient has cough"
+
+
+def test_get_retrieval_plugin_builtin():
+    cls = retrieval.get_retrieval_plugin("sentence-transformer")
+    assert cls is retrieval.SentenceTransformerIndex
+
+
+def test_get_retrieval_plugin_missing():
+    with pytest.raises(ValueError):
+        retrieval.get_retrieval_plugin("unknown")

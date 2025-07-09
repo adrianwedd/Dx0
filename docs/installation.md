@@ -80,6 +80,20 @@ pip install -r requirements.lock
 The `pytest` suite relies on packages such as `numpy`, `httpx`,
 `starlette`, and `pydantic`.
 
+## Retrieval Plugins
+
+Third-party retrieval backends can be integrated through Python entry points.
+Expose your index class in a small package and declare it under the
+`sdb.retrieval_plugins` group in `pyproject.toml`:
+
+```toml
+[project.entry-points."sdb.retrieval_plugins"]
+my-index = "my_package.module:MyIndex"
+```
+
+After installing the package with `pip`, the gatekeeper can load your plugin
+instead of the built-in backends.
+
 ## Data Versioning with DVC
 
 The case data and computed embeddings are tracked with [DVC](https://dvc.org/).
