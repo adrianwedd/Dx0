@@ -878,3 +878,254 @@ phases:
   command: null
   epic: User Experience (UX) & Accessibility
   assigned_to: null
+
+- id: 63
+  title: Expire and Revoke Web UI Session Tokens
+  description: >
+    Add expiration timestamps and logout support for tokens issued by the FastAPI UI. Expired tokens should be purged periodically to prevent unlimited access.
+  component: ui
+  area: security
+  dependencies: [45]
+  priority: 3
+  status: done
+  actionable_steps:
+    - Store issue time for each token in `SESSIONS`.
+    - Reject tokens older than a configurable TTL.
+    - Provide a `/logout` endpoint to invalidate a token.
+    - Add unit tests covering expiration and logout.
+  acceptance_criteria:
+    - "Tokens expire after the configured TTL."
+    - "Logout removes the token and prevents further WebSocket access."
+  command: null
+  epic: User Experience (UX) & Accessibility
+  assigned_to: null
+
+- id: 64
+  title: Test CI on Multiple Python Versions
+  description: >
+    Update GitHub Actions to run the test suite on Python 3.11 and 3.12 to ensure compatibility across supported interpreters.
+  component: ci
+  area: testing
+  dependencies: [53]
+  priority: 2
+  status: done
+  actionable_steps:
+    - Modify `.github/workflows/ci.yml` to include a matrix of Python versions.
+    - Ensure dependency installation succeeds on each version.
+    - Update documentation to list supported Python versions.
+  acceptance_criteria:
+    - "CI passes on both Python 3.11 and 3.12."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+- id: 65
+  title: Persist UI Sessions in SQLite
+  description: >
+    Store session tokens in a SQLite database so that authentication persists
+    across server restarts and can be shared when scaling the UI horizontally.
+  component: ui
+  area: persistence
+  dependencies: [45, 63]
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Create a `SessionStore` class backed by SQLite.
+    - Replace the in-memory `SESSIONS` dict with `SessionStore` operations.
+    - Add migration logic to initialize the table on startup.
+    - Update tests for token login and expiration using the new store.
+  acceptance_criteria:
+    - "Sessions remain valid after a server restart."
+    - "Concurrent UI instances share the same token store."
+  command: null
+  epic: User Experience (UX) & Accessibility
+  assigned_to: null
+
+- id: 66
+  title: Validate WebSocket Payloads with Pydantic
+  description: >
+    Define Pydantic models for incoming and outgoing WebSocket messages to
+    ensure fields are present and correctly typed before processing.
+  component: backend
+  area: validation
+  dependencies: [56]
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Create `MessageIn` and `MessageOut` models describing the schema.
+    - Parse incoming JSON payloads using `MessageIn.parse_obj`.
+    - Return validation errors to the client when fields are missing.
+    - Update UI code to follow the new schema.
+  acceptance_criteria:
+    - "Invalid messages result in a 400 error with details."
+    - "All WebSocket interactions use typed models."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
+- id: 67
+  title: Rate Limit Logins and Chat Messages
+  description: >
+    Prevent abuse by limiting failed login attempts and throttling the number
+    of messages each client can send per minute.
+  component: security
+  area: protection
+  dependencies: [63]
+  priority: 2
+  status: pending
+  actionable_steps:
+    - Track login failures per IP and temporarily block after 5 attempts.
+    - Enforce a per-session message rate using a sliding window counter.
+    - Expose configuration options for limits in `settings`.
+    - Add tests verifying rate limits trigger correctly.
+  acceptance_criteria:
+    - "Excessive login attempts are rejected with HTTP 429."
+    - "Chat clients cannot flood the server with messages."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
+- id: 68
+  title: CLI Tool for Managing UI Users
+  description: >
+    Provide a command-line utility to add, delete, and list user accounts used
+    by the Web UI authentication system.
+  component: cli
+  area: tooling
+  dependencies: [45]
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Implement a `manage-users` command under `cli.py`.
+    - Support subcommands `add`, `remove`, and `list` with appropriate args.
+    - Store password hashes in the existing credentials file.
+    - Document usage in `docs/installation.md`.
+  acceptance_criteria:
+    - "Administrators can manage accounts without editing YAML manually."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
+- id: 69
+  title: Optimize Docker Image Size
+  description: >
+    Refactor the Dockerfile to use multi-stage builds and slimmer base images
+    to reduce container size and deployment time.
+  component: docker
+  area: build
+  dependencies: []
+  priority: 2
+  status: pending
+  actionable_steps:
+    - Split dependency installation and runtime layers into separate stages.
+    - Remove development tools from the final image.
+    - Document the resulting image size reduction in `docs/installation.md`.
+  acceptance_criteria:
+    - "Final Docker image is under 1 GB."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
+- id: 70
+  title: Asynchronous Case Ingestion Pipeline
+  description: >
+    Speed up NEJM case collection by downloading articles concurrently and
+    reporting progress with structured logs.
+  component: data
+  area: performance
+  dependencies: []
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Use `asyncio` and `aiohttp` to fetch PubMed abstracts in parallel.
+    - Limit concurrency to avoid API rate limits.
+    - Update `collect_cases` and `collect_new_cases` accordingly.
+    - Add a progress indicator during pipeline runs.
+  acceptance_criteria:
+    - "Full dataset download completes significantly faster."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
+- id: 71
+  title: Retrieval Accuracy Evaluation Script
+  description: >
+    Provide a utility that measures recall and ranking metrics for the
+    retrieval subsystem using the existing case database.
+  component: retrieval
+  area: evaluation
+  dependencies: []
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Generate queries from case summaries or questions.
+    - Compare returned passages against ground truth excerpts.
+    - Output recall@k and mean reciprocal rank statistics.
+    - Integrate the script into CI for regression tracking.
+  acceptance_criteria:
+    - "Retrieval evaluation produces metrics for each index type."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
+- id: 72
+  title: License Compliance Check in CI
+  description: >
+    Add a step to the GitHub Actions workflow that scans project dependencies
+    for incompatible licenses and fails the build when violations are found.
+  component: ci
+  area: compliance
+  dependencies: [53]
+  priority: 2
+  status: pending
+  actionable_steps:
+    - Install a tool like `licensecheck` or `pip-licenses` during CI.
+    - Generate a license report for all packages in `requirements.lock`.
+    - Fail the job if any package has a prohibited license type.
+  acceptance_criteria:
+    - "CI blocks merges when disallowed licenses are introduced."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
+- id: 73
+  title: Add Dark Mode Theme to UI
+  description: >
+    Offer an optional dark color scheme for the React-based interface while
+    preserving WCAG AA contrast requirements.
+  component: ui
+  area: design
+  dependencies: [62]
+  priority: 2
+  status: pending
+  actionable_steps:
+    - Define a dark palette in the chosen component library.
+    - Provide a toggle or automatic detection of system theme.
+    - Verify color contrast using accessibility tools.
+  acceptance_criteria:
+    - "Users can switch between light and dark themes."
+    - "All colors pass WCAG AA in both modes."
+  command: null
+  epic: User Experience (UX) & Accessibility
+  assigned_to: null
+
+- id: 74
+  title: Adopt JWT-Based Authentication
+  description: >
+    Replace simple token strings with signed JSON Web Tokens to allow stateless
+    validation and optional refresh tokens for long-lived sessions.
+  component: security
+  area: authentication
+  dependencies: [63]
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Issue JWTs with expiration and user claims on login.
+    - Verify token signatures on each request.
+    - Implement refresh token rotation and revocation.
+    - Update tests and docs to reflect the new scheme.
+  acceptance_criteria:
+    - "Web UI authenticates using signed JWTs."
+    - "Refresh tokens can be revoked independently of access tokens."
+  command: null
+  epic: Phase 5
+  assigned_to: null
