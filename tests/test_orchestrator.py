@@ -125,3 +125,35 @@ def test_gatekeeper_timeout_propagates():
     orch = Orchestrator(panel, TimeoutGatekeeper())
     with pytest.raises(TimeoutError):
         orch.run_turn("info")
+
+
+class AsyncStubPanel:
+    """Asynchronous stub panel returning predefined actions."""
+
+    def __init__(self, actions):
+        self.actions = actions
+        self.index = 0
+        self.last_case_info = ""
+
+    async def adeliberate(self, case_info: str) -> PanelAction:
+        self.last_case_info = case_info
+        action = self.actions[self.index]
+        self.index += 1
+        return action
+
+
+@pytest.mark.asyncio
+async def test_run_turn_async_budget_stops_session():
+    actions = [
+        PanelAction(ActionType.TEST, "cbc"),
+        PanelAction(ActionType.TEST, "bmp"),
+        PanelAction(ActionType.DIAGNOSIS, "flu"),
+    ]
+    panel = AsyncStubPanel(actions)
+    tracker = BudgetManager(DummyCostEstimator(), budget=7.0)
+    orch = Orchestrator(panel, DummyGatekeeper(), budget_manager=tracker)
+
+    await orch.run_turn_async("1")
+    await orch.run_turn_async("2")
+    assert orch.finished is True
+    assert orch.final_diagnosis is None
