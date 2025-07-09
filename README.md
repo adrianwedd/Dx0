@@ -276,6 +276,13 @@ python cli.py batch-eval --db cases.json --rubric rubric.json \
 ```
 If using --llm-provider ollama, set --ollama-base-url to your server URL.
 
+### Notebook Walkthrough
+
+For a short, self-contained demo see
+[evaluation_example.ipynb](notebooks/evaluation_example.ipynb). The notebook
+illustrates running `batch_evaluate`, using a `WeightedVoter`, and plotting
+accuracy versus cost.
+
 ### FHIR Session Export
 
 To convert a session transcript and ordered tests into a FHIR Bundle use the
