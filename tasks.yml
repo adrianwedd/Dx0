@@ -1244,3 +1244,21 @@ phases:
   epic: Phase 5
   assigned_to: null
 
+
+- id: 75
+  title: Slurm Batch Evaluation Helper
+  description: |
+    Provide a script for submitting `batch_evaluate` jobs as a Slurm array to ease large scale experiments.
+  component: scripts
+  area: performance
+  dependencies: []
+  priority: 3
+  status: done
+  actionable_steps:
+    - Implement `scripts/slurm_batch_eval.py`.
+    - Document usage with an example submission file.
+  acceptance_criteria:
+    - "Users can launch evaluations on HPC clusters using Slurm arrays."
+  command: null
+  epic: Phase 5
+  assigned_to: null
