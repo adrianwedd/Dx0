@@ -129,6 +129,26 @@ class CaseDatabase:
             )
         return CaseDatabase(cases)
 
+    @staticmethod
+    def load_from_sqlite(path: str, lazy: bool = False):
+        """Load cases from a SQLite database.
+
+        Parameters
+        ----------
+        path:
+            Path to the SQLite database file.
+        lazy:
+            If ``True``, return :class:`SQLiteCaseDatabase` for on-demand
+            retrieval of cases.
+        """
+
+        if lazy:
+            return SQLiteCaseDatabase(path)
+
+        from .sqlite_db import iter_sqlite_cases
+
+        return CaseDatabase(iter_sqlite_cases(path))
+
 
 class SQLiteCaseDatabase:
     """Case storage backed by SQLite with lazy loading."""
