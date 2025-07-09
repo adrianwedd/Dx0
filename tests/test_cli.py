@@ -714,3 +714,40 @@ def test_fhir_import_bundle_command(tmp_path):
     data = json.loads(result.stdout)
     assert data["summary"] == "sum"
     assert data["steps"][0]["text"] == "foo"
+
+
+def test_annotate_case_command(tmp_path):
+    cases = [{"id": "1", "summary": "s", "full_text": "t"}]
+    case_file = tmp_path / "cases.json"
+    with open(case_file, "w", encoding="utf-8") as f:
+        json.dump(cases, f)
+
+    mapping = {"cbc": "complete blood count"}
+    map_file = tmp_path / "map.json"
+    with open(map_file, "w", encoding="utf-8") as f:
+        json.dump(mapping, f)
+
+    out_file = tmp_path / "annot" / "1.json"
+
+    cmd = [
+        sys.executable,
+        "cli.py",
+        "annotate-case",
+        "--db",
+        str(case_file),
+        "--case",
+        "1",
+        "--notes",
+        "note",
+        "--test-mapping",
+        str(map_file),
+        "--output",
+        str(out_file),
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0
+    with open(out_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    assert data["id"] == "1"
+    assert data["notes"] == "note"
+    assert data["test_mappings"] == mapping
