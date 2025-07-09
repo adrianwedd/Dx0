@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import sys
+import yaml
 from sdb.config import load_settings, settings
 from sdb import (
     CaseDatabase,
@@ -47,6 +48,20 @@ def _load_weights(arg: str | None) -> dict[str, float] | None:
         return json.loads(arg)
     except json.JSONDecodeError as exc:
         raise SystemExit(f"Invalid vote weights: {exc}") from exc
+
+
+def _load_weights_file(path: str | None) -> dict[str, float] | None:
+    """Return a mapping from run ID to weight loaded from ``path``."""
+
+    if path is None:
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            if path.endswith((".yaml", ".yml")):
+                return yaml.safe_load(fh) or {}
+            return json.load(fh)
+    except (json.JSONDecodeError, yaml.YAMLError) as exc:
+        raise SystemExit(f"Invalid weights file: {exc}") from exc
 
 
 def _load_persona_models(arg: str | None) -> dict[str, str] | None:
@@ -193,6 +208,11 @@ def batch_eval_main(argv: list[str]) -> None:
         default=None,
         help=("JSON string or path with run ID weights for ensemble voting"),
     )
+    parser.add_argument(
+        "--weights-file",
+        default=None,
+        help="JSON or YAML file mapping run IDs to vote weights",
+    )
     semantic = parser.add_mutually_exclusive_group()
     semantic.add_argument(
         "--semantic-retrieval",
@@ -218,7 +238,9 @@ def batch_eval_main(argv: list[str]) -> None:
         args.db = cfg.case_db
         args.db_sqlite = cfg.case_db_sqlite
 
-    vote_weights = _load_weights(args.vote_weights)
+    vote_weights = _load_weights_file(args.weights_file)
+    if vote_weights is None:
+        vote_weights = _load_weights(args.vote_weights)
     meta_panel = MetaPanel(weights=vote_weights)
     persona_models = _load_persona_models(args.persona_models) or cfg.persona_models
 
@@ -677,6 +699,11 @@ def main() -> None:
         help=("JSON string or path with run ID weights for ensemble voting"),
     )
     parser.add_argument(
+        "--weights-file",
+        default=None,
+        help="JSON or YAML file mapping run IDs to vote weights",
+    )
+    parser.add_argument(
         "--metrics-port",
         type=int,
         default=None,
@@ -688,7 +715,9 @@ def main() -> None:
         args.db = cfg.case_db
         args.db_sqlite = cfg.case_db_sqlite
 
-    vote_weights = _load_weights(args.vote_weights)
+    vote_weights = _load_weights_file(args.weights_file)
+    if vote_weights is None:
+        vote_weights = _load_weights(args.vote_weights)
     meta_panel = MetaPanel(weights=vote_weights)
     persona_models = _load_persona_models(args.persona_models) or cfg.persona_models
 

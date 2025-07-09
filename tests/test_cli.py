@@ -2,6 +2,7 @@ import json
 import csv
 import subprocess
 import sys
+import yaml
 
 import cli
 from pathlib import Path
@@ -615,6 +616,82 @@ def test_cli_vote_weights(monkeypatch, tmp_path, capsys):
     assert "weighted" in output
     assert captured["weights"] == weights
     assert len(captured["results"]) == 1
+
+
+def test_cli_weights_file_affects_output(monkeypatch, tmp_path, capsys):
+    cases = [{"id": "1", "summary": "s", "full_text": "t"}]
+    case_file = tmp_path / "cases.json"
+    with open(case_file, "w", encoding="utf-8") as f:
+        json.dump(cases, f)
+
+    rubric_file = tmp_path / "r.json"
+    with open(rubric_file, "w", encoding="utf-8") as f:
+        json.dump({}, f)
+
+    cost_file = tmp_path / "c.csv"
+    with open(cost_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["test_name", "cpt_code", "price"])
+        writer.writeheader()
+        writer.writerow({"test_name": "x", "cpt_code": "1", "price": "1"})
+
+    weights_a = {"r1": 2.0, "r2": 1.0}
+    weights_b = {"r1": 0.1, "r2": 5.0}
+    file_a = tmp_path / "w1.yaml"
+    file_b = tmp_path / "w2.yaml"
+    with open(file_a, "w", encoding="utf-8") as f:
+        yaml.safe_dump(weights_a, f)
+    with open(file_b, "w", encoding="utf-8") as f:
+        yaml.safe_dump(weights_b, f)
+
+    class DummyMetaPanel:
+        def __init__(self, *args, **kwargs):
+            self.weights = kwargs.get("weights")
+            self.voter = cli.WeightedVoter()
+
+        def synthesize(self, _results):
+            preds = [
+                cli.DiagnosisResult("a", 1.0, run_id="r1"),
+                cli.DiagnosisResult("b", 1.0, run_id="r2"),
+            ]
+            return self.voter.vote(preds, weights=self.weights)
+
+    class DummyOrchestrator:
+        def __init__(self, *args, **kwargs):
+            self.finished = True
+            self.total_time = 0.0
+            self.final_diagnosis = ""
+            self.ordered_tests = []
+
+        def run_turn(self, *_args, **_kwargs):
+            return ""
+
+    monkeypatch.setattr(cli, "MetaPanel", DummyMetaPanel)
+    monkeypatch.setattr(cli, "Orchestrator", DummyOrchestrator)
+    monkeypatch.setattr(cli, "start_metrics_server", lambda *_: None)
+
+    argv = [
+        "cli.py",
+        "--db",
+        str(case_file),
+        "--case",
+        "1",
+        "--rubric",
+        str(rubric_file),
+        "--costs",
+        str(cost_file),
+        "--weights-file",
+        str(file_a),
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+    cli.main()
+    out_a = capsys.readouterr().out
+
+    argv[-1] = str(file_b)
+    monkeypatch.setattr(sys, "argv", argv)
+    cli.main()
+    out_b = capsys.readouterr().out
+
+    assert out_a != out_b
 
 
 def test_fhir_export_command(tmp_path):
