@@ -1,24 +1,24 @@
-flake8
-pytest
-requests  # HTTP client used by update scripts
-beautifulsoup4  # HTML parsing for data scraping
-black
-isort
-mypy
-pre-commit
-prometheus_client  # Metrics exposure for FastAPI app
-numpy>=1.26.4
-structlog
-fastapi
-uvicorn  # ASGI server for development
-sentence-transformers  # Embedding models for retrieval
-faiss-cpu  # Optional fast vector search backend
-tiktoken  # Token counting utility for LLM usage
-httpx<0.28
-starlette
-pydantic
+flake8==7.3.0
+pytest==8.4.1
+requests==2.32.4  # HTTP client used by update scripts
+beautifulsoup4==4.13.4  # HTML parsing for data scraping
+black==25.1.0
+isort==6.0.1
+mypy==1.16.1
+pre-commit==4.2.0
+prometheus_client==0.22.1  # Metrics exposure for FastAPI app
+numpy==2.3.1
+structlog==25.4.0
+fastapi==0.116.0
+uvicorn==0.35.0  # ASGI server for development
+sentence-transformers==5.0.0  # Embedding models for retrieval
+faiss-cpu==1.11.0  # Optional fast vector search backend
+tiktoken==0.9.0  # Token counting utility for LLM usage
+httpx==0.27.2
+starlette==0.46.2
+pydantic==2.11.7
 
 # password hashing
-bcrypt
+bcrypt==4.3.0
 
-dvc[s3]  # Dataset versioning tool with S3 remote
+dvc[s3]==3.61.0  # Dataset versioning tool with S3 remote

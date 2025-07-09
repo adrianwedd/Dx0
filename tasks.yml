@@ -697,7 +697,7 @@ phases:
   area: dependencies
   dependencies: []
   priority: 4
-  status: pending
+  status: done
   actionable_steps:
     - Update requirements files with version pins.
     - Add a docs section on updating and auditing dependencies.

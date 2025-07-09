@@ -47,6 +47,9 @@ source venv/bin/activate
 pip install -r requirements.lock
 ```
 
+See [Dependency Management](docs/dependency_updates.md) for instructions on
+updating and auditing requirements.
+
 *(Optional)* Docker build:
 
 ```bash
