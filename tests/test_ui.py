@@ -291,3 +291,27 @@ async def test_token_cleanup(tmp_path):
     await asyncio.sleep(1.2)
     store.cleanup()
     assert store.get("tok") is None
+
+
+def test_fhir_transcript_endpoint():
+    client = TestClient(app)
+    data = [["panel", "hi"], ["gatekeeper", "hello"]]
+    res = client.post(
+        "/api/v1/fhir/transcript",
+        json={"transcript": data, "patient_id": "p1"},
+    )
+    assert res.status_code == 200
+    bundle = res.json()
+    assert bundle["resourceType"] == "Bundle"
+    assert bundle["entry"][0]["resource"]["sender"]["display"] == "panel"
+
+
+def test_fhir_tests_endpoint():
+    client = TestClient(app)
+    res = client.post(
+        "/api/v1/fhir/tests",
+        json={"tests": ["cbc"], "patient_id": "p2"},
+    )
+    assert res.status_code == 200
+    bundle = res.json()
+    assert bundle["entry"][0]["resource"]["code"]["text"] == "cbc"

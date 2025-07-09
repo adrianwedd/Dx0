@@ -28,6 +28,7 @@ from sdb.services import BudgetManager
 from sdb.panel import PanelAction
 from sdb.protocol import ActionType
 from sdb.ui.session_db import SessionDB
+from sdb.fhir_export import transcript_to_fhir, ordered_tests_to_fhir
 
 app = FastAPI(title="SDBench Physician UI")
 tracer = trace.get_tracer(__name__)
@@ -162,6 +163,20 @@ class TestList(BaseModel):
     tests: list[str]
 
 
+class FhirTranscriptRequest(BaseModel):
+    """Request body for transcript FHIR export."""
+
+    transcript: list[tuple[str, str]]
+    patient_id: str = "example"
+
+
+class FhirTestsRequest(BaseModel):
+    """Request body for ordered tests FHIR export."""
+
+    tests: list[str]
+    patient_id: str = "example"
+
+
 class UserPanel:
     """Panel that feeds user actions into the orchestrator."""
 
@@ -215,6 +230,20 @@ async def get_tests() -> TestList:
     """Return available test names."""
     with tracer.start_as_current_span("get_tests"):
         return TestList(tests=sorted(cost_table.keys()))
+
+
+@app.post("/api/v1/fhir/transcript", response_model=dict)
+async def fhir_transcript(req: FhirTranscriptRequest) -> dict:
+    """Convert a chat transcript to a FHIR Bundle."""
+    with tracer.start_as_current_span("fhir_transcript"):
+        return transcript_to_fhir(req.transcript, patient_id=req.patient_id)
+
+
+@app.post("/api/v1/fhir/tests", response_model=dict)
+async def fhir_tests(req: FhirTestsRequest) -> dict:
+    """Convert ordered tests to a FHIR Bundle."""
+    with tracer.start_as_current_span("fhir_tests"):
+        return ordered_tests_to_fhir(req.tests, patient_id=req.patient_id)
 
 
 @app.post("/api/v1/login", response_model=TokenResponse)
