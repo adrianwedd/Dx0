@@ -120,6 +120,26 @@ The screenshot file is base64 encoded. Decode it with:
 base64 -d docs/images/ui.png.b64 > ui.png
 ```
 
+### Exporting Traces to Jaeger
+
+Tracing is disabled by default. To collect spans and send them to a running
+Jaeger agent, set the following environment variables before starting the
+server:
+
+```bash
+export SDB_TRACING_ENABLED=true
+export SDB_TRACING_HOST=localhost  # Jaeger agent host
+export SDB_TRACING_PORT=6831       # Jaeger UDP port
+```
+
+Then run the FastAPI application as usual. Jaeger can be started locally with:
+
+```bash
+docker run -p 6831:6831/udp -p 16686:16686 jaegertracing/all-in-one
+```
+
+Browse to `http://localhost:16686` to view the collected traces.
+
 ## Testing
 
 Install the development dependencies and run the test suite:

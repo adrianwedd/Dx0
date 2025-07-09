@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import structlog
 import asyncio
+from opentelemetry import trace
 
 from .panel import VirtualPanel, PanelAction
 from .gatekeeper import Gatekeeper
@@ -13,6 +14,7 @@ import time
 from .metrics import ORCHESTRATOR_TURNS, ORCHESTRATOR_LATENCY
 
 logger = structlog.get_logger(__name__)
+tracer = trace.get_tracer(__name__)
 
 
 class Orchestrator:
@@ -73,76 +75,78 @@ class Orchestrator:
     def run_turn(self, case_info: str) -> str:
         """Process a single interaction turn with the panel."""
 
-        start = time.perf_counter()
-        action = self.panel.deliberate(case_info=case_info)
-        ORCHESTRATOR_TURNS.inc()
-        logger.info(
-            "panel_action",
-            turn=getattr(self.panel, "turn", 0),
-            type=action.action_type.value,
-            content=action.content,
-        )
-        if self.question_only and action.action_type == ActionType.TEST:
-            action = PanelAction(ActionType.QUESTION, action.content)
+        with tracer.start_as_current_span("orchestrator.run_turn"):
+            start = time.perf_counter()
+            action = self.panel.deliberate(case_info=case_info)
+            ORCHESTRATOR_TURNS.inc()
+            logger.info(
+                "panel_action",
+                turn=getattr(self.panel, "turn", 0),
+                type=action.action_type.value,
+                content=action.content,
+            )
+            if self.question_only and action.action_type == ActionType.TEST:
+                action = PanelAction(ActionType.QUESTION, action.content)
 
-        xml = build_action(action.action_type, action.content)
-        result = self.gatekeeper.answer_question(xml)
-        logger.info(
-            "gatekeeper_response",
-            synthetic=result.synthetic,
-        )
+            xml = build_action(action.action_type, action.content)
+            result = self.gatekeeper.answer_question(xml)
+            logger.info(
+                "gatekeeper_response",
+                synthetic=result.synthetic,
+            )
 
-        if action.action_type == ActionType.TEST:
-            self.results.record_test(action.content)
-            self.budget_manager.add_test(action.content)
-            if self.budget_manager.over_budget():
-                self.results.finished = True
-        logger.info("spent", amount=self.spent)
-        if action.action_type == ActionType.DIAGNOSIS:
-            self.results.record_diagnosis(action.content)
-            logger.info("final_diagnosis", diagnosis=action.content)
+            if action.action_type == ActionType.TEST:
+                self.results.record_test(action.content)
+                self.budget_manager.add_test(action.content)
+                if self.budget_manager.over_budget():
+                    self.results.finished = True
+            logger.info("spent", amount=self.spent)
+            if action.action_type == ActionType.DIAGNOSIS:
+                self.results.record_diagnosis(action.content)
+                logger.info("final_diagnosis", diagnosis=action.content)
 
-        duration = time.perf_counter() - start
-        self.total_time += duration
-        ORCHESTRATOR_LATENCY.observe(duration)
-        return result.content
+            duration = time.perf_counter() - start
+            self.total_time += duration
+            ORCHESTRATOR_LATENCY.observe(duration)
+            return result.content
 
     async def run_turn_async(self, case_info: str) -> str:
         """Asynchronous version of :meth:`run_turn`."""
 
-        start = time.perf_counter()
-        if hasattr(self.panel, "adeliberate"):
-            action = await self.panel.adeliberate(case_info=case_info)
-        else:
-            action = await asyncio.to_thread(self.panel.deliberate, case_info)
-        ORCHESTRATOR_TURNS.inc()
-        logger.info(
-            "panel_action",
-            turn=getattr(self.panel, "turn", 0),
-            type=action.action_type.value,
-            content=action.content,
-        )
-        if self.question_only and action.action_type == ActionType.TEST:
-            action = PanelAction(ActionType.QUESTION, action.content)
+        with tracer.start_as_current_span("orchestrator.run_turn_async"):
+            start = time.perf_counter()
+            if hasattr(self.panel, "adeliberate"):
+                action = await self.panel.adeliberate(case_info=case_info)
+            else:
+                action = await asyncio.to_thread(self.panel.deliberate, case_info)
+            ORCHESTRATOR_TURNS.inc()
+            logger.info(
+                "panel_action",
+                turn=getattr(self.panel, "turn", 0),
+                type=action.action_type.value,
+                content=action.content,
+            )
+            if self.question_only and action.action_type == ActionType.TEST:
+                action = PanelAction(ActionType.QUESTION, action.content)
 
-        xml = build_action(action.action_type, action.content)
-        result = await asyncio.to_thread(self.gatekeeper.answer_question, xml)
-        logger.info(
-            "gatekeeper_response",
-            synthetic=result.synthetic,
-        )
+            xml = build_action(action.action_type, action.content)
+            result = await asyncio.to_thread(self.gatekeeper.answer_question, xml)
+            logger.info(
+                "gatekeeper_response",
+                synthetic=result.synthetic,
+            )
 
-        if action.action_type == ActionType.TEST:
-            self.results.record_test(action.content)
-            self.budget_manager.add_test(action.content)
-            if self.budget_manager.over_budget():
-                self.results.finished = True
-        logger.info("spent", amount=self.spent)
-        if action.action_type == ActionType.DIAGNOSIS:
-            self.results.record_diagnosis(action.content)
-            logger.info("final_diagnosis", diagnosis=action.content)
+            if action.action_type == ActionType.TEST:
+                self.results.record_test(action.content)
+                self.budget_manager.add_test(action.content)
+                if self.budget_manager.over_budget():
+                    self.results.finished = True
+            logger.info("spent", amount=self.spent)
+            if action.action_type == ActionType.DIAGNOSIS:
+                self.results.record_diagnosis(action.content)
+                logger.info("final_diagnosis", diagnosis=action.content)
 
-        duration = time.perf_counter() - start
-        self.total_time += duration
-        ORCHESTRATOR_LATENCY.observe(duration)
-        return result.content
+            duration = time.perf_counter() - start
+            self.total_time += duration
+            ORCHESTRATOR_LATENCY.observe(duration)
+            return result.content

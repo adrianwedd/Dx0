@@ -12,6 +12,7 @@ import yaml
 import bcrypt
 
 from fastapi import FastAPI, WebSocket, HTTPException
+from opentelemetry import trace
 from collections import defaultdict
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -29,6 +30,7 @@ from sdb.protocol import ActionType
 from sdb.ui.session_db import SessionDB
 
 app = FastAPI(title="SDBench Physician UI")
+tracer = trace.get_tracer(__name__)
 static_dir = Path(__file__).with_name("static")
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
@@ -196,92 +198,94 @@ async def start_cleanup() -> None:
 @app.get("/api/v1", response_class=HTMLResponse)
 async def index() -> HTMLResponse:
     """Return the React chat application."""
-
-    return HTMLResponse(HTML)
+    with tracer.start_as_current_span("index"):
+        return HTMLResponse(HTML)
 
 
 @app.get("/api/v1/case", response_model=CaseSummary)
 async def get_case() -> CaseSummary:
     """Return the demo case summary."""
-
-    case = demo_case.get_case("demo")
-    return CaseSummary(summary=case.summary)
+    with tracer.start_as_current_span("get_case"):
+        case = demo_case.get_case("demo")
+        return CaseSummary(summary=case.summary)
 
 
 @app.get("/api/v1/tests", response_model=TestList)
 async def get_tests() -> TestList:
     """Return available test names."""
-
-    return TestList(tests=sorted(cost_table.keys()))
+    with tracer.start_as_current_span("get_tests"):
+        return TestList(tests=sorted(cost_table.keys()))
 
 
 @app.post("/api/v1/login", response_model=TokenResponse)
 async def login(req: LoginRequest) -> TokenResponse:
     """Authenticate a user and return a session token."""
+    with tracer.start_as_current_span("login"):
+        now = time.time()
+        attempts = FAILED_LOGINS.get(req.username, [])
+        attempts = [ts for ts in attempts if now - ts < FAILED_LOGIN_COOLDOWN]
+        if len(attempts) >= FAILED_LOGIN_LIMIT:
+            raise HTTPException(status_code=429, detail="Too many failed login attempts")
 
-    now = time.time()
-    attempts = FAILED_LOGINS.get(req.username, [])
-    attempts = [ts for ts in attempts if now - ts < FAILED_LOGIN_COOLDOWN]
-    if len(attempts) >= FAILED_LOGIN_LIMIT:
-        raise HTTPException(status_code=429, detail="Too many failed login attempts")
+        hashed = CREDENTIALS.get(req.username)
+        if not hashed or not bcrypt.checkpw(req.password.encode(), hashed.encode()):
+            attempts.append(now)
+            FAILED_LOGINS[req.username] = attempts
+            raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    hashed = CREDENTIALS.get(req.username)
-    if not hashed or not bcrypt.checkpw(req.password.encode(), hashed.encode()):
-        attempts.append(now)
-        FAILED_LOGINS[req.username] = attempts
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-
-    FAILED_LOGINS.pop(req.username, None)
-    token = secrets.token_hex(16)
-    SESSION_DB.add(token, req.username)
-    return TokenResponse(token=token)
+        FAILED_LOGINS.pop(req.username, None)
+        token = secrets.token_hex(16)
+        SESSION_DB.add(token, req.username)
+        return TokenResponse(token=token)
 
 
 @app.post("/api/v1/logout")
 async def logout(req: LogoutRequest) -> None:
     """Invalidate a session token."""
-    SESSION_DB.remove(req.token)
+    with tracer.start_as_current_span("logout"):
+        SESSION_DB.remove(req.token)
 
 
 @app.websocket("/api/v1/ws")
 async def websocket_endpoint(ws: WebSocket) -> None:
     """Handle websocket chat with the Gatekeeper."""
-    token = ws.query_params.get("token")
-    if not token or SESSION_DB.get(token) is None:
-        await ws.close(code=1008)
-        return
-    await ws.accept()
-    panel = UserPanel()
-    orchestrator = Orchestrator(
-        panel,
-        gatekeeper,
-        budget_manager=BudgetManager(cost_estimator),
-    )
-    try:
-        while True:
-            try:
-                data = await ws.receive_json()
-                msg = ChatMessage.model_validate(data)
-            except (ValueError, ValidationError):
-                await ws.close(code=1003)
-                return
-            content = msg.content
-            if msg.action == ActionType.TEST:
-                panel.add_action(PanelAction(ActionType.TEST, content))
-            elif msg.action == ActionType.DIAGNOSIS:
-                panel.add_action(PanelAction(ActionType.DIAGNOSIS, content))
-            else:
-                panel.add_action(PanelAction(ActionType.QUESTION, content))
+    with tracer.start_as_current_span("websocket"):
+        token = ws.query_params.get("token")
+        if not token or SESSION_DB.get(token) is None:
+            await ws.close(code=1008)
+            return
+        await ws.accept()
+        panel = UserPanel()
+        orchestrator = Orchestrator(
+            panel,
+            gatekeeper,
+            budget_manager=BudgetManager(cost_estimator),
+        )
+        try:
+            while True:
+                try:
+                    data = await ws.receive_json()
+                    msg = ChatMessage.model_validate(data)
+                except (ValueError, ValidationError):
+                    await ws.close(code=1003)
+                    return
+                content = msg.content
+                if msg.action == ActionType.TEST:
+                    panel.add_action(PanelAction(ActionType.TEST, content))
+                elif msg.action == ActionType.DIAGNOSIS:
+                    panel.add_action(PanelAction(ActionType.DIAGNOSIS, content))
+                else:
+                    panel.add_action(PanelAction(ActionType.QUESTION, content))
 
-            prev_spent = orchestrator.spent
-            reply = orchestrator.run_turn(content)
-            step_cost = orchestrator.spent - prev_spent
-            await stream_reply(
-                ws,
-                reply,
-                step_cost,
-                orchestrator.spent,
-                orchestrator.ordered_tests,
-            )
-    except WebSocketDisconnect:
-        return
+                prev_spent = orchestrator.spent
+                reply = orchestrator.run_turn(content)
+                step_cost = orchestrator.spent - prev_spent
+                await stream_reply(
+                    ws,
+                    reply,
+                    step_cost,
+                    orchestrator.spent,
+                    orchestrator.ordered_tests,
+                )
+        except WebSocketDisconnect:
+            return
