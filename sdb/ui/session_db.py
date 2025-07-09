@@ -17,15 +17,28 @@ class SessionDB:
     def _init_db(self) -> None:
         with self._connect() as conn:
             conn.execute(
-                "CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, username TEXT NOT NULL, issue_time REAL NOT NULL)"
+                (
+                    "CREATE TABLE IF NOT EXISTS sessions "
+                    "(token TEXT PRIMARY KEY, "
+                    "username TEXT NOT NULL, "
+                    "issue_time REAL NOT NULL)"
+                )
             )
             conn.commit()
 
-    def add(self, token: str, username: str, issue_time: Optional[float] = None) -> None:
+    def add(
+        self,
+        token: str,
+        username: str,
+        issue_time: Optional[float] = None,
+    ) -> None:
         ts = issue_time if issue_time is not None else time.time()
         with self._connect() as conn:
             conn.execute(
-                "INSERT OR REPLACE INTO sessions (token, username, issue_time) VALUES (?, ?, ?)",
+                (
+                    "INSERT OR REPLACE INTO sessions "
+                    "(token, username, issue_time) VALUES (?, ?, ?)"
+                ),
                 (token, username, ts),
             )
             conn.commit()

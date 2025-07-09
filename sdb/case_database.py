@@ -152,4 +152,3 @@ class SQLiteCaseDatabase:
         if row is None:
             raise KeyError(case_id)
         return Case(id=case_id, summary=row[0], full_text=row[1])
-

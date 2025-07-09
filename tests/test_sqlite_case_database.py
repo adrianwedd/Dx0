@@ -43,4 +43,3 @@ def test_lazy_memory_usage(tmp_path):
     _ = db.get_case("0")
     after = proc.memory_info().rss
     assert after - before < 1024 * 1024
-
