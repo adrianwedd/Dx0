@@ -20,6 +20,7 @@ from sdb import (
     Judge,
     Evaluator,
     DiagnosisResult,
+    WeightedVoter,  # noqa: F401 - exposed for tests
     MetaPanel,
     batch_evaluate,
     configure_logging,
@@ -34,6 +35,7 @@ from sdb import (
     bundle_to_case,
 )
 import csv
+_ = WeightedVoter
 
 
 def _load_weights(arg: str | None) -> dict[str, float] | None:
