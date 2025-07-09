@@ -17,6 +17,7 @@ class Settings:
     cross_encoder_model: Optional[str] = None
     case_db: Optional[str] = None
     case_db_sqlite: Optional[str] = None
+    parallel_personas: bool = False
 
 
 def load_settings(path: str | None = None) -> Settings:
@@ -42,6 +43,8 @@ def load_settings(path: str | None = None) -> Settings:
         data["case_db"] = env("SDB_CASE_DB")
     if "case_db_sqlite" not in data and env("SDB_CASE_DB_SQLITE"):
         data["case_db_sqlite"] = env("SDB_CASE_DB_SQLITE")
+    if "parallel_personas" not in data and env("SDB_PARALLEL_PERSONAS"):
+        data["parallel_personas"] = env("SDB_PARALLEL_PERSONAS").lower() == "true"
     settings_obj = Settings(**data)
     globals()["settings"] = settings_obj
     return settings_obj

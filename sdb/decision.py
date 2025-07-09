@@ -11,6 +11,7 @@ from .actions import PanelAction, parse_panel_action
 from .protocol import ActionType
 from .prompt_loader import load_prompt
 from .llm_client import LLMClient, OpenAIClient, AsyncLLMClient
+from .config import settings
 
 logger = structlog.get_logger(__name__)
 
@@ -131,11 +132,18 @@ class LLMEngine(DecisionEngine):
         model: str = "gpt-4",
         client: LLMClient | AsyncLLMClient | None = None,
         personas: list[str] | None = None,
+        *,
+        parallel_personas: bool | None = None,
     ) -> None:
+        """Create an LLM engine with optional parallel persona execution."""
+
         self.model = model
         self.client = client or OpenAIClient()
         self.fallback = RuleEngine()
         self.personas = personas or self.DEFAULT_PERSONAS
+        self.parallel_personas = (
+            settings.parallel_personas if parallel_personas is None else parallel_personas
+        )
         self.prompts = {name: load_prompt(name) for name in self.personas}
         for name, text in self.prompts.items():
             if not text.strip():
@@ -180,14 +188,29 @@ class LLMEngine(DecisionEngine):
 
         conversation = "\n".join(context.past_infos)
         messages = []
-        for name in self.personas:
-            system = {"role": "system", "content": self.prompts[name]}
-            user = {"role": "user", "content": conversation}
-            messages.extend([system, user])
-            reply = await self._achat(messages)
-            if reply is None:
-                return await asyncio.to_thread(self.fallback.decide, context)
-            messages.append({"role": "assistant", "content": reply})
+        if self.parallel_personas and isinstance(self.client, AsyncLLMClient):
+            async def run_persona(name: str) -> tuple[dict, dict, str | None]:
+                system = {"role": "system", "content": self.prompts[name]}
+                user = {"role": "user", "content": conversation}
+                reply = await self._achat([system, user])
+                return system, user, reply
+
+            tasks = [run_persona(name) for name in self.personas]
+            results = await asyncio.gather(*tasks)
+            for system, user, reply in results:
+                messages.extend([system, user])
+                if reply is None:
+                    return await asyncio.to_thread(self.fallback.decide, context)
+                messages.append({"role": "assistant", "content": reply})
+        else:
+            for name in self.personas:
+                system = {"role": "system", "content": self.prompts[name]}
+                user = {"role": "user", "content": conversation}
+                messages.extend([system, user])
+                reply = await self._achat(messages)
+                if reply is None:
+                    return await asyncio.to_thread(self.fallback.decide, context)
+                messages.append({"role": "assistant", "content": reply})
         action = parse_panel_action(messages[-1]["content"])
         if action is None:
             return await asyncio.to_thread(self.fallback.decide, context)
