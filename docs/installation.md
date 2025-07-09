@@ -119,3 +119,13 @@ The screenshot file is base64 encoded. Decode it with:
 ```bash
 base64 -d docs/images/ui.png.b64 > ui.png
 ```
+
+## Testing
+
+Install the development dependencies and run the test suite:
+
+```bash
+./scripts/install_dev_deps.sh
+pytest -q
+```
+
