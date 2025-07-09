@@ -1,15 +1,23 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "sdb"
 version = "0.1.0"
 description = "Sequential diagnosis benchmark and demo orchestrator"
-authors = [{name = "MAI"}]
+authors = [{name = "MAI", email = "maintainers@example.com"}]
 readme = "README.md"
 requires-python = ">=3.10"
-license = "MIT"
+license = {file = "LICENSE"}
+keywords = ["diagnosis", "benchmark", "medical ai"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Intended Audience :: Developers",
+    "Development Status :: 3 - Alpha",
+]
 dependencies = [
     "fastapi",
     "uvicorn",
@@ -33,6 +41,7 @@ sdb-cli = "cli:main"
 [tool.setuptools]
 packages = ["sdb", "sdb.ingest", "sdb.ui", "sdb.plugins"]
 py-modules = ["cli"]
+include-package-data = true
 
 [project.entry-points."dx0.personas"]
 optimist = "sdb.plugins.optimist_plugin:optimistic_chain"
