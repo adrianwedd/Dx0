@@ -1,6 +1,7 @@
 """Auxiliary service classes used by the orchestrator."""
 
 from .budget import BudgetManager
+from .budget_store import BudgetStore
 from .results import ResultAggregator
 
-__all__ = ["BudgetManager", "ResultAggregator"]
+__all__ = ["BudgetManager", "BudgetStore", "ResultAggregator"]
