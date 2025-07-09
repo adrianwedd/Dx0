@@ -1,0 +1,27 @@
+from sdb.services import BudgetManager, ResultAggregator
+
+
+class DummyEstimator:
+    def estimate_cost(self, _name: str) -> float:
+        return 5.0
+
+
+def test_budget_manager_over_budget():
+    bm = BudgetManager(DummyEstimator(), budget=9.0)
+    bm.add_test("cbc")
+    assert bm.spent == 5.0
+    assert not bm.over_budget()
+    bm.add_test("bmp")
+    assert bm.spent == 10.0
+    assert bm.over_budget()
+
+
+def test_result_aggregator_records():
+    agg = ResultAggregator()
+    agg.record_test("cbc")
+    agg.record_test("bmp")
+    assert agg.ordered_tests == ["cbc", "bmp"]
+    assert not agg.finished
+    agg.record_diagnosis("flu")
+    assert agg.final_diagnosis == "flu"
+    assert agg.finished
