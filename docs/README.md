@@ -44,6 +44,20 @@ See `weighted_voter.md` for an overview of how the `WeightedVoter` class
 combines multiple diagnoses using confidence scores and optional run-specific
 weights.
 
+## Persona Models
+
+Each persona in the virtual panel can use a different model. Pass a JSON
+mapping via the `--persona-models` CLI option or define `persona_models` in the
+YAML settings file:
+
+```yaml
+persona_models:
+  hypothesis_system: gpt-4
+  challenger_system: gpt-3.5-turbo
+```
+
+Unspecified personas fall back to the model selected by `--llm-model`.
+
 ## Structured Logging
 
 Logs are emitted in JSON format. Initialize logging with

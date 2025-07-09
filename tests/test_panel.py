@@ -1,6 +1,7 @@
 from sdb.panel import VirtualPanel
-from sdb.decision import LLMEngine
+from sdb.decision import LLMEngine, Context
 from sdb.protocol import ActionType
+from sdb.llm_client import LLMClient
 
 
 def test_panel_sequence():
@@ -47,3 +48,23 @@ def test_persona_plugin_loaded():
     panel = VirtualPanel(persona_chain="optimist")
     assert isinstance(panel.engine, LLMEngine)
     assert "optimist_system" in panel.engine.prompts
+
+
+def test_llm_engine_persona_models():
+    class CapturingClient(LLMClient):
+        def __init__(self):
+            super().__init__()
+            self.models = []
+
+        def _chat(self, messages, model):
+            self.models.append(model)
+            return "<test>done</test>"
+
+    client = CapturingClient()
+    pmodels = {"hypothesis_system": "m1", "test_chooser_system": "m2"}
+    engine = LLMEngine(client=client, persona_models=pmodels, model="def")
+    ctx = Context(turn=1, past_infos=["case"], triggered_keywords=set())
+    engine.decide(ctx)
+    assert client.models[0] == "m1"
+    assert client.models[1] == "m2"
+    assert all(m == "def" for m in client.models[2:])
