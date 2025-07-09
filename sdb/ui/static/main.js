@@ -13,6 +13,7 @@ function App() {
   const [loadingCase, setLoadingCase] = React.useState(false);
   const [loadingReply, setLoadingReply] = React.useState(false);
   const [toast, setToast] = React.useState('');
+  const chartRef = React.useRef(null);
 
   React.useEffect(() => {
     if (toast) {
@@ -27,6 +28,31 @@ function App() {
         .then(res => res.ok ? res.json() : {tests: []})
         .then(data => setAvailableTests(data.tests || []))
         .catch(() => setAvailableTests([]));
+      if (!chartRef.current && window.Chart) {
+        const ctx = document.getElementById('cost-chart');
+        if (ctx) {
+          chartRef.current = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: [0],
+              datasets: [{
+                label: 'Cumulative Cost',
+                data: [0],
+                borderColor: 'blue',
+                fill: false,
+                tension: 0.1,
+              }]
+            },
+            options: {
+              animation: false,
+              scales: {
+                x: { title: { display: true, text: 'Step' } },
+                y: { title: { display: true, text: 'Cost ($)' } },
+              }
+            }
+          });
+        }
+      }
     }
   }, [token]);
 
@@ -85,6 +111,12 @@ function App() {
         if (d.done) {
           setCost(d.total_spent);
           setStepCost(d.cost || 0);
+          if (chartRef.current && typeof d.total_spent === 'number') {
+            const chart = chartRef.current;
+            chart.data.labels.push(chart.data.labels.length);
+            chart.data.datasets[0].data.push(d.total_spent);
+            chart.update();
+          }
           if (d.ordered_tests) setTests(d.ordered_tests);
           setFlow(f => [...f, {sender: 'Gatekeeper', text: msgText}]);
           setLoadingReply(false);

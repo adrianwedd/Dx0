@@ -6,6 +6,7 @@ import asyncio
 import time
 from httpx_ws import aconnect_ws, WebSocketUpgradeError, WebSocketDisconnect
 from starlette.testclient import TestClient
+from pathlib import Path
 
 import sdb.ui.app as ui_app
 
@@ -315,3 +316,9 @@ def test_fhir_tests_endpoint():
     assert res.status_code == 200
     bundle = res.json()
     assert bundle["entry"][0]["resource"]["code"]["text"] == "cbc"
+
+
+def test_cost_chart_updates():
+    """Chart.js dataset is updated in the websocket handler."""
+    js = Path("sdb/ui/static/main.js").read_text()
+    assert "datasets[0].data.push" in js

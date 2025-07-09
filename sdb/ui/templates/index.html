@@ -6,6 +6,7 @@
   <script crossorigin src='https://unpkg.com/react@18/umd/react.development.js'></script>
   <script crossorigin src='https://unpkg.com/react-dom@18/umd/react-dom.development.js'></script>
   <script crossorigin src='https://unpkg.com/babel-standalone@6/babel.min.js'></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { font-family: sans-serif; }
     #layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
@@ -34,6 +35,7 @@
 </head>
 <body>
 <div id='root'></div>
+<canvas id="cost-chart" width="400" height="150"></canvas>
 <script type='text/babel' src='/static/main.js'></script>
 </body>
 </html>
