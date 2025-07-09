@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import sqlite3
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, Iterator, List
 
-from .case_database import Case, CaseDatabase
+from .case_database import Case, CaseDatabase, SQLiteCaseDatabase
 
 
 def save_to_sqlite(path: str, cases: Iterable[Dict[str, object]]) -> None:
@@ -37,15 +37,31 @@ def save_to_sqlite(path: str, cases: Iterable[Dict[str, object]]) -> None:
     conn.close()
 
 
-def load_from_sqlite(path: str) -> CaseDatabase:
-    """Load cases from a SQLite database at ``path``."""
+def iter_sqlite_cases(path: str) -> Iterator[Case]:
+    """Yield :class:`Case` objects from ``path`` one at a time."""
 
     conn = sqlite3.connect(path)
     cur = conn.cursor()
-    cur.execute("SELECT id, summary, full_text FROM cases")
-    rows = cur.fetchall()
-    conn.close()
-    cases: List[Case] = [
-        Case(id=row[0], summary=row[1], full_text=row[2]) for row in rows
-    ]
+    try:
+        for row in cur.execute("SELECT id, summary, full_text FROM cases"):
+            yield Case(id=row[0], summary=row[1], full_text=row[2])
+    finally:
+        conn.close()
+
+
+def load_from_sqlite(path: str, lazy: bool = False):
+    """Load cases from a SQLite database at ``path``.
+
+    Parameters
+    ----------
+    path:
+        Path to the SQLite database file.
+    lazy:
+        If ``True``, return :class:`SQLiteCaseDatabase` for on-demand loading.
+    """
+
+    if lazy:
+        return SQLiteCaseDatabase(path)
+
+    cases = list(iter_sqlite_cases(path))
     return CaseDatabase(cases)

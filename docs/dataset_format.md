@@ -22,3 +22,15 @@ Example:
 
 The ingestion pipeline in `sdb.ingest.convert` can convert raw text files into
 this JSON structure.
+
+## SQLite Storage
+
+Cases can also be stored in a SQLite database for lazy loading. Use the
+``scripts/migrate_to_sqlite.py`` script to convert an existing JSON or CSV
+dataset:
+
+```bash
+python scripts/migrate_to_sqlite.py cases.json cases.db
+```
+
+Then load it with ``--db-sqlite`` when running ``cli.py``.

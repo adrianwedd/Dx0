@@ -524,6 +524,48 @@ phases:
   epic: Phase 5
   assigned_to: null
 
+- id: 65
+  title: Parallel Persona Execution in LLM Engine
+  description: >
+    Allow the LLMEngine to query all persona prompts concurrently when using an
+    AsyncLLMClient.
+  component: panel
+  area: performance
+  dependencies: [47]
+  priority: 3
+  status: done
+  actionable_steps:
+    - Add configuration flag `parallel_personas`.
+    - Dispatch persona prompts concurrently when enabled.
+    - Ensure responses are ordered deterministically.
+    - Write unit tests covering the parallel path.
+  acceptance_criteria:
+    - "adecide executes persona prompts concurrently with AsyncLLMClient."
+    - "Tests validate concurrency and correct action parsing."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
+- id: 65
+  title: Use SQLite for Lazy Case Loading
+  description: >
+    Implement a SQLite-backed case database and migration script so large
+    datasets don't need to be loaded fully into memory.
+  component: backend
+  area: data
+  dependencies: []
+  priority: 2
+  status: done
+  actionable_steps:
+    - Add SQLiteCaseDatabase class for on-demand fetching
+    - Provide a migration utility to build the SQLite file
+    - Expose config options for selecting the database type
+  acceptance_criteria:
+    - "Cases load lazily from SQLite without excess memory use."
+  command: null
+  epic: Phase 5
+  assigned_to: null
+
 - id: 55
   title: Add Async LLM Client Support
   description: >
@@ -889,7 +931,7 @@ phases:
   priority: 3
   status: done
   actionable_steps:
-    - Store issue time for each token in `SESSIONS`.
+    - Store issue time for each token in a persistent SQLite DB.
     - Reject tokens older than a configurable TTL.
     - Provide a `/logout` endpoint to invalidate a token.
     - Add unit tests covering expiration and logout.
@@ -909,6 +951,7 @@ phases:
   dependencies: [53]
   priority: 2
   status: done
+
   actionable_steps:
     - Modify `.github/workflows/ci.yml` to include a matrix of Python versions.
     - Ensure dependency installation succeeds on each version.
@@ -1129,3 +1172,4 @@ phases:
   command: null
   epic: Phase 5
   assigned_to: null
+

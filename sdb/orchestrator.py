@@ -8,7 +8,8 @@ import asyncio
 from .panel import VirtualPanel, PanelAction
 from .gatekeeper import Gatekeeper
 from .protocol import build_action, ActionType
-from .cost_estimator import CostEstimator
+from .budget import BudgetTracker
+from .services import ResultAggregator
 import time
 from .metrics import ORCHESTRATOR_TURNS, ORCHESTRATOR_LATENCY
 
@@ -20,9 +21,10 @@ class Orchestrator:
         self,
         panel: VirtualPanel,
         gatekeeper: Gatekeeper,
-        cost_estimator: CostEstimator | None = None,
-        budget: float | None = None,
         question_only: bool = False,
+        *,
+        budget_tracker: BudgetTracker | None = None,
+        result_aggregator: ResultAggregator | None = None,
     ):
         """Coordinate panel actions and track test spending.
 
@@ -32,24 +34,42 @@ class Orchestrator:
             :class:`VirtualPanel` generating actions.
         gatekeeper:
             Interface used to obtain answers from the case.
-        cost_estimator:
-            Optional :class:`CostEstimator` for test pricing.
-        budget:
-            Optional maximum spend allowed for tests.
         question_only:
             If ``True``, convert test requests into questions.
+        budget_tracker:
+            Optional :class:`BudgetTracker` tracking test costs.
         """
 
         self.panel = panel
         self.gatekeeper = gatekeeper
-        self.cost_estimator = cost_estimator
-        self.budget = budget
         self.question_only = question_only
-        self.spent = 0.0
-        self.finished = False
-        self.ordered_tests: list[str] = []
-        self.final_diagnosis: str | None = None
+        self.budget_tracker = budget_tracker or BudgetTracker()
+        self.results = result_aggregator or ResultAggregator()
         self.total_time = 0.0
+
+    @property
+    def spent(self) -> float:
+        """Total money spent on ordered tests."""
+
+        return self.budget_tracker.spent
+
+    @property
+    def ordered_tests(self) -> list[str]:
+        """List of tests ordered so far."""
+
+        return self.results.ordered_tests
+
+    @property
+    def final_diagnosis(self) -> str | None:
+        """Diagnosis provided by the panel, if any."""
+
+        return self.results.final_diagnosis
+
+    @property
+    def finished(self) -> bool:
+        """Whether the session has concluded."""
+
+        return self.results.finished or self.budget_tracker.over_budget()
 
     def run_turn(self, case_info: str) -> str:
         """Process a single interaction turn with the panel."""
@@ -74,15 +94,13 @@ class Orchestrator:
         )
 
         if action.action_type == ActionType.TEST:
-            self.ordered_tests.append(action.content)
-            if self.cost_estimator:
-                self.spent += self.cost_estimator.estimate_cost(action.content)
-                if self.budget is not None and self.spent >= self.budget:
-                    self.finished = True
+            self.results.record_test(action.content)
+            self.budget_tracker.add(action.content)
+            if self.budget_tracker.over_budget():
+                self.results.finished = True
         logger.info("spent", amount=self.spent)
         if action.action_type == ActionType.DIAGNOSIS:
-            self.finished = True
-            self.final_diagnosis = action.content
+            self.results.record_diagnosis(action.content)
             logger.info("final_diagnosis", diagnosis=action.content)
 
         duration = time.perf_counter() - start
@@ -116,15 +134,13 @@ class Orchestrator:
         )
 
         if action.action_type == ActionType.TEST:
-            self.ordered_tests.append(action.content)
-            if self.cost_estimator:
-                self.spent += self.cost_estimator.estimate_cost(action.content)
-                if self.budget is not None and self.spent >= self.budget:
-                    self.finished = True
+            self.results.record_test(action.content)
+            self.budget_tracker.add(action.content)
+            if self.budget_tracker.over_budget():
+                self.results.finished = True
         logger.info("spent", amount=self.spent)
         if action.action_type == ActionType.DIAGNOSIS:
-            self.finished = True
-            self.final_diagnosis = action.content
+            self.results.record_diagnosis(action.content)
             logger.info("final_diagnosis", diagnosis=action.content)
 
         duration = time.perf_counter() - start

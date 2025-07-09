@@ -1,6 +1,7 @@
 import csv
 import json
 import os
+import sqlite3
 from dataclasses import dataclass
 from typing import Iterable
 
@@ -127,3 +128,47 @@ class CaseDatabase:
                 )
             )
         return CaseDatabase(cases)
+
+    @staticmethod
+    def load_from_sqlite(path: str, lazy: bool = False):
+        """Load cases from a SQLite database.
+
+        Parameters
+        ----------
+        path:
+            Path to the SQLite database file.
+        lazy:
+            If ``True``, return :class:`SQLiteCaseDatabase` for on-demand
+            retrieval of cases.
+        """
+
+        if lazy:
+            return SQLiteCaseDatabase(path)
+
+        from .sqlite_db import iter_sqlite_cases
+
+        return CaseDatabase(iter_sqlite_cases(path))
+
+
+class SQLiteCaseDatabase:
+    """Case storage backed by SQLite with lazy loading."""
+
+    def __init__(self, path: str):
+        """Initialize with a SQLite database ``path``."""
+
+        self.path = path
+
+    def get_case(self, case_id: str) -> Case:
+        """Return the case with ``case_id`` from the SQLite file."""
+
+        conn = sqlite3.connect(self.path)
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT summary, full_text FROM cases WHERE id=?",
+            (case_id,),
+        )
+        row = cur.fetchone()
+        conn.close()
+        if row is None:
+            raise KeyError(case_id)
+        return Case(id=case_id, summary=row[0], full_text=row[1])

@@ -111,7 +111,11 @@ openai_api_key: sk-your-key
 openai_model: gpt-4
 ollama_base_url: http://localhost:11434
 metrics_port: 8000
+case_db: data/sdbench/cases
+case_db_sqlite: cases.db
 ```
+
+If ``case_db_sqlite`` is provided, cases are loaded lazily from the SQLite file.
 
 Pass the file to any CLI command:
 

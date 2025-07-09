@@ -80,15 +80,30 @@ class Gatekeeper:
             )
 
     def load_results_from_json(self, path: str) -> None:
-        """Load test result fixtures from a JSON file."""
+        """Load test result fixtures from a JSON file.
+
+        Parameters
+        ----------
+        path:
+            File path containing a mapping of test names to results.
+
+        Raises
+        ------
+        FileNotFoundError
+            If ``path`` does not exist.
+        ValueError
+            If the file cannot be parsed or does not contain a JSON object.
+        """
 
         if not os.path.exists(path):
-            return
+            raise FileNotFoundError(f"Results file not found: {path}")
         try:
             with open(path, "r", encoding="utf-8") as fh:
                 data = json.load(fh)
-        except json.JSONDecodeError:
-            return
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid JSON data in {path}") from exc
+        if not isinstance(data, dict):
+            raise ValueError("Results JSON must be a mapping of test names to results")
         for name, result in data.items():
             self.register_test_result(name, str(result))
 

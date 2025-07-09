@@ -7,13 +7,15 @@ from __future__ import annotations
 import asyncio
 import os
 import secrets
+import time
 import yaml
 import bcrypt
 
 from fastapi import FastAPI, WebSocket, HTTPException
+from collections import defaultdict
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from starlette.websockets import WebSocketDisconnect
 from pathlib import Path
 
@@ -21,8 +23,10 @@ from sdb.case_database import Case, CaseDatabase
 from sdb.cost_estimator import CostEstimator, CptCost
 from sdb.gatekeeper import Gatekeeper
 from sdb.orchestrator import Orchestrator
+from sdb.budget import BudgetTracker
 from sdb.panel import PanelAction
 from sdb.protocol import ActionType
+from sdb.ui.session_db import SessionDB
 
 app = FastAPI(title="SDBench Physician UI")
 static_dir = Path(__file__).with_name("static")
@@ -67,8 +71,14 @@ def load_user_credentials() -> dict[str, str]:
 
 CREDENTIALS = load_user_credentials()
 
-# Session tokens issued to authenticated users
-SESSIONS: dict[str, str] = {}
+SESSION_TTL = int(os.environ.get("UI_TOKEN_TTL", "3600"))
+SESSION_DB_PATH = os.environ.get("SESSIONS_DB", "sessions.db")
+SESSION_DB = SessionDB(SESSION_DB_PATH, ttl=SESSION_TTL)
+
+# Failed login tracking configuration
+FAILED_LOGIN_LIMIT = int(os.environ.get("FAILED_LOGIN_LIMIT", "5"))
+FAILED_LOGIN_COOLDOWN = int(os.environ.get("FAILED_LOGIN_COOLDOWN", "300"))
+FAILED_LOGINS: dict[str, list[float]] = defaultdict(list)
 
 
 async def stream_reply(
@@ -83,12 +93,14 @@ async def stream_reply(
 
     for start in range(0, len(text), chunk_size):
         done = start + chunk_size >= len(text)
-        payload = {"reply": text[start : start + chunk_size], "done": done}
-        if done:
-            payload["cost"] = cost
-            payload["total_spent"] = total
-            payload["ordered_tests"] = tests or []
-        await ws.send_json(payload)
+        payload = ChatResponse(
+            reply=text[start : start + chunk_size],
+            done=done,
+            cost=cost if done else None,
+            total_spent=total if done else None,
+            ordered_tests=(tests or []) if done else None,
+        )
+        await ws.send_json(payload.model_dump(exclude_none=True))
         await asyncio.sleep(0)
 
 
@@ -97,6 +109,55 @@ class LoginRequest(BaseModel):
 
     username: str
     password: str
+
+
+class ChatMessage(BaseModel):
+    """Incoming websocket message from the UI.
+
+    Parameters
+    ----------
+    action: ActionType
+        The user intent, one of ``question``, ``test``, or ``diagnosis``.
+    content: str
+        Free form user text for the selected ``action``.
+    """
+
+    action: ActionType = ActionType.QUESTION
+    content: str
+
+
+class ChatResponse(BaseModel):
+    """Outgoing websocket payload."""
+
+    reply: str
+    done: bool
+    cost: float | None = None
+    total_spent: float | None = None
+    ordered_tests: list[str] | None = None
+
+
+class TokenResponse(BaseModel):
+    """Session token returned after login."""
+
+    token: str
+
+
+class LogoutRequest(BaseModel):
+    """Request body for logout."""
+
+    token: str
+
+
+class CaseSummary(BaseModel):
+    """Response model for case summary."""
+
+    summary: str
+
+
+class TestList(BaseModel):
+    """Response model for available tests."""
+
+    tests: list[str]
 
 
 class UserPanel:
@@ -118,64 +179,96 @@ class UserPanel:
         return self.actions.get_nowait()
 
 
-
-
 HTML_PATH = Path(__file__).with_name("templates").joinpath("template.html")
 HTML = HTML_PATH.read_text(encoding="utf-8")
 
 
-@app.get("/", response_class=HTMLResponse)
+@app.on_event("startup")
+async def start_cleanup() -> None:
+    async def _loop() -> None:
+        while True:
+            SESSION_DB.cleanup()
+            await asyncio.sleep(SESSION_TTL)
+
+    asyncio.create_task(_loop())
+
+
+@app.get("/api/v1", response_class=HTMLResponse)
 async def index() -> HTMLResponse:
     """Return the React chat application."""
 
     return HTMLResponse(HTML)
 
 
-@app.get("/case")
-async def get_case() -> dict[str, str]:
+@app.get("/api/v1/case", response_model=CaseSummary)
+async def get_case() -> CaseSummary:
     """Return the demo case summary."""
 
     case = demo_case.get_case("demo")
-    return {"summary": case.summary}
+    return CaseSummary(summary=case.summary)
 
 
-@app.get("/tests")
-async def get_tests() -> dict[str, list[str]]:
+@app.get("/api/v1/tests", response_model=TestList)
+async def get_tests() -> TestList:
     """Return available test names."""
 
-    return {"tests": sorted(cost_table.keys())}
+    return TestList(tests=sorted(cost_table.keys()))
 
 
-@app.post("/login")
-async def login(req: LoginRequest) -> dict[str, str]:
+@app.post("/api/v1/login", response_model=TokenResponse)
+async def login(req: LoginRequest) -> TokenResponse:
     """Authenticate a user and return a session token."""
+
+    now = time.time()
+    attempts = FAILED_LOGINS.get(req.username, [])
+    attempts = [ts for ts in attempts if now - ts < FAILED_LOGIN_COOLDOWN]
+    if len(attempts) >= FAILED_LOGIN_LIMIT:
+        raise HTTPException(status_code=429, detail="Too many failed login attempts")
 
     hashed = CREDENTIALS.get(req.username)
     if not hashed or not bcrypt.checkpw(req.password.encode(), hashed.encode()):
+        attempts.append(now)
+        FAILED_LOGINS[req.username] = attempts
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    FAILED_LOGINS.pop(req.username, None)
     token = secrets.token_hex(16)
-    SESSIONS[token] = req.username
-    return {"token": token}
+    SESSION_DB.add(token, req.username)
+    return TokenResponse(token=token)
 
 
-@app.websocket("/ws")
+@app.post("/api/v1/logout")
+async def logout(req: LogoutRequest) -> None:
+    """Invalidate a session token."""
+    SESSION_DB.remove(req.token)
+
+
+@app.websocket("/api/v1/ws")
 async def websocket_endpoint(ws: WebSocket) -> None:
     """Handle websocket chat with the Gatekeeper."""
     token = ws.query_params.get("token")
-    if not token or token not in SESSIONS:
+    if not token or SESSION_DB.get(token) is None:
         await ws.close(code=1008)
         return
     await ws.accept()
     panel = UserPanel()
-    orchestrator = Orchestrator(panel, gatekeeper, cost_estimator=cost_estimator)
+    orchestrator = Orchestrator(
+        panel,
+        gatekeeper,
+        budget_tracker=BudgetTracker(cost_estimator),
+    )
     try:
         while True:
-            data = await ws.receive_json()
-            action = data.get("action", "question").lower()
-            content = data.get("content", "")
-            if action == "test":
+            try:
+                data = await ws.receive_json()
+                msg = ChatMessage.model_validate(data)
+            except (ValueError, ValidationError):
+                await ws.close(code=1003)
+                return
+            content = msg.content
+            if msg.action == ActionType.TEST:
                 panel.add_action(PanelAction(ActionType.TEST, content))
-            elif action == "diagnosis":
+            elif msg.action == ActionType.DIAGNOSIS:
                 panel.add_action(PanelAction(ActionType.DIAGNOSIS, content))
             else:
                 panel.add_action(PanelAction(ActionType.QUESTION, content))
