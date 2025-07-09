@@ -34,6 +34,7 @@ Repository = "https://github.com/mai-dxo/dx0"
 
 [project.optional-dependencies]
 cli = ["httpx"]
+sentry = ["sentry-sdk"]
 
 [project.scripts]
 sdb-cli = "cli:main"

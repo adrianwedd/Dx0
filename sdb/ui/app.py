@@ -8,27 +8,27 @@ import asyncio
 import os
 import secrets
 import time
-import yaml
-import bcrypt
-
-from fastapi import FastAPI, WebSocket, HTTPException
-from opentelemetry import trace
 from collections import defaultdict
+from pathlib import Path
+
+import bcrypt
+import yaml
+from fastapi import FastAPI, HTTPException, WebSocket
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from opentelemetry import trace
 from pydantic import BaseModel, ValidationError
 from starlette.websockets import WebSocketDisconnect
-from pathlib import Path
 
 from sdb.case_database import Case, CaseDatabase
 from sdb.cost_estimator import CostEstimator, CptCost
+from sdb.fhir_export import ordered_tests_to_fhir, transcript_to_fhir
 from sdb.gatekeeper import Gatekeeper
 from sdb.orchestrator import Orchestrator
-from sdb.services import BudgetManager
 from sdb.panel import PanelAction
 from sdb.protocol import ActionType
+from sdb.services import BudgetManager
 from sdb.ui.session_db import SessionDB
-from sdb.fhir_export import transcript_to_fhir, ordered_tests_to_fhir
 
 app = FastAPI(title="SDBench Physician UI")
 tracer = trace.get_tracer(__name__)
@@ -56,6 +56,17 @@ cost_table = {
 }
 
 cost_estimator = CostEstimator(cost_table)
+
+# optional error reporting
+SENTRY_ENABLED = False
+if os.getenv("SENTRY_DSN"):
+    try:
+        import sentry_sdk
+
+        sentry_sdk.init(os.environ["SENTRY_DSN"])
+        SENTRY_ENABLED = True
+    except Exception:
+        pass
 
 
 def load_user_credentials() -> dict[str, str]:
@@ -254,7 +265,9 @@ async def login(req: LoginRequest) -> TokenResponse:
         attempts = FAILED_LOGINS.get(req.username, [])
         attempts = [ts for ts in attempts if now - ts < FAILED_LOGIN_COOLDOWN]
         if len(attempts) >= FAILED_LOGIN_LIMIT:
-            raise HTTPException(status_code=429, detail="Too many failed login attempts")
+            raise HTTPException(
+                status_code=429, detail="Too many failed login attempts"
+            )
 
         hashed = CREDENTIALS.get(req.username)
         if not hashed or not bcrypt.checkpw(req.password.encode(), hashed.encode()):
@@ -289,6 +302,7 @@ async def websocket_endpoint(ws: WebSocket) -> None:
             panel,
             gatekeeper,
             budget_manager=BudgetManager(cost_estimator),
+            session_id=token,
         )
         try:
             while True:
@@ -318,3 +332,11 @@ async def websocket_endpoint(ws: WebSocket) -> None:
                 )
         except WebSocketDisconnect:
             return
+        except Exception as exc:  # pragma: no cover - unexpected errors
+            if SENTRY_ENABLED:
+                import sentry_sdk
+
+                with sentry_sdk.push_scope() as scope:
+                    scope.set_tag("session_id", token)
+                    sentry_sdk.capture_exception(exc)
+            raise
