@@ -90,3 +90,9 @@ def test_coverage_check(tmp_path):
             cms_pricing_path=str(cms_path),
             coverage_threshold=0.98,
         )
+
+
+def test_lookup_cost_missing():
+    ce = CostEstimator({})
+    with pytest.raises(KeyError):
+        ce.lookup_cost("unknown")
