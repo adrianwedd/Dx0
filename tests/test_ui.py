@@ -62,7 +62,7 @@ async def test_websocket_chat():
 
 def test_index_layout():
     client = TestClient(app)
-    res = client.get("/")
+    res = client.get("/api/v1")
     html = res.text
     assert "summary-panel" in html
     assert "tests-panel" in html
@@ -76,6 +76,13 @@ def test_case_summary():
     res = client.get("/api/v1/case")
     assert res.status_code == 200
     assert res.json() == {"summary": "A 30 year old with cough"}
+
+
+def test_unknown_version():
+    """Requests to an unsupported API version return 404."""
+    client = TestClient(app)
+    res = client.get("/api/v2/case")
+    assert res.status_code == 404
 
 
 def test_login_success():
@@ -95,6 +102,13 @@ def test_login_failure():
         json={"username": "physician", "password": "wrong"},
     )
     assert res.status_code == 401
+
+
+def test_login_missing_field():
+    """Missing fields should trigger validation error."""
+    client = TestClient(app)
+    res = client.post("/api/v1/login", json={"username": "physician"})
+    assert res.status_code == 422
 
 
 def test_login_lockout(monkeypatch):

@@ -192,7 +192,7 @@ async def start_cleanup() -> None:
     asyncio.create_task(_loop())
 
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/api/v1", response_class=HTMLResponse)
 async def index() -> HTMLResponse:
     """Return the React chat application."""
 
@@ -256,7 +256,7 @@ async def websocket_endpoint(ws: WebSocket) -> None:
         while True:
             try:
                 data = await ws.receive_json()
-                msg = ChatMessage.parse_obj(data)
+                msg = ChatMessage.model_validate(data)
             except (ValueError, ValidationError):
                 await ws.close(code=1003)
                 return
