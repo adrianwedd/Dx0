@@ -729,3 +729,87 @@ phases:
   command: null
   epic: Phase 5
   assigned_to: null
+- id: 56
+  title: Holistic User Experience Enhancement
+  description: >
+    A comprehensive initiative to improve the SDBench UI's usability, clarity,
+    and accessibility. This epic covers workflow simplification, consistent
+    feedback, and modern visual design.
+  component: ui
+  area: design
+  dependencies: []
+  priority: 2
+  status: pending
+  actionable_steps:
+    - Document current UX pain points and desired outcomes.
+  acceptance_criteria:
+    - "UX improvement plan is approved by project stakeholders."
+  command: null
+  epic: User Experience (UX) & Accessibility
+  assigned_to: null
+
+- id: 57
+  title: Introduce Guided Actions for Questions and Tests
+  description: >
+    Replace the `test:` text prefix with explicit controls so users can ask
+    questions or order tests without remembering special syntax.
+  component: ui
+  area: frontend
+  dependencies: [56]
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Add buttons or a dropdown to select Ask Question, Order Test, or Provide Diagnosis.
+    - Update WebSocket payloads based on the selected control.
+    - Display available tests in a searchable list.
+  acceptance_criteria:
+    - "Users can order a test without typing a prefix."
+    - "Common test names are selectable via UI controls."
+  command: null
+  epic: User Experience (UX) & Accessibility
+  assigned_to: null
+
+- id: 58
+  title: Provide Clear Loading and Error Feedback
+  description: >
+    Ensure the UI always communicates system state during data fetches and
+    WebSocket interactions.
+  component: ui
+  area: frontend
+  dependencies: [56]
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Add spinners or skeleton components during case loading and Gatekeeper responses.
+    - Show descriptive error messages when login fails or the WebSocket disconnects.
+    - Display cumulative cost and per-step cost separately.
+  acceptance_criteria:
+    - "Users see a loading indicator whenever data is being fetched."
+    - "Error messages specify the cause of failures."
+    - "Cost updates distinguish between individual and total spending."
+  command: null
+  epic: User Experience (UX) & Accessibility
+  assigned_to: null
+
+- id: 59
+  title: Apply Accessible and Consistent Visual Styling
+  description: >
+    Modernize the interface with a consistent component library and ensure
+    compliance with WCAG 2.1 AA.
+  component: ui
+  area: design
+  dependencies: [56]
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Adopt a design system for inputs, buttons, and layout.
+    - Ensure color contrast ratios meet WCAG AA standards.
+    - Add ARIA roles and focus styles for keyboard navigation.
+    - Test keyboard-only navigation across workflows.
+  acceptance_criteria:
+    - "Visual elements follow a consistent style guide."
+    - "Accessibility audit reports no critical WCAG 2.1 violations."
+    - "All interactive elements are keyboard accessible."
+  command: null
+  epic: User Experience (UX) & Accessibility
+  assigned_to: null
