@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import pytest
 
 from sdb.orchestrator import Orchestrator
-from sdb.services import BudgetManager
+from sdb.services import BudgetManager, BudgetStore
 from sdb.panel import VirtualPanel
 from sdb.actions import PanelAction
 from sdb.protocol import ActionType
@@ -85,6 +85,22 @@ def test_orchestrator_budget_stops_session():
     orch.run_turn("2")
     assert orch.finished is True
     assert orch.final_diagnosis is None
+
+
+def test_budget_store_persists(tmp_path):
+    store = BudgetStore(str(tmp_path / "budget.db"))
+    estimator = DummyCostEstimator()
+
+    panel1 = StubPanel([PanelAction(ActionType.TEST, "cbc")])
+    bm1 = BudgetManager(estimator, store=store)
+    orch1 = Orchestrator(panel1, DummyGatekeeper(), budget_manager=bm1)
+    orch1.run_turn("step1")
+    assert orch1.spent == 5.0
+
+    panel2 = StubPanel([])
+    bm2 = BudgetManager(estimator, store=store)
+    orch2 = Orchestrator(panel2, DummyGatekeeper(), budget_manager=bm2)
+    assert orch2.spent == 5.0
 
 
 class TimeoutPanel:

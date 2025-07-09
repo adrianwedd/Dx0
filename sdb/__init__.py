@@ -22,7 +22,7 @@ from .retrieval import (
     SentenceTransformerIndex,
     CrossEncoderReranker,
 )
-from .services import BudgetManager, ResultAggregator
+from .services import BudgetManager, BudgetStore, ResultAggregator
 from .statistics import load_scores, permutation_test
 from .sqlite_db import load_from_sqlite, save_to_sqlite
 from .fhir_export import transcript_to_fhir, ordered_tests_to_fhir
@@ -55,6 +55,7 @@ __all__ = [
     "VirtualPanel",
     "Orchestrator",
     "BudgetManager",
+    "BudgetStore",
     "ResultAggregator",
     "Evaluator",
     "convert_directory",
