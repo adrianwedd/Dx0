@@ -49,3 +49,11 @@ weights.
 Logs are emitted in JSON format. Initialize logging with
 `sdb.configure_logging()` and refer to `logging.md` for examples of consuming
 the output.
+
+## Evaluation
+
+Dx0 relies on an LLM-based judge to grade diagnoses on a five-point rubric.
+The system prompt in `prompts/judge_system.txt` explains the scale from 1
+(completely incorrect) to 5 (clinically equivalent). During evaluation the
+model's numeric score is used directly. If no score can be parsed, a default
+rating of 1 is assigned.
