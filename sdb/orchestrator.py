@@ -2,19 +2,31 @@
 
 from __future__ import annotations
 
-import structlog
 import asyncio
+import os
+import time
+
+import structlog
 from opentelemetry import trace
 
-from .panel import VirtualPanel, PanelAction
 from .gatekeeper import Gatekeeper
-from .protocol import build_action, ActionType
+from .metrics import ORCHESTRATOR_LATENCY, ORCHESTRATOR_TURNS
+from .panel import PanelAction, VirtualPanel
+from .protocol import ActionType, build_action
 from .services import BudgetManager, ResultAggregator
-import time
-from .metrics import ORCHESTRATOR_TURNS, ORCHESTRATOR_LATENCY
 
 logger = structlog.get_logger(__name__)
 tracer = trace.get_tracer(__name__)
+
+SENTRY_ENABLED = False
+if os.getenv("SENTRY_DSN"):
+    try:
+        import sentry_sdk
+
+        sentry_sdk.init(os.environ["SENTRY_DSN"])
+        SENTRY_ENABLED = True
+    except Exception:
+        pass
 
 
 class Orchestrator:
@@ -26,6 +38,7 @@ class Orchestrator:
         *,
         budget_manager: BudgetManager | None = None,
         result_aggregator: ResultAggregator | None = None,
+        session_id: str | None = None,
     ):
         """Coordinate panel actions and track test spending.
 
@@ -39,6 +52,8 @@ class Orchestrator:
             If ``True``, convert test requests into questions.
         budget_manager:
             Optional :class:`BudgetManager` tracking test costs.
+        session_id:
+            Identifier used for error reporting context.
         """
 
         self.panel = panel
@@ -46,6 +61,7 @@ class Orchestrator:
         self.question_only = question_only
         self.budget_manager = budget_manager or BudgetManager()
         self.results = result_aggregator or ResultAggregator()
+        self.session_id = session_id
         self.total_time = 0.0
 
     @property
@@ -74,79 +90,98 @@ class Orchestrator:
 
     def run_turn(self, case_info: str) -> str:
         """Process a single interaction turn with the panel."""
-
         with tracer.start_as_current_span("orchestrator.run_turn"):
             start = time.perf_counter()
-            action = self.panel.deliberate(case_info=case_info)
-            ORCHESTRATOR_TURNS.inc()
-            logger.info(
-                "panel_action",
-                turn=getattr(self.panel, "turn", 0),
-                type=action.action_type.value,
-                content=action.content,
-            )
-            if self.question_only and action.action_type == ActionType.TEST:
-                action = PanelAction(ActionType.QUESTION, action.content)
+            try:
+                action = self.panel.deliberate(case_info=case_info)
+                ORCHESTRATOR_TURNS.inc()
+                logger.info(
+                    "panel_action",
+                    turn=getattr(self.panel, "turn", 0),
+                    type=action.action_type.value,
+                    content=action.content,
+                )
+                if self.question_only and action.action_type == ActionType.TEST:
+                    action = PanelAction(ActionType.QUESTION, action.content)
 
-            xml = build_action(action.action_type, action.content)
-            result = self.gatekeeper.answer_question(xml)
-            logger.info(
-                "gatekeeper_response",
-                synthetic=result.synthetic,
-            )
+                xml = build_action(action.action_type, action.content)
+                result = self.gatekeeper.answer_question(xml)
+                logger.info(
+                    "gatekeeper_response",
+                    synthetic=result.synthetic,
+                )
 
-            if action.action_type == ActionType.TEST:
-                self.results.record_test(action.content)
-                self.budget_manager.add_test(action.content)
-                if self.budget_manager.over_budget():
-                    self.results.finished = True
-            logger.info("spent", amount=self.spent)
-            if action.action_type == ActionType.DIAGNOSIS:
-                self.results.record_diagnosis(action.content)
-                logger.info("final_diagnosis", diagnosis=action.content)
+                if action.action_type == ActionType.TEST:
+                    self.results.record_test(action.content)
+                    self.budget_manager.add_test(action.content)
+                    if self.budget_manager.over_budget():
+                        self.results.finished = True
+                logger.info("spent", amount=self.spent)
+                if action.action_type == ActionType.DIAGNOSIS:
+                    self.results.record_diagnosis(action.content)
+                    logger.info("final_diagnosis", diagnosis=action.content)
 
-            duration = time.perf_counter() - start
-            self.total_time += duration
-            ORCHESTRATOR_LATENCY.observe(duration)
-            return result.content
+                duration = time.perf_counter() - start
+                self.total_time += duration
+                ORCHESTRATOR_LATENCY.observe(duration)
+                return result.content
+            except Exception as exc:  # pragma: no cover - error path
+                if SENTRY_ENABLED:
+                    import sentry_sdk
+
+                    with sentry_sdk.push_scope() as scope:
+                        if self.session_id:
+                            scope.set_tag("session_id", self.session_id)
+                        sentry_sdk.capture_exception(exc)
+                raise
 
     async def run_turn_async(self, case_info: str) -> str:
         """Asynchronous version of :meth:`run_turn`."""
 
         with tracer.start_as_current_span("orchestrator.run_turn_async"):
             start = time.perf_counter()
-            if hasattr(self.panel, "adeliberate"):
-                action = await self.panel.adeliberate(case_info=case_info)
-            else:
-                action = await asyncio.to_thread(self.panel.deliberate, case_info)
-            ORCHESTRATOR_TURNS.inc()
-            logger.info(
-                "panel_action",
-                turn=getattr(self.panel, "turn", 0),
-                type=action.action_type.value,
-                content=action.content,
-            )
-            if self.question_only and action.action_type == ActionType.TEST:
-                action = PanelAction(ActionType.QUESTION, action.content)
+            try:
+                if hasattr(self.panel, "adeliberate"):
+                    action = await self.panel.adeliberate(case_info=case_info)
+                else:
+                    action = await asyncio.to_thread(self.panel.deliberate, case_info)
+                ORCHESTRATOR_TURNS.inc()
+                logger.info(
+                    "panel_action",
+                    turn=getattr(self.panel, "turn", 0),
+                    type=action.action_type.value,
+                    content=action.content,
+                )
+                if self.question_only and action.action_type == ActionType.TEST:
+                    action = PanelAction(ActionType.QUESTION, action.content)
 
-            xml = build_action(action.action_type, action.content)
-            result = await asyncio.to_thread(self.gatekeeper.answer_question, xml)
-            logger.info(
-                "gatekeeper_response",
-                synthetic=result.synthetic,
-            )
+                xml = build_action(action.action_type, action.content)
+                result = await asyncio.to_thread(self.gatekeeper.answer_question, xml)
+                logger.info(
+                    "gatekeeper_response",
+                    synthetic=result.synthetic,
+                )
 
-            if action.action_type == ActionType.TEST:
-                self.results.record_test(action.content)
-                self.budget_manager.add_test(action.content)
-                if self.budget_manager.over_budget():
-                    self.results.finished = True
-            logger.info("spent", amount=self.spent)
-            if action.action_type == ActionType.DIAGNOSIS:
-                self.results.record_diagnosis(action.content)
-                logger.info("final_diagnosis", diagnosis=action.content)
+                if action.action_type == ActionType.TEST:
+                    self.results.record_test(action.content)
+                    self.budget_manager.add_test(action.content)
+                    if self.budget_manager.over_budget():
+                        self.results.finished = True
+                logger.info("spent", amount=self.spent)
+                if action.action_type == ActionType.DIAGNOSIS:
+                    self.results.record_diagnosis(action.content)
+                    logger.info("final_diagnosis", diagnosis=action.content)
 
-            duration = time.perf_counter() - start
-            self.total_time += duration
-            ORCHESTRATOR_LATENCY.observe(duration)
-            return result.content
+                duration = time.perf_counter() - start
+                self.total_time += duration
+                ORCHESTRATOR_LATENCY.observe(duration)
+                return result.content
+            except Exception as exc:  # pragma: no cover - error path
+                if SENTRY_ENABLED:
+                    import sentry_sdk
+
+                    with sentry_sdk.push_scope() as scope:
+                        if self.session_id:
+                            scope.set_tag("session_id", self.session_id)
+                        sentry_sdk.capture_exception(exc)
+                raise
