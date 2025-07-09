@@ -1,4 +1,5 @@
 import json
+import threading
 from sdb.llm_client import LLMClient
 
 
@@ -38,3 +39,24 @@ def test_cache_eviction(tmp_path):
     client.chat(m1, "model")
     # m1 should have been evicted and fetched again
     assert client.calls == 3
+
+
+def test_cache_thread_safety(tmp_path):
+    cache_file = tmp_path / "cache.jsonl"
+
+    def worker(idx: int) -> None:
+        client = DummyClient(cache_path=str(cache_file), cache_size=10)
+        msgs = [{"role": "user", "content": f"msg{idx}"}]
+        for _ in range(5):
+            client.chat(msgs, "model")
+
+    threads = [threading.Thread(target=worker, args=(i,)) for i in range(5)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    with open(cache_file, "r", encoding="utf-8") as fh:
+        for line in fh:
+            obj = json.loads(line)
+            assert "key" in obj and "value" in obj

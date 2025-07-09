@@ -716,7 +716,7 @@ phases:
   area: robustness
   dependencies: []
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
     - Add a cross-platform file lock around cache read/write.
     - Write tests simulating concurrent access.
