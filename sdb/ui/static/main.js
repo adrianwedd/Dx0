@@ -7,6 +7,7 @@ function App() {
   const [ws, setWs] = React.useState(null);
   const [cost, setCost] = React.useState(0);
   const [stepCost, setStepCost] = React.useState(0);
+  const [remaining, setRemaining] = React.useState(null);
   const [tests, setTests] = React.useState([]);
   const [flow, setFlow] = React.useState([]);
   const [availableTests, setAvailableTests] = React.useState([]);
@@ -111,6 +112,9 @@ function App() {
         if (d.done) {
           setCost(d.total_spent);
           setStepCost(d.cost || 0);
+          if (typeof d.remaining_budget === 'number') {
+            setRemaining(d.remaining_budget);
+          }
           if (chartRef.current && typeof d.total_spent === 'number') {
             const chart = chartRef.current;
             chart.data.labels.push(chart.data.labels.length);
@@ -149,7 +153,7 @@ function App() {
   };
 
   if (!token) {
-    return (
+      return (
       <form onSubmit={login} className='m-3' role='form'>
         <div className='mb-2'>
           <input
@@ -173,6 +177,9 @@ function App() {
     );
   }
 
+  const limit = remaining !== null ? remaining + cost : null;
+  const percent = limit ? (cost / limit) * 100 : 0;
+
   return (
     <div id='layout'>
       <div id='summary-panel' role='region' aria-label='Case Summary'>
@@ -186,6 +193,18 @@ function App() {
       <div id='chat-panel' role='region' aria-label='Chat Panel'>
         <h2>SDBench Physician Chat</h2>
         <div>Step Cost: ${stepCost.toFixed(2)} | Total Cost: ${cost.toFixed(2)}</div>
+        {limit && (
+          <div className='mb-2'>
+            <div className='progress'>
+              <div className='progress-bar' role='progressbar'
+                style={{width: `${percent}%`}}
+                aria-valuenow={percent}
+                aria-valuemin='0'
+                aria-valuemax='100'></div>
+            </div>
+            <small>Remaining Budget: ${remaining.toFixed(2)} of ${limit.toFixed(2)}</small>
+          </div>
+        )}
         <div id='log'>
           {log.map((m, i) => <div key={i}><b>{m.sender}:</b> {m.text}</div>)}
           {loadingReply && <span className='spinner'></span>}
