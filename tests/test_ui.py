@@ -400,9 +400,11 @@ async def test_ws_budget_query_param(monkeypatch):
     class DummyOrchestrator:
         def __init__(self, *args, **kwargs):
             self.budget_manager = kwargs.get("budget_manager")
+            self.spent = 0.0
+            self.ordered_tests = []
 
         def run_turn(self, *_args, **_kwargs):
-            return ""
+            return "ok"
 
     monkeypatch.setattr(ui_app, "BudgetManager", DummyBudgetManager)
     monkeypatch.setattr(ui_app, "Orchestrator", DummyOrchestrator)
