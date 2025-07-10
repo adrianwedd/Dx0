@@ -27,9 +27,9 @@ This repository contains two integrated projects for advancing sequential clinic
 ### BudgetManager
 
 The ``BudgetManager`` service keeps a running total of ordered test costs and
-optionally stops a session once spending exceeds a configurable limit.  It
-relies on a ``CostEstimator`` to translate test names into prices and can be
-passed to :class:`Orchestrator` or created automatically when the CLI runs in
+optionally stops a session once spending exceeds a configurable limit. It replaces the earlier budget tracker and relies on a ``CostEstimator`` to
+translate test names into prices. The manager can be passed to
+:class:`Orchestrator` or created automatically when the CLI runs in
 ``budgeted`` mode.
 
 ```python
