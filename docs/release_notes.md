@@ -3,7 +3,7 @@
 ## v0.4.0
 
 * Introduced a `BudgetManager` service to track test spending and enforce
-  per-session limits.
+  per-session limits. This replaces the former budget tracker component.
 * Added the `--budget-limit` CLI flag and `UI_BUDGET_LIMIT` environment
   variable for configuring default budgets.
 
