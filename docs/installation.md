@@ -139,6 +139,13 @@ export UI_BUDGET_LIMIT=750
 uvicorn sdb.ui.app:app --reload
 ```
 
+You can also override the limit for a specific session by including a
+`budget` query parameter when the client opens the WebSocket connection:
+
+```
+ws://localhost:8000/api/v1/ws?token=<TOKEN>&budget=500
+```
+
 Log in with username `physician` and password `secret`. After authentication the
 interface calls the `/case` endpoint to display the vignette in the **Case
 Summary** panel. The **Ordered Tests** list and **Diagnostic Flow** log update as
