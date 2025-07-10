@@ -36,6 +36,7 @@ if os.getenv("SENTRY_DSN"):
 
 
 class Orchestrator:
+    """Coordinate panel actions while enforcing test budgets."""
     def __init__(
         self,
         panel: VirtualPanel,
