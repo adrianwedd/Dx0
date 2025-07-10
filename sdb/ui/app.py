@@ -107,6 +107,7 @@ async def stream_reply(
     text: str,
     cost: float,
     total: float,
+    remaining: float | None = None,
     tests: list[str] | None = None,
     chunk_size: int = 20,
 ) -> None:
@@ -119,6 +120,7 @@ async def stream_reply(
             done=done,
             cost=cost if done else None,
             total_spent=total if done else None,
+            remaining_budget=remaining if done else None,
             ordered_tests=(tests or []) if done else None,
         )
         await ws.send_json(payload.model_dump(exclude_none=True))
@@ -148,12 +150,13 @@ class ChatMessage(BaseModel):
 
 
 class ChatResponse(BaseModel):
-    """Outgoing websocket payload."""
+    """Outgoing websocket payload with cost information."""
 
     reply: str
     done: bool
     cost: float | None = None
     total_spent: float | None = None
+    remaining_budget: float | None = None
     ordered_tests: list[str] | None = None
 
 
@@ -339,11 +342,14 @@ async def websocket_endpoint(ws: WebSocket) -> None:
                 prev_spent = orchestrator.spent
                 reply = orchestrator.run_turn(content)
                 step_cost = orchestrator.spent - prev_spent
+                limit = orchestrator.budget_manager.budget
+                remaining = limit - orchestrator.spent if limit is not None else None
                 await stream_reply(
                     ws,
                     reply,
                     step_cost,
                     orchestrator.spent,
+                    remaining,
                     orchestrator.ordered_tests,
                 )
         except WebSocketDisconnect:
