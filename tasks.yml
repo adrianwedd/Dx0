@@ -1262,3 +1262,201 @@ phases:
   command: null
   epic: Phase 5
   assigned_to: null
+
+- id: 76
+  title: Enable Retrieval Result Caching
+  description: >
+    Introduce a simple caching layer for retrieval responses to
+    accelerate repeated queries during evaluation.
+  component: retrieval
+  area: performance
+  dependencies: []
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Add an in-memory cache keyed by query hash.
+    - Expire cached items after a configurable TTL.
+    - Provide unit tests covering cache hits and misses.
+  acceptance_criteria:
+    - "Retrieval benchmarks show improved throughput with caching enabled."
+  command: null
+  epic: Phase 6
+  assigned_to: null
+
+- id: 77
+  title: Persist Evaluation Results to SQLite
+  description: >
+    Store orchestrator evaluation metrics in a SQLite database so results
+    can be compared across runs.
+  component: evaluation
+  area: data
+  dependencies: []
+  priority: 2
+  status: pending
+  actionable_steps:
+    - Define a results schema and migration script.
+    - Update evaluator to write metrics after each run.
+    - Document how to query the database for summaries.
+  acceptance_criteria:
+    - "Historical evaluation data persists between sessions."
+  command: null
+  epic: Phase 6
+  assigned_to: null
+
+- id: 78
+  title: Build Prometheus Metrics Dashboard
+  description: >
+    Create example Grafana dashboards that visualize orchestrator latency
+    and retrieval accuracy using Prometheus metrics.
+  component: observability
+  area: monitoring
+  dependencies: [49]
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Provide dashboard JSON files under docs/.
+    - Include setup instructions for Prometheus and Grafana.
+    - Add screenshots to the documentation.
+  acceptance_criteria:
+    - "Dashboards display latency histograms and accuracy trends."
+  command: null
+  epic: Phase 6
+  assigned_to: null
+
+- id: 79
+  title: CLI Command to Export FHIR JSON
+  description: >
+    Add a subcommand that converts saved transcripts into FHIR
+    JSON bundles for interoperability with other tools.
+  component: cli
+  area: tooling
+  dependencies: []
+  priority: 4
+  status: pending
+  actionable_steps:
+    - Implement `cli.py export-fhir` with input/output options.
+    - Reuse existing FHIR export functions.
+    - Write unit tests covering the command.
+  acceptance_criteria:
+    - "Users can generate FHIR bundles from transcripts on disk."
+  command: null
+  epic: Phase 6
+  assigned_to: null
+
+- id: 80
+  title: HTTP Connection Pooling
+  description: >
+    Use persistent HTTP sessions for external API calls to reduce
+    latency and system load.
+  component: backend
+  area: performance
+  dependencies: []
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Refactor network utilities to reuse an `httpx.Client` instance.
+    - Measure request latency before and after the change.
+  acceptance_criteria:
+    - "Average response time decreases in load tests."
+  command: null
+  epic: Phase 6
+  assigned_to: null
+
+- id: 81
+  title: Cost Estimator Plugin Interface
+  description: >
+    Allow third parties to provide custom cost estimation logic via
+    a plugin entry point.
+  component: cost-estimation
+  area: extensibility
+  dependencies: []
+  priority: 4
+  status: pending
+  actionable_steps:
+    - Define an entry point group `dx0.cost_estimators`.
+    - Load the selected estimator from plugins at runtime.
+    - Document how to implement a custom estimator.
+  acceptance_criteria:
+    - "Custom estimator plugins can override default pricing logic."
+  command: null
+  epic: Phase 6
+  assigned_to: null
+
+- id: 82
+  title: Group-Based User Roles
+  description: >
+    Add support for assigning users to groups with specific permissions
+    in the web UI.
+  component: ui
+  area: authentication
+  dependencies: [68]
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Extend the credentials model with a group field.
+    - Enforce permissions when accessing protected endpoints.
+    - Provide an admin interface to manage groups.
+  acceptance_criteria:
+    - "API endpoints reject users lacking required roles."
+  command: null
+  epic: Phase 6
+  assigned_to: null
+
+- id: 83
+  title: Ephemeral CLI Session Tokens
+  description: >
+    Issue short-lived tokens for command-line sessions to improve
+    security when running batch evaluations.
+  component: cli
+  area: security
+  dependencies: [74]
+  priority: 2
+  status: pending
+  actionable_steps:
+    - Add `dx0 login` command that obtains a token via the API.
+    - Automatically refresh the token when expired.
+    - Document best practices for token storage.
+  acceptance_criteria:
+    - "CLI commands fail gracefully when the token expires."
+  command: null
+  epic: Phase 6
+  assigned_to: null
+
+- id: 84
+  title: Document Advanced Orchestrator Settings
+  description: >
+    Expand the README with guidance on tuning orchestrator parameters
+    and integrating custom panels.
+  component: docs
+  area: documentation
+  dependencies: []
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Describe configuration options for budgets and personas.
+    - Provide examples for plugin-based panels.
+  acceptance_criteria:
+    - "Users can customize orchestrator behavior following the docs."
+  command: null
+  epic: Phase 6
+  assigned_to: null
+
+- id: 85
+  title: Pydantic Schema for Plugin Metadata
+  description: >
+    Define a typed model describing plugin metadata to validate
+    loaded entry points at startup.
+  component: plugins
+  area: validation
+  dependencies: []
+  priority: 2
+  status: pending
+  actionable_steps:
+    - Create `PluginInfo` model with name, version, and entry point.
+    - Validate registered plugins before use.
+    - Fail startup if required fields are missing.
+  acceptance_criteria:
+    - "Invalid plugins are rejected with a clear error message."
+  command: null
+  epic: Phase 6
+  assigned_to: null
