@@ -852,7 +852,7 @@ phases:
   area: design
   dependencies: []
   priority: 2
-  status: pending
+  status: done
   actionable_steps:
     - Document current UX pain points and desired outcomes.
   acceptance_criteria:
@@ -871,7 +871,7 @@ phases:
   area: frontend
   dependencies: [56]
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
     - Add buttons or a dropdown to select Ask Question, Order Test, or Provide Diagnosis.
     - Update WebSocket payloads based on the selected control.
