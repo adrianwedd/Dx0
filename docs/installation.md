@@ -30,6 +30,9 @@ python -m dx0.cli \
   --output results/case_001.json
 ```
 
+The CLI instantiates :class:`sdb.services.BudgetManager` to track the cumulative
+cost of ordered tests. Once the limit is reached the session stops.
+
 To start the demo web UI locally:
 
 ```bash

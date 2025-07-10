@@ -32,8 +32,8 @@ The React demo arranges four panels in a two-column grid:
 * **Case Summary** – shows the summary text returned by `/case`.
 * **Ordered Tests** – lists completed labs or imaging studies.
 * **Chat Panel** – spans both columns and displays the running conversation and
-  live cost summary from the `BudgetManager` service (replacing the former
-  budget tracker).
+  live cost summary from :class:`sdb.services.BudgetManager` (which
+  replaced the previous `BudgetTracker`).
 * **Diagnostic Flow** – captures a step-by-step log of the debate.
 
 Together these panels provide an overview of the ordered tests and reasoning
