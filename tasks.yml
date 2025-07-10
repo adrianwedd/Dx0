@@ -1460,3 +1460,40 @@ phases:
   command: null
   epic: Phase 6
   assigned_to: null
+- id: 86
+  title: Provide Final Cost Summary and Completion Notice
+  description: >
+    Show clinicians when the conversation has concluded and display a final
+    cost summary for the ordered tests.
+  component: ui
+  area: usability
+  dependencies: [58, 60]
+  priority: 2
+  status: pending
+  actionable_steps:
+    - Display an "interaction complete" banner after the final diagnosis.
+    - Summarize the total cost next to the banner.
+  acceptance_criteria:
+    - "Users see a clear end-of-session indicator with total cost." 
+  command: null
+  epic: User Experience (UX) & Accessibility
+  assigned_to: null
+
+- id: 87
+  title: Expandable Case Vignette
+  description: >
+    Allow the initial case description to be expanded or collapsed during the
+    chat so clinicians can reference details without losing context.
+  component: ui
+  area: usability
+  dependencies: [62]
+  priority: 3
+  status: pending
+  actionable_steps:
+    - Add a toggle that reveals or hides the vignette text.
+    - Ensure the control is keyboard accessible and labelled for screen readers.
+  acceptance_criteria:
+    - "Clinicians can show or hide the case vignette while chatting."
+  command: null
+  epic: User Experience (UX) & Accessibility
+  assigned_to: null
