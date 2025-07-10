@@ -101,6 +101,9 @@ class AGatekeeper:
     def answer_question(self, xml: str):
         return DummyResult("ack")
 
+    async def aanswer_question(self, xml: str):
+        return self.answer_question(xml)
+
 
 async def async_run_case(cid: str) -> dict[str, str]:
     panel = VirtualPanel(decision_engine=LLMEngine(client=DummyAsyncClient()))

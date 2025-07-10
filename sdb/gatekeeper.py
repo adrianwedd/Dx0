@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Dict
+import asyncio
 import json
 import structlog
 import os
@@ -117,9 +118,19 @@ class Gatekeeper:
         for name, result in data.items():
             self.register_test_result(name, str(result))
 
+    async def aload_results_from_json(self, path: str) -> None:
+        """Asynchronous version of :meth:`load_results_from_json`."""
+
+        await asyncio.to_thread(self.load_results_from_json, path)
+
     def register_test_result(self, test_name: str, result: str):
         """Add known test result for the current case."""
         self.known_tests[test_name.lower()] = result
+
+    async def aregister_test_result(self, test_name: str, result: str) -> None:
+        """Asynchronous version of :meth:`register_test_result`."""
+
+        await asyncio.to_thread(self.register_test_result, test_name, result)
 
     def answer_question(self, query: str) -> QueryResult:
         """Return relevant snippet from case or synthetic result."""
@@ -213,3 +224,8 @@ class Gatekeeper:
         result = QueryResult("Unknown action", synthetic=True)
         logger.info("gatekeeper_result", synthetic=True)
         return result
+
+    async def aanswer_question(self, query: str) -> QueryResult:
+        """Asynchronous version of :meth:`answer_question`."""
+
+        return await asyncio.to_thread(self.answer_question, query)

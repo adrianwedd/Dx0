@@ -19,6 +19,9 @@ class DummyGatekeeper:
     def answer_question(self, xml: str) -> DummyResult:
         return DummyResult("ack")
 
+    async def aanswer_question(self, xml: str) -> DummyResult:
+        return self.answer_question(xml)
+
 
 def test_run_turn_passes_case_info():
     panel = VirtualPanel()
@@ -130,6 +133,9 @@ class TimeoutPanel:
 
 class TimeoutGatekeeper:
     def answer_question(self, xml: str) -> DummyResult:
+        raise TimeoutError("gatekeeper timeout")
+
+    async def aanswer_question(self, xml: str) -> DummyResult:
         raise TimeoutError("gatekeeper timeout")
 
 
