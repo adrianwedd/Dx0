@@ -169,7 +169,10 @@ class Orchestrator:
                     action = PanelAction(ActionType.QUESTION, action.content)
 
                 xml = build_action(action.action_type, action.content)
-                result = await asyncio.to_thread(self.gatekeeper.answer_question, xml)
+                if hasattr(self.gatekeeper, "aanswer_question"):
+                    result = await self.gatekeeper.aanswer_question(xml)  # type: ignore[attr-defined]
+                else:
+                    result = await asyncio.to_thread(self.gatekeeper.answer_question, xml)
                 logger.info(
                     "gatekeeper_response",
                     synthetic=result.synthetic,
