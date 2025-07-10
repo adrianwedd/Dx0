@@ -850,7 +850,7 @@ def main() -> None:
     )
     gatekeeper.register_test_result("complete blood count", "normal")
 
-    cost_estimator = CostEstimator.load_from_csv(args.costs)
+    cost_estimator = CostEstimator.load_from_csv(cost_path)
 
     with open(args.rubric, "r", encoding="utf-8") as fh:
         rubric = json.load(fh)
