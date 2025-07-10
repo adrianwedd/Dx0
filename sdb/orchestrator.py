@@ -116,26 +116,7 @@ class Orchestrator:
 
                 xml = build_action(action.action_type, action.content)
                 result = self.gatekeeper.answer_question(xml)
-                logger.info(
-                    "gatekeeper_response",
-                    synthetic=result.synthetic,
-                )
-
-                if action.action_type == ActionType.TEST:
-                    self.results.record_test(action.content)
-                    self.budget_manager.add_test(action.content)
-                    if self.budget_manager.over_budget():
-                        self.results.finished = True
-                USER_MESSAGE_COST.inc(self.budget_manager.spent - prev_spent)
-                logger.info("spent", amount=self.spent)
-                if action.action_type == ActionType.DIAGNOSIS:
-                    self.results.record_diagnosis(action.content)
-                    logger.info("final_diagnosis", diagnosis=action.content)
-
-                duration = time.perf_counter() - start
-                self.total_time += duration
-                ORCHESTRATOR_LATENCY.observe(duration)
-                return result.content
+                return self._execute_turn(action, result, start, prev_spent)
             except Exception as exc:  # pragma: no cover - error path
                 if SENTRY_ENABLED:
                     import sentry_sdk
@@ -174,26 +155,7 @@ class Orchestrator:
                     result = await self.gatekeeper.aanswer_question(xml)  # type: ignore[attr-defined]
                 else:
                     result = await asyncio.to_thread(self.gatekeeper.answer_question, xml)
-                logger.info(
-                    "gatekeeper_response",
-                    synthetic=result.synthetic,
-                )
-
-                if action.action_type == ActionType.TEST:
-                    self.results.record_test(action.content)
-                    self.budget_manager.add_test(action.content)
-                    if self.budget_manager.over_budget():
-                        self.results.finished = True
-                USER_MESSAGE_COST.inc(self.budget_manager.spent - prev_spent)
-                logger.info("spent", amount=self.spent)
-                if action.action_type == ActionType.DIAGNOSIS:
-                    self.results.record_diagnosis(action.content)
-                    logger.info("final_diagnosis", diagnosis=action.content)
-
-                duration = time.perf_counter() - start
-                self.total_time += duration
-                ORCHESTRATOR_LATENCY.observe(duration)
-                return result.content
+                return self._execute_turn(action, result, start, prev_spent)
             except Exception as exc:  # pragma: no cover - error path
                 if SENTRY_ENABLED:
                     import sentry_sdk
@@ -203,3 +165,33 @@ class Orchestrator:
                             scope.set_tag("session_id", self.session_id)
                         sentry_sdk.capture_exception(exc)
                 raise
+
+    def _execute_turn(
+        self,
+        action: PanelAction,
+        result: Gatekeeper.QueryResult | any,
+        start: float,
+        prev_spent: float,
+    ) -> str:
+        """Finalize bookkeeping after obtaining an action result."""
+
+        logger.info(
+            "gatekeeper_response",
+            synthetic=getattr(result, "synthetic", False),
+        )
+
+        if action.action_type == ActionType.TEST:
+            self.results.record_test(action.content)
+            self.budget_manager.add_test(action.content)
+            if self.budget_manager.over_budget():
+                self.results.finished = True
+        USER_MESSAGE_COST.inc(self.budget_manager.spent - prev_spent)
+        logger.info("spent", amount=self.spent)
+        if action.action_type == ActionType.DIAGNOSIS:
+            self.results.record_diagnosis(action.content)
+            logger.info("final_diagnosis", diagnosis=action.content)
+
+        duration = time.perf_counter() - start
+        self.total_time += duration
+        ORCHESTRATOR_LATENCY.observe(duration)
+        return result.content
