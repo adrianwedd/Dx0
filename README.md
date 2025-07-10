@@ -41,6 +41,16 @@ bm = BudgetManager(costs, budget=500)
 orc = Orchestrator(panel, gatekeeper, budget_manager=bm)
 ```
 
+Use ``--budget-limit`` to set the cap when running the CLI in ``budgeted`` mode:
+
+```bash
+python -m dx0.cli --mode budgeted --budget-limit 1000 --case-file case.json
+```
+
+The Physician UI reads ``UI_BUDGET_LIMIT`` for the default limit and also
+accepts a ``budget`` query parameter on the WebSocket connection. See
+[`docs/budget_manager.md`](docs/budget_manager.md) for details.
+
 ---
 
 ## SDBench: Sequential Diagnosis Benchmark
