@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Optional
 
 from .budget_store import BudgetStore
+from ..ui.session_db import SessionDB
 
 from ..cost_estimator import CostEstimator
 
@@ -16,6 +17,8 @@ class BudgetManager:
     budget: Optional[float] = None
     category_limits: Dict[str, float] | None = None
     store: BudgetStore | None = None
+    session_db: SessionDB | None = None
+    session_token: str | None = None
     spent: float = 0.0
     spent_by_category: Dict[str, float] = field(default_factory=dict)
     test_categories: Dict[str, str] = field(default_factory=dict)
@@ -23,6 +26,11 @@ class BudgetManager:
     def __post_init__(self) -> None:
         if self.store is not None:
             self.spent = self.store.total()
+        if self.session_db is not None and self.session_token is not None:
+            limit, spent = self.session_db.get_budget(self.session_token)
+            if limit is not None:
+                self.budget = limit
+            self.spent = spent
 
     def add_test(self, test_name: str) -> None:
         """Record the cost of ``test_name`` using ``cost_estimator``."""
@@ -37,6 +45,8 @@ class BudgetManager:
         self.test_categories[test_name] = category
         if self.store is not None:
             self.store.record(test_name, amount)
+        if self.session_db is not None and self.session_token is not None:
+            self.session_db.update_spent(self.session_token, self.spent)
 
     def over_budget(self) -> bool:
         """Return ``True`` if any spending limit was exceeded."""
