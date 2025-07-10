@@ -10,7 +10,13 @@ import structlog
 from opentelemetry import trace
 
 from .gatekeeper import Gatekeeper
-from .metrics import ORCHESTRATOR_LATENCY, ORCHESTRATOR_TURNS
+from .metrics import (
+    ORCHESTRATOR_LATENCY,
+    ORCHESTRATOR_TURNS,
+    USER_MESSAGE_COST,
+    USER_MESSAGE_TOKENS,
+)
+from .llm_client import LLMClient
 from .panel import PanelAction, VirtualPanel
 from .protocol import ActionType, build_action
 from .services import BudgetManager, ResultAggregator
@@ -92,6 +98,9 @@ class Orchestrator:
         """Process a single interaction turn with the panel."""
         with tracer.start_as_current_span("orchestrator.run_turn"):
             start = time.perf_counter()
+            prev_spent = self.budget_manager.spent
+            tokens = LLMClient._count_tokens([{"role": "user", "content": case_info}])
+            USER_MESSAGE_TOKENS.inc(tokens)
             try:
                 action = self.panel.deliberate(case_info=case_info)
                 ORCHESTRATOR_TURNS.inc()
@@ -116,6 +125,7 @@ class Orchestrator:
                     self.budget_manager.add_test(action.content)
                     if self.budget_manager.over_budget():
                         self.results.finished = True
+                USER_MESSAGE_COST.inc(self.budget_manager.spent - prev_spent)
                 logger.info("spent", amount=self.spent)
                 if action.action_type == ActionType.DIAGNOSIS:
                     self.results.record_diagnosis(action.content)
@@ -140,6 +150,9 @@ class Orchestrator:
 
         with tracer.start_as_current_span("orchestrator.run_turn_async"):
             start = time.perf_counter()
+            prev_spent = self.budget_manager.spent
+            tokens = LLMClient._count_tokens([{"role": "user", "content": case_info}])
+            USER_MESSAGE_TOKENS.inc(tokens)
             try:
                 if hasattr(self.panel, "adeliberate"):
                     action = await self.panel.adeliberate(case_info=case_info)
@@ -167,6 +180,7 @@ class Orchestrator:
                     self.budget_manager.add_test(action.content)
                     if self.budget_manager.over_budget():
                         self.results.finished = True
+                USER_MESSAGE_COST.inc(self.budget_manager.spent - prev_spent)
                 logger.info("spent", amount=self.spent)
                 if action.action_type == ActionType.DIAGNOSIS:
                     self.results.record_diagnosis(action.content)
