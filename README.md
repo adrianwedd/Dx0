@@ -32,6 +32,14 @@ relies on a ``CostEstimator`` to translate test names into prices and can be
 passed to :class:`Orchestrator` or created automatically when the CLI runs in
 ``budgeted`` mode.
 
+```python
+from sdb import BudgetManager, CostEstimator, Orchestrator
+
+costs = CostEstimator.load_from_csv("data/sdbench/costs.csv")
+bm = BudgetManager(costs, budget=500)
+orc = Orchestrator(panel, gatekeeper, budget_manager=bm)
+```
+
 ---
 
 ## SDBench: Sequential Diagnosis Benchmark

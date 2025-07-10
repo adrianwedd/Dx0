@@ -26,7 +26,7 @@ Run the CLI on a single case in budgeted mode:
 python -m dx0.cli \
   --mode budgeted \
   --case-file data/sdbench/cases/case_001.json \
-  --budget 1000 \
+  --budget-limit 1000 \
   --output results/case_001.json
 ```
 
@@ -126,6 +126,13 @@ pip install -r requirements.lock
 Start the server and open `http://localhost:8000`:
 
 ```bash
+uvicorn sdb.ui.app:app --reload
+```
+
+Set `UI_BUDGET_LIMIT` to change the default spending cap for new sessions:
+
+```bash
+export UI_BUDGET_LIMIT=750
 uvicorn sdb.ui.app:app --reload
 ```
 
