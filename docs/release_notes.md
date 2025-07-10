@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.4.0
+
+* Introduced a `BudgetManager` service to track test spending and enforce
+  per-session limits.
+* Added the `--budget-limit` CLI flag and `UI_BUDGET_LIMIT` environment
+  variable for configuring default budgets.
+
 ## v0.3.0
 
 * Added a `WeightedVoter` that combines panel diagnoses using confidence
