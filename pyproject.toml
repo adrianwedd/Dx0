@@ -40,7 +40,13 @@ sentry = ["sentry-sdk"]
 sdb-cli = "cli:main"
 
 [tool.setuptools]
-packages = ["sdb", "sdb.ingest", "sdb.ui", "sdb.plugins", "sdb.services"]
+packages = [
+    "sdb",
+    "sdb.ingest",
+    "sdb.ui",
+    "sdb.plugins",
+    "sdb.services",
+]
 py-modules = ["cli"]
 include-package-data = true
 
