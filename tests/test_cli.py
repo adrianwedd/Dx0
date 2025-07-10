@@ -536,6 +536,68 @@ def test_cli_budget_limit(monkeypatch, tmp_path):
     assert captured["limit"] == 5.0
 
 
+def test_cli_cost_table_custom(monkeypatch, tmp_path):
+    cases = [{"id": "1", "summary": "s", "full_text": "t"}]
+    case_file = tmp_path / "cases.json"
+    with open(case_file, "w", encoding="utf-8") as f:
+        json.dump(cases, f)
+
+    rubric_file = tmp_path / "r.json"
+    with open(rubric_file, "w", encoding="utf-8") as f:
+        json.dump({}, f)
+
+    cost_file = tmp_path / "table.csv"
+    with open(cost_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["test_name", "cpt_code", "price"])
+        writer.writeheader()
+        writer.writerow({"test_name": "x", "cpt_code": "1", "price": "1"})
+
+    captured: dict[str, object] = {}
+
+    class DummyCostEstimator:
+        pass
+
+    def dummy_load(path: str) -> DummyCostEstimator:
+        captured["path"] = path
+        return DummyCostEstimator()
+
+    class DummyBudgetManager:
+        def __init__(self, estimator, *args, **kwargs):
+            captured["estimator"] = estimator
+
+    class DummyOrchestrator:
+        def __init__(self, *args, **kwargs):
+            self.finished = True
+            self.total_time = 0.0
+            self.final_diagnosis = ""
+            self.ordered_tests = []
+
+        def run_turn(self, *_args, **_kwargs):
+            return ""
+
+    monkeypatch.setattr(cli.CostEstimator, "load_from_csv", staticmethod(dummy_load))
+    monkeypatch.setattr(cli, "BudgetManager", DummyBudgetManager)
+    monkeypatch.setattr(cli, "Orchestrator", DummyOrchestrator)
+    monkeypatch.setattr(cli, "start_metrics_server", lambda *_: None)
+
+    argv = [
+        "cli.py",
+        "--db",
+        str(case_file),
+        "--case",
+        "1",
+        "--rubric",
+        str(rubric_file),
+        "--cost-table",
+        str(cost_file),
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+    cli.main()
+
+    assert captured["path"] == str(cost_file)
+    assert isinstance(captured["estimator"], DummyCostEstimator)
+
+
 def test_batch_eval_ollama_base_url(monkeypatch, tmp_path):
     cases = [{"id": "1", "summary": "s", "full_text": "t"}]
     case_file = tmp_path / "cases.json"
