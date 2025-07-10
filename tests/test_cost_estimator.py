@@ -86,12 +86,13 @@ def test_coverage_check(tmp_path):
         writer.writeheader()
         writer.writerows(cms_rows)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as exc:
         CostEstimator.load_from_csv(
             str(cost_path),
             cms_pricing_path=str(cms_path),
-            coverage_threshold=0.98,
+            coverage_threshold=1.0,
         )
+    assert "101" in str(exc.value)
 
 
 def test_lookup_cost_missing():

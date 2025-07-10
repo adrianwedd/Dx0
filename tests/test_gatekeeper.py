@@ -93,10 +93,15 @@ def test_cross_encoder_name_passed(monkeypatch):
             *,
             cross_encoder_name=None,
             rerank_k=5,
+            plugin_name=None,
         ):
             captured["name"] = cross_encoder_name
 
-    monkeypatch.setattr(gatekeeper, "load_retrieval_index", lambda docs, **k: DummyIndex(docs, **k))
+    monkeypatch.setattr(
+        gatekeeper,
+        "load_retrieval_index",
+        lambda docs, **k: DummyIndex(docs, **k),
+    )
 
     case = Case(id="1", summary="s", full_text="t")
     db = CaseDatabase([case])
