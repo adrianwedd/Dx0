@@ -19,6 +19,8 @@ jobs:
           ./scripts/install_dev_deps.sh
       - name: Run pre-commit
         run: pre-commit run --show-diff-on-failure --color=always --all-files
+      - name: Run flake8
+        run: flake8 .
       - name: Run tests
         run: pytest -q
 

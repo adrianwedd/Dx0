@@ -3,3 +3,5 @@ __pycache__/
 /.dvc/cache
 /.dvc/tmp
 dvc_storage/
+*.egg-info/
+sessions.db

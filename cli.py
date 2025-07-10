@@ -886,7 +886,7 @@ def main() -> None:
     max_turns = 1 if args.mode == "instant" else 10
     while not orchestrator.finished and turn < max_turns:
         response = orchestrator.run_turn("")
-        print(f"Turn {turn+1}: {response}")
+        print(f"Turn {turn + 1}: {response}")
         turn += 1
 
     diag_result = DiagnosisResult(
