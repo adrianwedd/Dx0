@@ -2,7 +2,11 @@ import csv
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
 
+import structlog
+
 from .cpt_lookup import lookup_cpt
+
+logger = structlog.get_logger(__name__)
 
 
 @dataclass
@@ -56,6 +60,10 @@ class CostEstimator:
     ) -> "CostEstimator":
         """Load CPT pricing table from CSV and optionally verify coverage.
 
+        Missing CPT codes referenced in ``cms_pricing_path`` are reported via
+        the logger. Coverage below ``coverage_threshold`` results in a
+        ``ValueError`` that lists the missing codes.
+
         Parameters
         ----------
         path:
@@ -108,6 +116,13 @@ class CostEstimator:
             else:
                 estimator.match_rate = 1.0
 
+            if estimator.unmatched_codes:
+                logger.warning(
+                    "unmatched_cpt_codes",
+                    count=len(estimator.unmatched_codes),
+                    codes=estimator.unmatched_codes,
+                )
+
             if report_path is not None:
                 with open(
                     report_path,
@@ -121,9 +136,10 @@ class CostEstimator:
                         writer.writerow([code])
 
             if estimator.match_rate < coverage_threshold:
+                missing = ", ".join(estimator.unmatched_codes)
                 msg = (
                     f"Coverage {estimator.match_rate:.1%} below required "
-                    f"{coverage_threshold:.1%}"
+                    f"{coverage_threshold:.1%}. Missing CPT codes: {missing}"
                 )
                 raise ValueError(msg)
 

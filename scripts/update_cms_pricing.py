@@ -7,10 +7,12 @@ import csv
 import datetime
 import io
 import os
+import tempfile
 import zipfile
 from typing import Dict
 
 import requests
+from sdb.cost_estimator import CostEstimator
 
 
 def default_cms_url() -> str:
@@ -72,8 +74,16 @@ def _fetch_cms_prices(url: str = DEFAULT_URL) -> Dict[str, float]:
     return mapping
 
 
-def refresh_pricing(path: str = DEFAULT_PATH, url: str = DEFAULT_URL) -> None:
-    """Update ``path`` with prices fetched from ``url``."""
+def refresh_pricing(
+    path: str = DEFAULT_PATH,
+    url: str = DEFAULT_URL,
+    coverage_threshold: float = 0.98,
+) -> None:
+    """Update ``path`` with prices fetched from ``url``.
+
+    The updated file is validated against the CMS pricing table. A
+    ``ValueError`` is raised when coverage falls below ``coverage_threshold``.
+    """
 
     prices = _fetch_cms_prices(url)
     rows = []
@@ -93,6 +103,21 @@ def refresh_pricing(path: str = DEFAULT_PATH, url: str = DEFAULT_URL) -> None:
         writer.writeheader()
         writer.writerows(rows)
 
+    # Validate coverage against the downloaded CMS pricing table
+    with tempfile.NamedTemporaryFile("w", newline="", delete=False) as tmp:
+        writer = csv.writer(tmp)
+        writer.writerow(["cpt_code"])
+        for code in prices:
+            writer.writerow([code])
+        cms_path = tmp.name
+
+    try:
+        CostEstimator.load_from_csv(
+            path, cms_pricing_path=cms_path, coverage_threshold=coverage_threshold
+        )
+    finally:
+        os.unlink(cms_path)
+
 
 def main(args: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Update CPT pricing from CMS")
@@ -106,8 +131,18 @@ def main(args: list[str] | None = None) -> None:
         default=DEFAULT_PATH,
         help="Path to cpt_lookup.csv",
     )
+    parser.add_argument(
+        "--coverage-threshold",
+        type=float,
+        default=0.98,
+        help="Minimum CPT coverage required",
+    )
     parsed = parser.parse_args(args)
-    refresh_pricing(parsed.path, parsed.url)
+    refresh_pricing(
+        parsed.path,
+        parsed.url,
+        coverage_threshold=parsed.coverage_threshold,
+    )
 
 
 if __name__ == "__main__":  # pragma: no cover
