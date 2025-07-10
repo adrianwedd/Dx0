@@ -17,6 +17,7 @@ from sdb import (
     OpenAIClient,
     OllamaClient,
     Orchestrator,
+    BudgetManager,
     Judge,
     Evaluator,
     DiagnosisResult,
@@ -199,6 +200,12 @@ def batch_eval_main(argv: list[str]) -> None:
         default=128,
         help="Maximum number of responses to keep in the cache",
     )
+    parser.add_argument(
+        "--budget-limit",
+        type=float,
+        default=None,
+        help="Maximum total spend allowed during the session",
+    )
     parser.add_argument("--budget", type=float, default=None)
     parser.add_argument(
         "--mode",
@@ -313,14 +320,20 @@ def batch_eval_main(argv: list[str]) -> None:
             )
 
         panel = VirtualPanel(decision_engine=engine)
+        budget_manager = BudgetManager(
+            cost_estimator,
+            budget=args.budget_limit,
+        )
         orch_kwargs = {}
-        if args.mode == "budgeted":
-            orch_kwargs["cost_estimator"] = cost_estimator
-            orch_kwargs["budget"] = args.budget
         if args.mode == "question-only":
             orch_kwargs["question_only"] = True
 
-        orchestrator = Orchestrator(panel, gatekeeper, **orch_kwargs)
+        orchestrator = Orchestrator(
+            panel,
+            gatekeeper,
+            budget_manager=budget_manager,
+            **orch_kwargs,
+        )
         turn = 0
         max_turns = 1 if args.mode == "instant" else 10
         while not orchestrator.finished and turn < max_turns:
@@ -667,6 +680,12 @@ def main() -> None:
         default=128,
         help="Maximum number of responses to keep in the cache",
     )
+    parser.add_argument(
+        "--budget-limit",
+        type=float,
+        default=None,
+        help="Maximum total spend allowed during the session",
+    )
     semantic = parser.add_mutually_exclusive_group()
     semantic.add_argument(
         "--semantic-retrieval",
@@ -685,6 +704,11 @@ def main() -> None:
         "--cross-encoder-model",
         default=None,
         help="Cross-encoder model name for semantic retrieval",
+    )
+    parser.add_argument(
+        "--retrieval-backend",
+        default=None,
+        help="Retrieval plugin name to use when semantic retrieval is enabled",
     )
     parser.add_argument(
         "--verbose",
@@ -758,6 +782,8 @@ def main() -> None:
     if args.db is None and args.db_sqlite is None:
         args.db = cfg.case_db
         args.db_sqlite = cfg.case_db_sqlite
+    if args.retrieval_backend is None:
+        args.retrieval_backend = cfg.retrieval_backend
 
     vote_weights = _load_weights_file(args.weights_file)
     if vote_weights is None:
@@ -843,14 +869,18 @@ def main() -> None:
 
     panel = VirtualPanel(decision_engine=engine)
 
+    budget_manager = BudgetManager(cost_estimator, budget=args.budget_limit)
+
     orch_kwargs = {}
-    if args.mode == "budgeted":
-        orch_kwargs["cost_estimator"] = cost_estimator
-        orch_kwargs["budget"] = args.budget
     if args.mode == "question-only":
         orch_kwargs["question_only"] = True
 
-    orchestrator = Orchestrator(panel, gatekeeper, **orch_kwargs)
+    orchestrator = Orchestrator(
+        panel,
+        gatekeeper,
+        budget_manager=budget_manager,
+        **orch_kwargs,
+    )
 
     turn = 0
     max_turns = 1 if args.mode == "instant" else 10

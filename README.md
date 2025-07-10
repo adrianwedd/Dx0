@@ -75,10 +75,11 @@ docker build -t clinical-ai-suite .
 python -m dx0.cli \
   --mode budgeted \
   --case-file data/sdbench/cases/case_001.json \
-  --budget 1000 \
+  --budget-limit 1000 \
   --output results/dx0_case_001.json
 ```
 Budget enforcement is handled by the ``BudgetManager`` service created by the CLI.
+Set the limit with ``--budget-limit``.
 Add `--cache` to reuse previous LLM responses and reduce API calls:
 
 ```bash
