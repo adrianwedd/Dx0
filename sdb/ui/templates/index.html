@@ -21,7 +21,15 @@
       animation: spin 1s linear infinite;
       display: inline-block;
     }
+    .skeleton {
+      background: #eee;
+      border-radius: 4px;
+      min-height: 1em;
+      animation: pulse 1.5s ease-in-out infinite;
+      display: inline-block;
+    }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
     #toast {
       position: fixed;
       bottom: 1rem;

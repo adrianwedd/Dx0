@@ -892,7 +892,7 @@ phases:
   area: frontend
   dependencies: [56]
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
     - Add spinners or skeleton components during case loading and Gatekeeper responses.
     - Show descriptive error messages when login fails or the WebSocket disconnects.

@@ -13,6 +13,7 @@ function App() {
   const [availableTests, setAvailableTests] = React.useState([]);
   const [loadingCase, setLoadingCase] = React.useState(false);
   const [loadingReply, setLoadingReply] = React.useState(false);
+  const [loadingLogin, setLoadingLogin] = React.useState(false);
   const [toast, setToast] = React.useState('');
   const chartRef = React.useRef(null);
 
@@ -59,16 +60,18 @@ function App() {
 
   const login = async (e) => {
     e.preventDefault();
+    setLoadingLogin(true);
     const user = e.target.user.value;
     const pass = e.target.pass.value;
-    const res = await fetch('/api/v1/login', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({username: user, password: pass})
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setToken(data.token);
+    try {
+      const res = await fetch('/api/v1/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username: user, password: pass})
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setToken(data.token);
       try {
         setLoadingCase(true);
         const caseRes = await fetch('/api/v1/case');
@@ -126,8 +129,12 @@ function App() {
           setLoadingReply(false);
         }
       };
-      socket.onclose = () => {
-        setToast('WebSocket disconnected');
+      socket.onerror = () => {
+        setToast('WebSocket error');
+      };
+      socket.onclose = (ev) => {
+        const reason = ev.reason || 'connection closed';
+        setToast(`WebSocket disconnected (${ev.code}): ${reason}`);
         setWs(null);
       };
       setWs(socket);
@@ -138,6 +145,11 @@ function App() {
         if (data.detail) text += `: ${data.detail}`;
       } catch {}
       setToast(text);
+    }
+    } catch (err) {
+      setToast(`Login error: ${err.message}`);
+    } finally {
+      setLoadingLogin(false);
     }
   };
 
@@ -172,7 +184,9 @@ function App() {
             aria-label='Password'
           />
         </div>
-        <button type='submit' className='btn btn-primary'>Login</button>
+        <button type='submit' className='btn btn-primary'>
+          {loadingLogin ? <span className='spinner'></span> : 'Login'}
+        </button>
       </form>
     );
   }
@@ -184,7 +198,13 @@ function App() {
     <div id='layout'>
       <div id='summary-panel' role='region' aria-label='Case Summary'>
         <h3>Case Summary</h3>
-        <div>{loadingCase ? <span className='spinner'></span> : summary}</div>
+        <div>
+          {loadingCase ? (
+            <span className='skeleton' style={{width: '100%', height: '3em'}}></span>
+          ) : (
+            summary
+          )}
+        </div>
       </div>
       <div id='tests-panel' role='region' aria-label='Ordered Tests'>
         <h3>Ordered Tests</h3>
@@ -192,7 +212,10 @@ function App() {
       </div>
       <div id='chat-panel' role='region' aria-label='Chat Panel'>
         <h2>SDBench Physician Chat</h2>
-        <div>Step Cost: ${stepCost.toFixed(2)} | Total Cost: ${cost.toFixed(2)}</div>
+        <div className='mb-2'>
+          <strong>Step Cost:</strong> ${stepCost.toFixed(2)}<br/>
+          <strong>Total Cost:</strong> ${cost.toFixed(2)}
+        </div>
         {limit && (
           <div className='mb-2'>
             <div className='progress'>
@@ -207,7 +230,9 @@ function App() {
         )}
         <div id='log'>
           {log.map((m, i) => <div key={i}><b>{m.sender}:</b> {m.text}</div>)}
-          {loadingReply && <span className='spinner'></span>}
+          {loadingReply && (
+            <span className='skeleton' style={{width: '100%', height: '1em'}}></span>
+          )}
         </div>
         <div>
           <select
