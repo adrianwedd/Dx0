@@ -181,5 +181,21 @@ async def test_run_turn_async_budget_stops_session():
 
     await orch.run_turn_async("1")
     await orch.run_turn_async("2")
+
+    assert orch.finished is True
+    assert orch.final_diagnosis is None
+
+
+@pytest.mark.asyncio
+async def test_run_turn_async_budget_exceeded_stops_session():
+    actions = [
+        PanelAction(ActionType.TEST, "cbc"),
+        PanelAction(ActionType.DIAGNOSIS, "flu"),
+    ]
+    panel = AsyncStubPanel(actions)
+    tracker = BudgetManager(DummyCostEstimator(), budget=4.0)
+    orch = Orchestrator(panel, DummyGatekeeper(), budget_manager=tracker)
+
+    await orch.run_turn_async("first")
     assert orch.finished is True
     assert orch.final_diagnosis is None
