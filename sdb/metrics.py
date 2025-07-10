@@ -1,7 +1,7 @@
 """Prometheus metrics helpers for MAI-DxO."""
 
 import os
-from prometheus_client import Counter, Histogram, start_http_server
+from prometheus_client import Counter, Gauge, Histogram, start_http_server
 from .config import settings
 
 ORCHESTRATOR_TURNS = Counter(
@@ -20,7 +20,8 @@ LLM_LATENCY = Histogram(
 
 # Time spent processing each orchestrator turn.
 ORCHESTRATOR_LATENCY = Histogram(
-    "orchestrator_turn_seconds", "Time spent in each orchestrator turn.",
+    "orchestrator_turn_seconds",
+    "Time spent in each orchestrator turn.",
 )
 
 LLM_TOKENS = Counter(
@@ -48,6 +49,16 @@ CPT_CACHE_HITS = Counter(
 # Count of CPT lookups that required an LLM call.
 CPT_LLM_LOOKUPS = Counter(
     "cpt_llm_lookups_total", "Number of CPT lookups resolved via LLM."
+)
+
+# Budget tracking metrics
+BUDGET_SPENT = Gauge(
+    "budget_spent",
+    "Total budget spent in dollars.",
+)
+BUDGET_REMAINING = Gauge(
+    "budget_remaining",
+    "Remaining budget in dollars.",
 )
 
 

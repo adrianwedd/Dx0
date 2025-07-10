@@ -1,4 +1,5 @@
 from sdb.services import BudgetManager, ResultAggregator
+from sdb.metrics import BUDGET_REMAINING, BUDGET_SPENT
 
 
 class DummyEstimator:
@@ -30,3 +31,12 @@ def test_result_aggregator_records():
     agg.record_diagnosis("flu")
     assert agg.final_diagnosis == "flu"
     assert agg.finished
+
+
+def test_budget_metrics_update():
+    BUDGET_SPENT.set(0)
+    BUDGET_REMAINING.set(0)
+    bm = BudgetManager(DummyEstimator(), budget=10.0)
+    bm.add_test("cbc")
+    assert BUDGET_SPENT._value.get() == 5.0
+    assert BUDGET_REMAINING._value.get() == 5.0
