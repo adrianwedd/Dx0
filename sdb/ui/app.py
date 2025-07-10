@@ -57,6 +57,13 @@ cost_table = {
 
 cost_estimator = CostEstimator(cost_table)
 
+# default budget limit for new sessions
+DEFAULT_BUDGET_LIMIT = (
+    float(os.environ.get("UI_BUDGET_LIMIT"))
+    if os.environ.get("UI_BUDGET_LIMIT")
+    else None
+)
+
 # optional error reporting
 SENTRY_ENABLED = False
 if os.getenv("SENTRY_DSN"):
@@ -277,7 +284,12 @@ async def login(req: LoginRequest) -> TokenResponse:
 
         FAILED_LOGINS.pop(req.username, None)
         token = secrets.token_hex(16)
-        SESSION_DB.add(token, req.username)
+        SESSION_DB.add(
+            token,
+            req.username,
+            budget_limit=DEFAULT_BUDGET_LIMIT,
+            amount_spent=0.0,
+        )
         return TokenResponse(token=token)
 
 
@@ -301,7 +313,11 @@ async def websocket_endpoint(ws: WebSocket) -> None:
         orchestrator = Orchestrator(
             panel,
             gatekeeper,
-            budget_manager=BudgetManager(cost_estimator),
+            budget_manager=BudgetManager(
+                cost_estimator,
+                session_db=SESSION_DB,
+                session_token=token,
+            ),
             session_id=token,
         )
         try:

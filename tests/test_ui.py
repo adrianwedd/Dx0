@@ -285,6 +285,63 @@ async def test_token_persistence(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_budget_persistence(tmp_path):
+    path = tmp_path / "sessions.db"
+    ui_app.SESSION_DB.path = str(path)
+    ui_app.SESSION_DB._init_db()
+    ui_app.SESSION_DB.ttl = 10
+
+    config = uvicorn.Config(app, host="127.0.0.1", port=8012, log_level="error")
+    server = uvicorn.Server(config)
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    while not server.started:
+        await asyncio.sleep(0.01)
+
+    async with httpx.AsyncClient(base_url="http://127.0.0.1:8012") as client:
+        res = await client.post(
+            "/api/v1/login",
+            json={"username": "physician", "password": "secret"},
+        )
+        token = res.json()["token"]
+        async with aconnect_ws(
+            f"ws://127.0.0.1:8012/api/v1/ws?token={token}", client
+        ) as ws:
+            await ws.send_json({"action": "test", "content": "complete blood count"})
+            while True:
+                data = await ws.receive_json()
+                if data["done"]:
+                    break
+
+    server.should_exit = True
+    thread.join()
+
+    ui_app.SESSION_DB = SessionDB(str(path), ttl=10)
+    config = uvicorn.Config(app, host="127.0.0.1", port=8013, log_level="error")
+    server = uvicorn.Server(config)
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    while not server.started:
+        await asyncio.sleep(0.01)
+
+    async with httpx.AsyncClient(base_url="http://127.0.0.1:8013") as client:
+        async with aconnect_ws(
+            f"ws://127.0.0.1:8013/api/v1/ws?token={token}", client
+        ) as ws:
+            await ws.send_json({"action": "question", "content": "hi"})
+            total = None
+            while True:
+                data = await ws.receive_json()
+                if data["done"]:
+                    total = data["total_spent"]
+                    break
+            assert total == 10.0
+
+    server.should_exit = True
+    thread.join()
+
+
+@pytest.mark.asyncio
 async def test_token_cleanup(tmp_path):
     path = tmp_path / "sessions.db"
     store = SessionDB(str(path), ttl=1)
