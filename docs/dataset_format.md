@@ -23,6 +23,19 @@ Example:
 The ingestion pipeline in `sdb.ingest.convert` can convert raw text files into
 this JSON structure.
 
+## FHIR Bundles
+
+DiagnosticReport bundles from EHR systems can be imported with
+``scripts/fhir_to_casedb.py``. The script accepts one or more FHIR JSON files
+or directories and writes a case database file:
+
+```bash
+python scripts/fhir_to_casedb.py fhir/ --output cases.json
+```
+
+Pass ``--sqlite`` or use a ``.db`` extension to create a SQLite database ready
+for ``CaseDatabase.load_from_sqlite``.
+
 ## SQLite Storage
 
 Cases can also be stored in a SQLite database for lazy loading. Use the
