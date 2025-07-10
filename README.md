@@ -21,7 +21,8 @@ This repository contains two integrated projects for advancing sequential clinic
   * *Stewardship*: Monitors and enforces cost budgets.
   * *Checklist*: Ensures reasoning completeness before final verdict.
 * **Gatekeeper Interface**: Information oracle that reveals only requested findings, synthesizes plausible results for unqueried tests.
-* **Cost Estimator**: Maps tests to CPT codes and CMS prices, maintaining cumulative cost tracking.
+* **Cost Estimator**: Maps tests to CPT codes and CMS prices.
+* **BudgetManager**: Tracks cumulative spending with the estimator and halts a session when a limit is reached.
 * **Evaluation Modes**: Modes for exploring different cost-accuracy scenarios: Instant Answer, Question-Only, Budgeted, Unconstrained Budget, and Ensemble.
 
 ### BudgetManager
