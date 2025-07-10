@@ -232,23 +232,28 @@ base64 -d docs/images/ui.png.b64 > ui.png
 ### Python API Example
 
 ```python
-from dx0 import DxOrchestrator
-from sdbench import Benchmark, Settings, CostEstimator, BudgetManager
+from sdb import (
+    CaseDatabase,
+    Gatekeeper,
+    VirtualPanel,
+    Orchestrator,
+    CostEstimator,
+    BudgetManager,
+)
 
 # Dx0 run
-dx_settings = Settings(mode="budgeted", model="gpt-4")
+db = CaseDatabase.load_from_json("cases.json")
+gatekeeper = Gatekeeper(db, "case_001")
+panel = VirtualPanel()
 costs = CostEstimator.load_from_csv("data/sdbench/costs.csv")
-orc = DxOrchestrator(
-    dx_settings,
+orc = Orchestrator(
+    panel,
+    gatekeeper,
     budget_manager=BudgetManager(costs, budget=1000),
 )
-res = orc.run(case_path="data/sdbench/cases/case_001.json")
-print(res.diagnosis, res.total_cost)
-
-# SDBench evaluation
-bench = Benchmark(data_dir="data/sdbench/cases/", settings=dx_settings)
-metrics = bench.run()
-print(metrics)
+while not orc.finished:
+    orc.run_turn("")
+print(orc.final_diagnosis, orc.spent)
 ```
 
 ### Running Tests
