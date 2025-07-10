@@ -536,6 +536,80 @@ def test_cli_budget_limit(monkeypatch, tmp_path):
     assert captured["limit"] == 5.0
 
 
+def test_cli_budgeted_mode_enforces_budget(monkeypatch, tmp_path):
+    cases = [{"id": "1", "summary": "s", "full_text": "t"}]
+    case_file = tmp_path / "cases.json"
+    with open(case_file, "w", encoding="utf-8") as f:
+        json.dump(cases, f)
+
+    rubric_file = tmp_path / "r.json"
+    with open(rubric_file, "w", encoding="utf-8") as f:
+        json.dump({}, f)
+
+    cost_file = tmp_path / "c.csv"
+    with open(cost_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=["test_name", "cpt_code", "price"],
+        )
+        writer.writeheader()
+        writer.writerow({"test_name": "x", "cpt_code": "1", "price": "1"})
+
+    captured: dict[str, float | int] = {"turns": 0}
+
+    class DummyBudgetManager:
+        def __init__(self, *args, **kwargs):
+            self.budget = float(kwargs.get("budget"))
+            self.spent = 0.0
+            captured["budget"] = self.budget
+
+        def add_test(self, *_args, **_kwargs):
+            self.spent += 5.0
+
+        def over_budget(self) -> bool:
+            return self.spent >= self.budget
+
+    class DummyOrchestrator:
+        def __init__(self, *args, **kwargs):
+            self.budget_manager = kwargs.get("budget_manager")
+            self.finished = False
+            self.total_time = 0.0
+            self.final_diagnosis = ""
+            self.ordered_tests = []
+
+        def run_turn(self, *_args, **_kwargs):
+            captured["turns"] += 1
+            self.budget_manager.add_test("x")
+            if self.budget_manager.over_budget():
+                self.finished = True
+            return ""
+
+    monkeypatch.setattr(cli, "BudgetManager", DummyBudgetManager)
+    monkeypatch.setattr(cli, "Orchestrator", DummyOrchestrator)
+    monkeypatch.setattr(cli, "start_metrics_server", lambda *_: None)
+
+    argv = [
+        "cli.py",
+        "--db",
+        str(case_file),
+        "--case",
+        "1",
+        "--rubric",
+        str(rubric_file),
+        "--costs",
+        str(cost_file),
+        "--mode",
+        "budgeted",
+        "--budget",
+        "5",
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+    cli.main()
+
+    assert captured["budget"] == 5.0
+    assert captured["turns"] == 1
+
+
 def test_cli_cost_table_custom(monkeypatch, tmp_path):
     cases = [{"id": "1", "summary": "s", "full_text": "t"}]
     case_file = tmp_path / "cases.json"
