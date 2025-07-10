@@ -156,7 +156,13 @@ def batch_eval_main(argv: list[str]) -> None:
     parser.add_argument("--db", help="Path to case JSON, CSV or directory")
     parser.add_argument("--db-sqlite", help="Path to case SQLite database")
     parser.add_argument("--rubric", required=True, help="Scoring rubric JSON")
-    parser.add_argument("--costs", required=True, help="Test cost table CSV")
+    parser.add_argument("--costs", help="Test cost table CSV")
+    parser.add_argument(
+        "--cost-table",
+        dest="cost_table",
+        default=None,
+        help="CSV file mapping test names to costs",
+    )
     parser.add_argument("--output", required=True, help="CSV file for results")
     parser.add_argument(
         "--concurrency",
@@ -282,7 +288,10 @@ def batch_eval_main(argv: list[str]) -> None:
     with open(args.rubric, "r", encoding="utf-8") as fh:
         rubric = json.load(fh)
 
-    cost_estimator = CostEstimator.load_from_csv(args.costs)
+    cost_path = args.cost_table or args.costs
+    if cost_path is None:
+        parser.error("--cost-table or --costs is required")
+    cost_estimator = CostEstimator.load_from_csv(cost_path)
     judge = Judge(rubric)
     evaluator = Evaluator(
         judge,
@@ -637,6 +646,12 @@ def main() -> None:
         help="Path to test cost table CSV",
     )
     parser.add_argument(
+        "--cost-table",
+        dest="cost_table",
+        default=None,
+        help="CSV file mapping test names to costs",
+    )
+    parser.add_argument(
         "--correct-threshold",
         type=int,
         default=4,
@@ -803,11 +818,12 @@ def main() -> None:
         )
         return
 
-    required = [args.case, args.rubric, args.costs]
+    cost_path = args.cost_table or args.costs
+    required = [args.case, args.rubric, cost_path]
     if args.db is None and args.db_sqlite is None:
         parser.error("--db or --db-sqlite is required for a session")
     if any(item is None for item in required):
-        parser.error("--case, --rubric and --costs are required for a session")
+        parser.error("--case, --rubric and --cost-table/--costs are required for a session")
 
     level = logging.INFO
     if args.verbose:
