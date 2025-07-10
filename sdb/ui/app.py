@@ -311,6 +311,15 @@ async def websocket_endpoint(ws: WebSocket) -> None:
         if not token or SESSION_DB.get(token) is None:
             await ws.close(code=1008)
             return
+
+        limit_str = ws.query_params.get("budget") or os.environ.get("UI_BUDGET_LIMIT")
+        limit = None
+        if limit_str is not None:
+            try:
+                limit = float(limit_str)
+            except ValueError:
+                limit = None
+
         await ws.accept()
         panel = UserPanel()
         orchestrator = Orchestrator(
@@ -318,6 +327,7 @@ async def websocket_endpoint(ws: WebSocket) -> None:
             gatekeeper,
             budget_manager=BudgetManager(
                 cost_estimator,
+                budget=limit,
                 session_db=SESSION_DB,
                 session_token=token,
             ),

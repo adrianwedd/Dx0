@@ -379,3 +379,55 @@ def test_cost_chart_updates():
     """Chart.js dataset is updated in the websocket handler."""
     js = Path("sdb/ui/static/main.js").read_text()
     assert "datasets[0].data.push" in js
+
+
+@pytest.mark.asyncio
+async def test_ws_budget_query_param(monkeypatch):
+    captured: dict[str, float | None] = {}
+
+    class DummyBudgetManager:
+        def __init__(self, *args, **kwargs):
+            captured["limit"] = kwargs.get("budget")
+            self.budget = kwargs.get("budget")
+            self.spent = 0.0
+
+        def add_test(self, *_args, **_kwargs):
+            return None
+
+        def over_budget(self) -> bool:
+            return False
+
+    class DummyOrchestrator:
+        def __init__(self, *args, **kwargs):
+            self.budget_manager = kwargs.get("budget_manager")
+
+        def run_turn(self, *_args, **_kwargs):
+            return ""
+
+    monkeypatch.setattr(ui_app, "BudgetManager", DummyBudgetManager)
+    monkeypatch.setattr(ui_app, "Orchestrator", DummyOrchestrator)
+
+    config = uvicorn.Config(app, host="127.0.0.1", port=8014, log_level="error")
+    server = uvicorn.Server(config)
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    while not server.started:
+        await asyncio.sleep(0.01)
+
+    async with httpx.AsyncClient(base_url="http://127.0.0.1:8014") as client:
+        res = await client.post(
+            "/api/v1/login",
+            json={"username": "physician", "password": "secret"},
+        )
+        token = res.json()["token"]
+        async with aconnect_ws(
+            f"ws://127.0.0.1:8014/api/v1/ws?token={token}&budget=42",
+            client,
+        ) as ws:
+            await ws.send_json({"action": "question", "content": "hi"})
+            await ws.receive_json()
+
+    server.should_exit = True
+    thread.join()
+
+    assert captured["limit"] == 42.0
