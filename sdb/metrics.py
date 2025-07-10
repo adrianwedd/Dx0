@@ -28,6 +28,18 @@ LLM_TOKENS = Counter(
     "Total number of tokens processed by the LLM.",
 )
 
+# Tokens present in each user message sent to the orchestrator.
+USER_MESSAGE_TOKENS = Counter(
+    "user_message_tokens_total",
+    "Total number of tokens contained in user messages.",
+)
+
+# Cost accrued from user actions such as ordering tests.
+USER_MESSAGE_COST = Counter(
+    "user_message_cost_total",
+    "Total cost incurred as a result of user messages.",
+)
+
 # Count of CPT lookups served from the local cache.
 CPT_CACHE_HITS = Counter(
     "cpt_cache_hits_total", "Number of CPT lookups served from cache."
