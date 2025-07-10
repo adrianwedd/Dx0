@@ -41,10 +41,10 @@ bm = BudgetManager(costs, budget=500)
 orc = Orchestrator(panel, gatekeeper, budget_manager=bm)
 ```
 
-Use ``--budget-limit`` to set the cap when running the CLI in ``budgeted`` mode:
+Use ``--budget`` to set the cap when running the CLI in ``budgeted`` mode:
 
 ```bash
-python -m dx0.cli --mode budgeted --budget-limit 1000 --case-file case.json
+python -m dx0.cli --mode budgeted --budget 1000 --case-file case.json
 ```
 
 The Physician UI reads ``UI_BUDGET_LIMIT`` for the default limit and also
@@ -94,11 +94,11 @@ docker build -t clinical-ai-suite .
 python -m dx0.cli \
   --mode budgeted \
   --case-file data/sdbench/cases/case_001.json \
-  --budget-limit 1000 \
+  --budget 1000 \
   --output results/dx0_case_001.json
 ```
 Budget enforcement is handled by the ``BudgetManager`` service created by the CLI.
-Set the limit with ``--budget-limit``.
+Set the limit with ``--budget``.
 Add `--cache` to reuse previous LLM responses and reduce API calls:
 
 ```bash

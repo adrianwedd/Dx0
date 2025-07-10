@@ -329,9 +329,10 @@ def batch_eval_main(argv: list[str]) -> None:
             )
 
         panel = VirtualPanel(decision_engine=engine)
+        limit = args.budget if args.mode == "budgeted" else args.budget_limit
         budget_manager = BudgetManager(
             cost_estimator,
-            budget=args.budget_limit,
+            budget=limit,
         )
         orch_kwargs = {}
         if args.mode == "question-only":
@@ -885,7 +886,8 @@ def main() -> None:
 
     panel = VirtualPanel(decision_engine=engine)
 
-    budget_manager = BudgetManager(cost_estimator, budget=args.budget_limit)
+    limit = args.budget if args.mode == "budgeted" else args.budget_limit
+    budget_manager = BudgetManager(cost_estimator, budget=limit)
 
     orch_kwargs = {}
     if args.mode == "question-only":

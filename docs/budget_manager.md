@@ -13,10 +13,10 @@ orc = Orchestrator(panel, gatekeeper, budget_manager=bm)
 ```
 
 The CLI creates a `BudgetManager` automatically when `--mode budgeted` is
-selected. Set the spending cap with `--budget-limit`:
+selected. Set the spending cap with `--budget`:
 
 ```bash
-python -m dx0.cli --mode budgeted --budget-limit 1000 --case-file case.json
+python -m dx0.cli --mode budgeted --budget 1000 --case-file case.json
 ```
 
 The Physician UI reads `UI_BUDGET_LIMIT` to control the default cap for new

@@ -26,7 +26,7 @@ Run the CLI on a single case in budgeted mode:
 python -m dx0.cli \
   --mode budgeted \
   --case-file data/sdbench/cases/case_001.json \
-  --budget-limit 1000 \
+  --budget 1000 \
   --output results/case_001.json
 ```
 
