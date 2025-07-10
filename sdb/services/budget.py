@@ -7,6 +7,7 @@ from .budget_store import BudgetStore
 from ..ui.session_db import SessionDB
 
 from ..cost_estimator import CostEstimator
+from ..metrics import BUDGET_REMAINING, BUDGET_SPENT
 
 
 @dataclass
@@ -43,6 +44,10 @@ class BudgetManager:
             self.spent_by_category.get(category, 0.0) + amount
         )
         self.test_categories[test_name] = category
+        BUDGET_SPENT.inc(amount)
+        if self.budget is not None:
+            remaining = max(self.budget - self.spent, 0.0)
+            BUDGET_REMAINING.set(remaining)
         if self.store is not None:
             self.store.record(test_name, amount)
         if self.session_db is not None and self.session_token is not None:
