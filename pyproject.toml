@@ -26,6 +26,7 @@ dependencies = [
     "sentence-transformers",
     "structlog",
     "filelock",
+    "pydantic>=2.11",
 ]
 
 [project.urls]

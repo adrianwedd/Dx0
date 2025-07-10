@@ -387,6 +387,7 @@ protobuf==4.25.8
     # via googleapis-common-protos
 psutil==7.0.0
     # via
+    #   -r requirements-dev.txt
     #   dvc
     #   flufl-lock
 pycodestyle==2.14.0
@@ -432,8 +433,9 @@ python-dateutil==2.9.0.post0
     #   aiobotocore
     #   botocore
     #   celery
-pyyaml==6.0.2
+pyyaml==6.0.1
     # via
+    #   -r requirements-dev.txt
     #   huggingface-hub
     #   omegaconf
     #   pre-commit
