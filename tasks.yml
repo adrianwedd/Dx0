@@ -937,7 +937,7 @@ phases:
   area: usability
   dependencies: [56]
   priority: 2
-  status: pending
+  status: done
   actionable_steps:
     - Add a collapsible help panel listing supported chat commands.
     - Show the current username in the header.

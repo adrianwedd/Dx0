@@ -5,5 +5,7 @@ __pycache__/
 dvc_storage/
 *.egg-info/
 sessions.db
-webui/node_modules/
-webui/dist/
+frontend/node_modules/
+frontend/package-lock.json
+frontend/dist/
+.env

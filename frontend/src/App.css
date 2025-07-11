@@ -1,0 +1,28 @@
+body {
+  font-family: sans-serif;
+}
+.panel {
+  border: 1px solid #ccc;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+}
+.panel h3 {
+  margin: 0;
+  background: #f6f6f6;
+  padding: 0.5rem;
+}
+.panel .toggle {
+  background: none;
+  border: none;
+  font-size: inherit;
+  cursor: pointer;
+}
+.panel .content {
+  padding: 0.5rem;
+}
+#chat-log {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 0.5rem;
+  text-align: left;
+}
