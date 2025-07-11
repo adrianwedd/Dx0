@@ -185,7 +185,9 @@ function App() {
           />
         </div>
         <button type='submit' className='btn btn-primary'>
-          {loadingLogin ? <span className='spinner'></span> : 'Login'}
+          {loadingLogin ? (
+            <span className='spinner' role='status' aria-label='Loading'></span>
+          ) : 'Login'}
         </button>
       </form>
     );
@@ -195,8 +197,8 @@ function App() {
   const percent = limit ? (cost / limit) * 100 : 0;
 
   return (
-    <div id='layout'>
-      <div id='summary-panel' role='region' aria-label='Case Summary'>
+    <div id='layout' role='main'>
+      <div id='summary-panel' className='panel' role='region' aria-label='Case Summary' tabIndex='0'>
         <h3>Case Summary</h3>
         <div>
           {loadingCase ? (
@@ -206,11 +208,11 @@ function App() {
           )}
         </div>
       </div>
-      <div id='tests-panel' role='region' aria-label='Ordered Tests'>
+      <div id='tests-panel' className='panel' role='region' aria-label='Ordered Tests' tabIndex='0'>
         <h3>Ordered Tests</h3>
         <ul>{tests.map((t, i) => <li key={i}>{t}</li>)}</ul>
       </div>
-      <div id='chat-panel' role='region' aria-label='Chat Panel'>
+      <div id='chat-panel' className='panel' role='region' aria-label='Chat Panel' tabIndex='0'>
         <h2>SDBench Physician Chat</h2>
         <div className='mb-2'>
           <strong>Step Cost:</strong> ${stepCost.toFixed(2)}<br/>
@@ -260,11 +262,11 @@ function App() {
           <button onClick={send} className='btn btn-primary'>Send</button>
         </div>
       </div>
-      <div id='flow-panel' role='region' aria-label='Diagnostic Flow'>
+      <div id='flow-panel' className='panel' role='region' aria-label='Diagnostic Flow' tabIndex='0'>
         <h3>Diagnostic Flow</h3>
         <ol>{flow.map((m, i) => <li key={i}>{m.sender}: {m.text}</li>)}</ol>
       </div>
-      {toast && <div id='toast'>{toast}</div>}
+      {toast && <div id='toast' role='alert' aria-live='polite'>{toast}</div>}
     </div>
   );
 }
