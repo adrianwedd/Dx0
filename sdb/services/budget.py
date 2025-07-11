@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Optional
 
 from .budget_store import BudgetStore
-from ..ui.session_db import SessionDB
+from ..ui.session_store import SessionStore
 
 from ..cost_estimator import CostEstimator
 from ..metrics import BUDGET_REMAINING, BUDGET_SPENT
@@ -18,7 +18,7 @@ class BudgetManager:
     budget: Optional[float] = None
     category_limits: Dict[str, float] | None = None
     store: BudgetStore | None = None
-    session_db: SessionDB | None = None
+    session_db: SessionStore | None = None
     session_token: str | None = None
     spent: float = 0.0
     spent_by_category: Dict[str, float] = field(default_factory=dict)
