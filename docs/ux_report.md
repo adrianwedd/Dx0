@@ -16,3 +16,8 @@ Clinicians also found it confusing to know when a conversation was finished and 
 - **Visual update** – migrate to a modern component framework (for example React with a UI library) and add collapsible panels so users can reference test results or the case summary without cluttering the chat.
 
 Implementing these improvements will make SDBench more approachable for clinicians evaluating the Gatekeeper approach.
+
+## Recent Updates
+
+The UI now shows the logged-in username in the header along with a Logout button
+and includes a collapsible panel listing the supported chat commands.
