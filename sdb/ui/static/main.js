@@ -193,7 +193,9 @@ function App() {
       return (
       <form onSubmit={login} className='m-3' role='form'>
         <div className='mb-2'>
+          <label htmlFor='username' className='form-label'>Username</label>
           <input
+            id='username'
             name='user'
             className='form-control'
             placeholder='Username'
@@ -201,7 +203,9 @@ function App() {
           />
         </div>
         <div className='mb-2'>
+          <label htmlFor='password' className='form-label'>Password</label>
           <input
+            id='password'
             name='pass'
             type='password'
             className='form-control'
@@ -280,7 +284,9 @@ function App() {
             <option value='test'>Order Test</option>
             <option value='diagnosis'>Provide Diagnosis</option>
           </select>
+          <label htmlFor='msg-input' className='form-label visually-hidden'>Message</label>
           <input
+            id='msg-input'
             value={msg}
             onChange={e => setMsg(e.target.value)}
             size='80'
