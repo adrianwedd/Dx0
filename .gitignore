@@ -8,3 +8,4 @@ sessions.db
 frontend/node_modules/
 frontend/package-lock.json
 frontend/dist/
+.env
