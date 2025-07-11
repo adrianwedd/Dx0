@@ -914,7 +914,7 @@ phases:
   area: design
   dependencies: [56]
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
     - Adopt a design system for inputs, buttons, and layout.
     - Ensure color contrast ratios meet WCAG AA standards.
