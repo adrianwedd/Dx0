@@ -11,8 +11,8 @@ from pathlib import Path
 import sdb.ui.app as ui_app
 
 app = ui_app.app
-SessionDB = ui_app.SessionDB
-SESSION_DB = ui_app.SESSION_DB
+SessionStore = ui_app.SessionStore
+SESSION_STORE = ui_app.SESSION_STORE
 
 
 @pytest.mark.asyncio
@@ -240,9 +240,9 @@ async def test_ws_invalid_action():
 @pytest.mark.asyncio
 async def test_token_persistence(tmp_path):
     path = tmp_path / "sessions.db"
-    ui_app.SESSION_DB.path = str(path)
-    ui_app.SESSION_DB._init_db()
-    ui_app.SESSION_DB.ttl = 10
+    ui_app.SESSION_STORE.path = str(path)
+    ui_app.SESSION_STORE.migrate()
+    ui_app.SESSION_STORE.ttl = 10
 
     config = uvicorn.Config(app, host="127.0.0.1", port=8010, log_level="error")
     server = uvicorn.Server(config)
@@ -261,7 +261,7 @@ async def test_token_persistence(tmp_path):
     server.should_exit = True
     thread.join()
 
-    ui_app.SESSION_DB = SessionDB(str(path), ttl=10)
+    ui_app.SESSION_STORE = SessionStore(str(path), ttl=10)
     # restart server
     config = uvicorn.Config(app, host="127.0.0.1", port=8011, log_level="error")
     server = uvicorn.Server(config)
@@ -287,9 +287,9 @@ async def test_token_persistence(tmp_path):
 @pytest.mark.asyncio
 async def test_budget_persistence(tmp_path):
     path = tmp_path / "sessions.db"
-    ui_app.SESSION_DB.path = str(path)
-    ui_app.SESSION_DB._init_db()
-    ui_app.SESSION_DB.ttl = 10
+    ui_app.SESSION_STORE.path = str(path)
+    ui_app.SESSION_STORE.migrate()
+    ui_app.SESSION_STORE.ttl = 10
 
     config = uvicorn.Config(app, host="127.0.0.1", port=8012, log_level="error")
     server = uvicorn.Server(config)
@@ -316,7 +316,7 @@ async def test_budget_persistence(tmp_path):
     server.should_exit = True
     thread.join()
 
-    ui_app.SESSION_DB = SessionDB(str(path), ttl=10)
+    ui_app.SESSION_STORE = SessionStore(str(path), ttl=10)
     config = uvicorn.Config(app, host="127.0.0.1", port=8013, log_level="error")
     server = uvicorn.Server(config)
     thread = threading.Thread(target=server.run, daemon=True)
@@ -344,7 +344,7 @@ async def test_budget_persistence(tmp_path):
 @pytest.mark.asyncio
 async def test_token_cleanup(tmp_path):
     path = tmp_path / "sessions.db"
-    store = SessionDB(str(path), ttl=1)
+    store = SessionStore(str(path), ttl=1)
     store.add("tok", "user")
     await asyncio.sleep(1.2)
     store.cleanup()

@@ -28,7 +28,7 @@ from sdb.orchestrator import Orchestrator
 from sdb.panel import PanelAction
 from sdb.protocol import ActionType
 from sdb.services import BudgetManager
-from sdb.ui.session_db import SessionDB
+from sdb.ui.session_store import SessionStore
 
 app = FastAPI(title="SDBench Physician UI")
 tracer = trace.get_tracer(__name__)
@@ -94,7 +94,7 @@ CREDENTIALS = load_user_credentials()
 
 SESSION_TTL = int(os.environ.get("UI_TOKEN_TTL", "3600"))
 SESSION_DB_PATH = os.environ.get("SESSIONS_DB", "sessions.db")
-SESSION_DB = SessionDB(SESSION_DB_PATH, ttl=SESSION_TTL)
+SESSION_STORE = SessionStore(SESSION_DB_PATH, ttl=SESSION_TTL)
 
 # Failed login tracking configuration
 FAILED_LOGIN_LIMIT = int(os.environ.get("FAILED_LOGIN_LIMIT", "5"))
@@ -225,10 +225,16 @@ else:
 
 
 @app.on_event("startup")
+async def migrate_store() -> None:
+    """Initialize the session store schema."""
+    SESSION_STORE.migrate()
+
+
+@app.on_event("startup")
 async def start_cleanup() -> None:
     async def _loop() -> None:
         while True:
-            SESSION_DB.cleanup()
+            SESSION_STORE.cleanup()
             await asyncio.sleep(SESSION_TTL)
 
     asyncio.create_task(_loop())
@@ -290,7 +296,7 @@ async def login(req: LoginRequest) -> TokenResponse:
 
         FAILED_LOGINS.pop(req.username, None)
         token = secrets.token_hex(16)
-        SESSION_DB.add(
+        SESSION_STORE.add(
             token,
             req.username,
             budget_limit=DEFAULT_BUDGET_LIMIT,
@@ -303,7 +309,7 @@ async def login(req: LoginRequest) -> TokenResponse:
 async def logout(req: LogoutRequest) -> None:
     """Invalidate a session token."""
     with tracer.start_as_current_span("logout"):
-        SESSION_DB.remove(req.token)
+        SESSION_STORE.remove(req.token)
 
 
 @app.websocket("/api/v1/ws")
@@ -311,7 +317,7 @@ async def websocket_endpoint(ws: WebSocket) -> None:
     """Handle websocket chat with the Gatekeeper."""
     with tracer.start_as_current_span("websocket"):
         token = ws.query_params.get("token")
-        if not token or SESSION_DB.get(token) is None:
+        if not token or SESSION_STORE.get(token) is None:
             await ws.close(code=1008)
             return
 
@@ -331,7 +337,7 @@ async def websocket_endpoint(ws: WebSocket) -> None:
             budget_manager=BudgetManager(
                 cost_estimator,
                 budget=limit,
-                session_db=SESSION_DB,
+                session_db=SESSION_STORE,
                 session_token=token,
             ),
             session_id=token,
