@@ -62,3 +62,10 @@ body {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}

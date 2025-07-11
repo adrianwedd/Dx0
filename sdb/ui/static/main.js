@@ -15,6 +15,8 @@ function App() {
   const [loadingReply, setLoadingReply] = React.useState(false);
   const [loadingLogin, setLoadingLogin] = React.useState(false);
   const [toast, setToast] = React.useState('');
+  const [username, setUsername] = React.useState('');
+  const [showCommands, setShowCommands] = React.useState(false);
   const chartRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -72,6 +74,7 @@ function App() {
       if (res.ok) {
         const data = await res.json();
         setToken(data.token);
+        setUsername(user);
       try {
         setLoadingCase(true);
         const caseRes = await fetch('/api/v1/case');
@@ -164,6 +167,28 @@ function App() {
     setLoadingReply(true);
   };
 
+  const logout = async () => {
+    if (!token) return;
+    try {
+      await fetch('/api/v1/logout', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({token})
+      });
+    } catch (err) {
+      console.error('Logout failed', err);
+    }
+    if (ws) ws.close();
+    setWs(null);
+    setToken(null);
+    setUsername('');
+    setLog([]);
+    setFlow([]);
+    setTests([]);
+    setCost(0);
+    setRemaining(null);
+  };
+
   if (!token) {
       return (
       <form onSubmit={login} className='m-3' role='form'>
@@ -197,7 +222,15 @@ function App() {
   const percent = limit ? (cost / limit) * 100 : 0;
 
   return (
-    <div id='layout' role='main'>
+    <div role='main'>
+      <header className='d-flex justify-content-between align-items-center mb-2'>
+        <h2>SDBench Physician Chat</h2>
+        <div>
+          <span className='me-2'>Logged in as {username}</span>
+          <button onClick={logout} className='btn btn-secondary btn-sm'>Logout</button>
+        </div>
+      </header>
+      <div id='layout'>
       <div id='summary-panel' className='panel' role='region' aria-label='Case Summary' tabIndex='0'>
         <h3>Case Summary</h3>
         <div>
@@ -266,7 +299,22 @@ function App() {
         <h3>Diagnostic Flow</h3>
         <ol>{flow.map((m, i) => <li key={i}>{m.sender}: {m.text}</li>)}</ol>
       </div>
+      <div id='commands-panel' className='panel' role='region' aria-label='Supported Commands' tabIndex='0'>
+        <h3>
+          <button className='btn btn-link p-0' onClick={() => setShowCommands(!showCommands)} aria-expanded={showCommands} aria-controls='commands-list'>
+            Chat Commands
+          </button>
+        </h3>
+        {showCommands && (
+          <ul id='commands-list'>
+            <li><strong>Ask Question</strong> – general questions about the case</li>
+            <li><strong>Order Test</strong> – request a medical test</li>
+            <li><strong>Provide Diagnosis</strong> – propose a diagnosis</li>
+          </ul>
+        )}
+      </div>
       {toast && <div id='toast' role='alert' aria-live='polite'>{toast}</div>}
+      </div>
     </div>
   );
 }
