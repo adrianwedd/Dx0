@@ -7,7 +7,8 @@ The initial physician UI exposes only minimal functionality. Internal testing an
 - **Styling shortcomings** – the static two‑column grid lacks responsive behaviour, accessible color contrast and clear separation between panels.
 - **No session status** – users cannot easily determine which account is logged in or log out without refreshing the page.
 
-Clinicians also found it confusing to know when a conversation was finished and asked for a clearer cost summary along with the ability to expand the case vignette while chatting.
+- **Conversation status** – clinicians were unsure when chats were complete or how to view the final cost.
+- **Expandable vignette** – they wanted to expand the case description while chatting.
 
 ## Desired UX Outcomes
 
