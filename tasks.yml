@@ -937,7 +937,7 @@ phases:
   area: usability
   dependencies: [56]
   priority: 2
-  status: pending
+  status: done
   actionable_steps:
     - Add a collapsible help panel listing supported chat commands.
     - Show the current username in the header.
@@ -980,7 +980,7 @@ phases:
   area: design
   dependencies: [56, 59]
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
     - Scaffold a React application (e.g., with Vite).
     - Implement chat, summary, and results panels as collapsible components.

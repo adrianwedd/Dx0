@@ -217,8 +217,11 @@ class UserPanel:
         return self.actions.get_nowait()
 
 
-HTML_PATH = Path(__file__).with_name("templates").joinpath("template.html")
-HTML = HTML_PATH.read_text(encoding="utf-8")
+HTML_PATH = static_dir / "react" / "index.html"
+if HTML_PATH.exists():
+    HTML = HTML_PATH.read_text(encoding="utf-8")
+else:
+    HTML = Path(__file__).with_name("templates").joinpath("template.html").read_text(encoding="utf-8")
 
 
 @app.on_event("startup")
