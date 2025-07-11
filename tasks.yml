@@ -980,7 +980,7 @@ phases:
   area: design
   dependencies: [56, 59]
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
     - Scaffold a React application (e.g., with Vite).
     - Implement chat, summary, and results panels as collapsible components.

@@ -5,3 +5,5 @@ __pycache__/
 dvc_storage/
 *.egg-info/
 sessions.db
+webui/node_modules/
+webui/dist/
