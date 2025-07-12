@@ -1142,3 +1142,46 @@ def test_manage_users_command(tmp_path):
     with open(cred, "r", encoding="utf-8") as fh:
         data = yaml.safe_load(fh)
     assert "alice" not in data.get("users", {})
+
+
+def test_batch_eval_records_metrics(tmp_path):
+    cases = [{"id": "1", "summary": "s", "full_text": "t"}]
+    case_file = tmp_path / "cases.json"
+    with open(case_file, "w", encoding="utf-8") as f:
+        json.dump(cases, f)
+    rubric_file = tmp_path / "r.json"
+    with open(rubric_file, "w", encoding="utf-8") as f:
+        json.dump({}, f)
+    cost_file = tmp_path / "c.csv"
+    with open(cost_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["test_name", "cpt_code", "price"])
+        writer.writeheader()
+        writer.writerow({"test_name": "x", "cpt_code": "1", "price": "1"})
+    db_file = tmp_path / "res.db"
+    cmd = [
+        sys.executable,
+        "cli.py",
+        "batch-eval",
+        "--db",
+        str(case_file),
+        "--rubric",
+        str(rubric_file),
+        "--costs",
+        str(cost_file),
+        "--output",
+        str(tmp_path / "out.csv"),
+        "--panel-engine",
+        "rule",
+        "--results-db",
+        str(db_file),
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0
+    import sqlite3
+
+    conn = sqlite3.connect(db_file)
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM results")
+    count = cur.fetchone()[0]
+    conn.close()
+    assert count == 1

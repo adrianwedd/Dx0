@@ -37,6 +37,7 @@ from sdb import (
     ordered_tests_to_fhir,
     diagnostic_report_to_case,
     bundle_to_case,
+    MetricsDB,
 )
 import csv
 _ = WeightedVoter
@@ -168,6 +169,11 @@ def batch_eval_main(argv: list[str]) -> None:
     )
     parser.add_argument("--output", required=True, help="CSV file for results")
     parser.add_argument(
+        "--results-db",
+        default=None,
+        help="SQLite database file to store metrics",
+    )
+    parser.add_argument(
         "--concurrency",
         type=int,
         default=2,
@@ -268,6 +274,7 @@ def batch_eval_main(argv: list[str]) -> None:
         vote_weights = _load_weights(args.vote_weights)
     meta_panel = MetaPanel(weights=vote_weights)
     persona_models = _load_persona_models(args.persona_models) or cfg.persona_models
+    metrics_db = MetricsDB(args.results_db) if args.results_db else None
 
     level = logging.INFO
     if args.verbose:
@@ -367,6 +374,8 @@ def batch_eval_main(argv: list[str]) -> None:
             visits=turn,
             duration=orchestrator.total_time,
         )
+        if metrics_db is not None:
+            metrics_db.record(case_id, result)
         return {
             "id": case_id,
             "total_cost": f"{result.total_cost:.2f}",
@@ -816,6 +825,11 @@ def main() -> None:
         help="Path to SQLite file when using --convert",
     )
     parser.add_argument(
+        "--results-db",
+        default=None,
+        help="SQLite database to store evaluation metrics",
+    )
+    parser.add_argument(
         "--budget",
         type=float,
         default=None,
@@ -862,6 +876,7 @@ def main() -> None:
         vote_weights = _load_weights(args.vote_weights)
     meta_panel = MetaPanel(weights=vote_weights)
     persona_models = _load_persona_models(args.persona_models) or cfg.persona_models
+    metrics_db = MetricsDB(args.results_db) if args.results_db else None
 
     start_metrics_server(args.metrics_port)
 
@@ -977,6 +992,8 @@ def main() -> None:
         visits=turn,
         duration=orchestrator.total_time,
     )
+    if metrics_db is not None:
+        metrics_db.record(args.case, result)
 
     print(f"Final diagnosis: {final_diag}")
     print(f"Total cost: ${result.total_cost:.2f}")
