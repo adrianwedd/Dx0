@@ -139,6 +139,15 @@ python -m dx0.cli \
   --ollama-base-url http://localhost:11434 ...
 ```
 
+For a locally fine-tuned Hugging Face model, use `--llm-provider hf-local` and
+point `--hf-model` to the model directory:
+
+```bash
+python -m dx0.cli \
+  --llm-provider hf-local \
+  --hf-model /models/nejm-lora ...
+```
+
 ### Configuration
 
 You can load common settings from a YAML file using `--config`:
@@ -146,6 +155,7 @@ You can load common settings from a YAML file using `--config`:
 ```yaml
 openai_api_key: sk-your-key
 openai_model: gpt-4
+hf_model: /models/nejm-lora
 ollama_base_url: http://localhost:11434
 metrics_port: 8000
 case_db: data/sdbench/cases
