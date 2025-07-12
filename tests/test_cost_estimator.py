@@ -1,7 +1,7 @@
 import csv
 import tempfile
 import pytest
-from sdb.cost_estimator import CostEstimator
+from sdb.cost_estimator import CostEstimator, CptCost
 from sdb import cost_estimator as ce_mod
 
 
@@ -124,3 +124,20 @@ def test_plugin_loader(monkeypatch):
     estimator = ce_mod.load_cost_estimator("table.csv", plugin_name="dummy")
     assert isinstance(estimator, CostEstimator)
     assert captured["path"] == "table.csv"
+
+
+def test_estimate_cost_average(monkeypatch):
+    ce = CostEstimator(
+        {
+            "a": CptCost("1", 10.0),
+            "b": CptCost("2", 30.0),
+        }
+    )
+    monkeypatch.setattr(ce_mod, "lookup_cpt", lambda name: None)
+    assert ce.estimate_cost("unknown") == 20.0
+
+
+def test_estimate_cost_empty(monkeypatch):
+    ce = CostEstimator({})
+    monkeypatch.setattr(ce_mod, "lookup_cpt", lambda name: None)
+    assert ce.estimate_cost("x") == 0.0
