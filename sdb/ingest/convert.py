@@ -7,6 +7,10 @@ import os
 import re
 from typing import Dict, List, Optional
 
+import structlog
+
+from ..exceptions import DataIngestionError
+
 from ..prompt_loader import load_prompt
 from ..llm_client import OpenAIClient
 from ..config import settings
@@ -46,6 +50,8 @@ def _extract_abstract(text: str) -> Optional[str]:
 
 
 _openai_client = OpenAIClient(api_key=settings.openai_api_key)
+
+logger = structlog.get_logger(__name__)
 
 
 def _llm_summarize(text: str) -> Optional[str]:
@@ -136,6 +142,10 @@ def convert_directory(
         Paths of files written.
     """
 
+    if not os.path.isdir(src_dir):
+        logger.error("source_missing", path=src_dir)
+        raise DataIngestionError(f"Source directory not found: {src_dir}")
+
     os.makedirs(dest_dir, exist_ok=True)
     if hidden_dir:
         os.makedirs(hidden_dir, exist_ok=True)
@@ -149,22 +159,36 @@ def convert_directory(
         except ValueError:
             continue
         path = os.path.join(src_dir, name)
-        with open(path, "r", encoding="utf-8") as fh:
-            text = fh.read()
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                text = fh.read()
+        except OSError as exc:
+            logger.exception("read_error", file=path)
+            raise DataIngestionError(str(exc)) from exc
         year = extract_year(text)
+        logger.info("processing_case", file=name, year=year)
         data = convert_text(text, case_num)
         target_dir = dest_dir
         if hidden_dir and year and 2024 <= year <= 2025:
             target_dir = hidden_dir
         out_path = os.path.join(target_dir, f"case_{case_num:03d}.json")
-        with open(out_path, "w", encoding="utf-8") as fh:
-            json.dump(data, fh, indent=2)
+        try:
+            with open(out_path, "w", encoding="utf-8") as fh:
+                json.dump(data, fh, indent=2)
+        except OSError as exc:
+            logger.exception("write_error", file=out_path)
+            raise DataIngestionError(str(exc)) from exc
         summary_file = f"case_{case_num:03d}_summary.txt"
         summary_path = os.path.join(target_dir, summary_file)
-        with open(summary_path, "w", encoding="utf-8") as sf:
-            sf.write(str(data["summary"]))
+        try:
+            with open(summary_path, "w", encoding="utf-8") as sf:
+                sf.write(str(data["summary"]))
+        except OSError as exc:
+            logger.exception("write_error", file=summary_path)
+            raise DataIngestionError(str(exc)) from exc
         if target_dir == dest_dir:
             written.append(out_path)
+    logger.info("conversion_complete", written=len(written))
     return written
 
 
