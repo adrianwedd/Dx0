@@ -66,6 +66,14 @@ class Verbosity(str, Enum):
     DEBUG = "debug"
 
 
+class LLMProvider(str, Enum):
+    """Available LLM service providers."""
+
+    OPENAI = "openai"
+    OLLAMA = "ollama"
+    HF_LOCAL = "hf-local"
+
+
 app = typer.Typer(help="Dx0 command line interface")
 
 
@@ -183,8 +191,9 @@ def batch_eval(
     concurrency: int = typer.Option(2, help="Number of concurrent sessions"),
     correct_threshold: int = typer.Option(4, help="Judge score required for a correct diagnosis"),
     panel_engine: PanelEngine = typer.Option(PanelEngine.RULE, help="Decision engine"),
-    llm_provider: str = typer.Option("openai", help="LLM provider", show_choices=True),
+    llm_provider: LLMProvider = typer.Option(LLMProvider.OPENAI, help="LLM provider"),
     llm_model: str = typer.Option("gpt-4", help="Model name"),
+    hf_model: str | None = typer.Option(None, help="Local HF model path"),
     persona_models: str | None = typer.Option(None, help="JSON string or file with persona to model mapping"),
     ollama_base_url: str = typer.Option("http://localhost:11434", help="Base URL for the Ollama server"),
     cache: bool = typer.Option(False, help="Cache LLM responses"),
@@ -216,6 +225,7 @@ def batch_eval(
         panel_engine=panel_engine.value,
         llm_provider=llm_provider,
         llm_model=llm_model,
+        hf_model=hf_model,
         persona_models=persona_models,
         ollama_base_url=ollama_base_url,
         cache=cache,
@@ -237,6 +247,8 @@ def batch_eval(
         args.db_sqlite = cfg.case_db_sqlite
     if args.retrieval_backend is None:
         args.retrieval_backend = cfg.retrieval_backend
+    if args.hf_model is None:
+        args.hf_model = cfg.hf_model
     if args.cost_estimator is None:
         args.cost_estimator = cfg.cost_estimator_plugin
 
@@ -294,9 +306,15 @@ def batch_eval(
             engine = RuleEngine()
         else:
             cache_path = "llm_cache.jsonl" if args.cache else None
-            if args.llm_provider == "ollama":
+            if args.llm_provider == LLMProvider.OLLAMA:
                 client = OllamaClient(
                     base_url=args.ollama_base_url or settings.ollama_base_url,
+                    cache_path=cache_path,
+                    cache_size=args.cache_size,
+                )
+            elif args.llm_provider == LLMProvider.HF_LOCAL:
+                client = HFLocalClient(
+                    model_path=args.hf_model or settings.hf_model,
                     cache_path=cache_path,
                     cache_size=args.cache_size,
                 )
@@ -644,8 +662,9 @@ def _main(
     cost_estimator: str | None = typer.Option(None, help="Cost estimator plugin name"),
     correct_threshold: int = typer.Option(4, help="Judge score required for a correct diagnosis"),
     panel_engine: PanelEngine = typer.Option(PanelEngine.RULE, help="Decision engine to use for the panel"),
-    llm_provider: str = typer.Option("openai", help="LLM provider for LLM engine", show_choices=True),
+    llm_provider: LLMProvider = typer.Option(LLMProvider.OPENAI, help="LLM provider for LLM engine"),
     llm_model: str = typer.Option("gpt-4", help="Model name for LLM engine"),
+    hf_model: str | None = typer.Option(None, help="Local HF model path"),
     persona_models: str | None = typer.Option(None, help="JSON string or file with persona to model mapping"),
     ollama_base_url: str = typer.Option("http://localhost:11434", help="Base URL for the Ollama server"),
     cache: bool = typer.Option(False, help="Cache LLM responses"),
@@ -685,6 +704,7 @@ def _main(
         panel_engine=panel_engine.value,
         llm_provider=llm_provider,
         llm_model=llm_model,
+        hf_model=hf_model,
         persona_models=persona_models,
         ollama_base_url=ollama_base_url,
         cache=cache,
@@ -785,9 +805,15 @@ def _main(
         engine = RuleEngine()
     else:
         cache_path = "llm_cache.jsonl" if args.cache else None
-        if args.llm_provider == "ollama":
+        if args.llm_provider == LLMProvider.OLLAMA:
             client = OllamaClient(
                 base_url=args.ollama_base_url or settings.ollama_base_url,
+                cache_path=cache_path,
+                cache_size=args.cache_size,
+            )
+        elif args.llm_provider == LLMProvider.HF_LOCAL:
+            client = HFLocalClient(
+                model_path=args.hf_model or settings.hf_model,
                 cache_path=cache_path,
                 cache_size=args.cache_size,
             )

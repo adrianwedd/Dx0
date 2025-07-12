@@ -8,7 +8,12 @@ from .protocol import ActionType, build_action
 from .actions import PanelAction, parse_panel_action
 from .panel import VirtualPanel
 from .decision import DecisionEngine, RuleEngine, LLMEngine
-from .llm_client import LLMClient, OpenAIClient, OllamaClient
+from .llm_client import (
+    LLMClient,
+    OpenAIClient,
+    OllamaClient,
+    HFLocalClient,
+)
 from .orchestrator import Orchestrator
 from .evaluation import Evaluator, async_batch_evaluate, batch_evaluate
 from .logging_config import configure_logging
@@ -62,6 +67,7 @@ __all__ = [
     "LLMClient",
     "OpenAIClient",
     "OllamaClient",
+    "HFLocalClient",
     "VirtualPanel",
     "Orchestrator",
     "BudgetManager",

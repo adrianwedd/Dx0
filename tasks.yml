@@ -523,6 +523,14 @@ phases:
         acceptance_criteria:
           - "New features are functional and intuitive."
 
+      - id: "T45"
+        title: "Fine-tune Domain-Specific LLM"
+        description: >
+          Train a custom language model on the NEJM case corpus and
+          integrate it through the multi-provider LLM engine.
+        labels: [feature, ai, data]
+        status: done
+
 - id: 45
   title: Secure Web UI Authentication
   description: >

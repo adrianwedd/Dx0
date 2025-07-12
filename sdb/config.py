@@ -11,6 +11,7 @@ class Settings(BaseModel):
 
     openai_api_key: Optional[str] = None
     openai_model: str = "gpt-4"
+    hf_model: Optional[str] = None
     ollama_base_url: HttpUrl = "http://localhost:11434"
     metrics_port: int = 8000
     semantic_retrieval: bool = False
@@ -63,6 +64,8 @@ def load_settings(path: str | None = None) -> Settings:
         data["openai_api_key"] = env("OPENAI_API_KEY")
     if "openai_model" not in data and env("OPENAI_MODEL"):
         data["openai_model"] = env("OPENAI_MODEL")
+    if "hf_model" not in data and env("HF_MODEL"):
+        data["hf_model"] = env("HF_MODEL")
     if "ollama_base_url" not in data and env("OLLAMA_BASE_URL"):
         data["ollama_base_url"] = env("OLLAMA_BASE_URL")
     if "metrics_port" not in data and env("SDB_METRICS_PORT"):
