@@ -24,6 +24,7 @@ from .retrieval import (
     CrossEncoderReranker,
     get_retrieval_plugin,
 )
+from .plugins import PluginInfo, validate_plugins
 from .services import BudgetManager, BudgetStore, ResultAggregator, MetricsDB
 from .statistics import load_scores, permutation_test
 from .sqlite_db import load_from_sqlite, save_to_sqlite
@@ -88,4 +89,6 @@ __all__ = [
     "async_batch_evaluate",
     "batch_evaluate",
     "configure_logging",
+    "PluginInfo",
+    "validate_plugins",
 ]

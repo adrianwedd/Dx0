@@ -1450,7 +1450,7 @@ phases:
   area: validation
   dependencies: []
   priority: 2
-  status: pending
+  status: done
   actionable_steps:
     - Create `PluginInfo` model with name, version, and entry point.
     - Validate registered plugins before use.
