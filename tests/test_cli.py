@@ -95,7 +95,8 @@ def test_cli_flag_parsing(tmp_path):
         "openai",
         "--llm-model",
         "turbo",
-        "--quiet",
+        "--verbosity",
+        "quiet",
         "--semantic-retrieval",
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -283,8 +284,7 @@ def test_cli_cache_size(monkeypatch, tmp_path):
         "--cache-size",
         "5",
     ]
-    monkeypatch.setattr(sys, "argv", argv)
-    cli.main()
+    cli.main(argv[1:])
     assert captured["path"] == "llm_cache.jsonl"
     assert captured["size"] == 5
 
@@ -346,8 +346,7 @@ def test_cli_cross_encoder_flag(monkeypatch, tmp_path):
         "ce",
         "--semantic-retrieval",
     ]
-    monkeypatch.setattr(sys, "argv", argv)
-    cli.main()
+    cli.main(argv[1:])
     assert captured["ce"] == "ce"
 
 
@@ -415,8 +414,7 @@ def test_cli_ollama_base_url(monkeypatch, tmp_path):
         "--ollama-base-url",
         "http://127.0.0.1:11434",
     ]
-    monkeypatch.setattr(sys, "argv", argv)
-    cli.main()
+    cli.main(argv[1:])
     assert captured["url"] == "http://127.0.0.1:11434"
 
 
@@ -475,8 +473,7 @@ def test_cli_persona_models(monkeypatch, tmp_path):
         "--persona-models",
         '{"hypothesis_system": "gpt-4"}',
     ]
-    monkeypatch.setattr(sys, "argv", argv)
-    cli.main()
+    cli.main(argv[1:])
     assert captured["models"] == {"hypothesis_system": "gpt-4"}
 
 
@@ -532,8 +529,7 @@ def test_cli_budget_limit(monkeypatch, tmp_path):
         "--budget-limit",
         "5",
     ]
-    monkeypatch.setattr(sys, "argv", argv)
-    cli.main()
+    cli.main(argv[1:])
     assert captured["limit"] == 5.0
 
 
@@ -604,8 +600,7 @@ def test_cli_budgeted_mode_enforces_budget(monkeypatch, tmp_path):
         "--budget",
         "5",
     ]
-    monkeypatch.setattr(sys, "argv", argv)
-    cli.main()
+    cli.main(argv[1:])
 
     assert captured["budget"] == 5.0
     assert captured["turns"] == 1
@@ -667,8 +662,7 @@ def test_cli_cost_table_custom(monkeypatch, tmp_path):
         "--cost-table",
         str(cost_file),
     ]
-    monkeypatch.setattr(sys, "argv", argv)
-    cli.main()
+    cli.main(argv[1:])
 
     assert captured["path"] == str(cost_file)
     assert isinstance(captured["estimator"], DummyCostEstimator)
@@ -744,7 +738,7 @@ def test_batch_eval_ollama_base_url(monkeypatch, tmp_path):
         "--ollama-base-url",
         "http://127.0.0.1:11434",
     ]
-    cli.batch_eval_main(argv)
+    cli.batch_eval(argv)
     assert captured["url"] == "http://127.0.0.1:11434"
 
 
@@ -805,8 +799,7 @@ def test_cli_vote_weights(monkeypatch, tmp_path, capsys):
         "--vote-weights",
         str(weights_path),
     ]
-    monkeypatch.setattr(sys, "argv", argv)
-    cli.main()
+    cli.main(argv[1:])
 
     output = capsys.readouterr().out
     assert "weighted" in output
@@ -878,13 +871,11 @@ def test_cli_weights_file_affects_output(monkeypatch, tmp_path, capsys):
         "--weights-file",
         str(file_a),
     ]
-    monkeypatch.setattr(sys, "argv", argv)
-    cli.main()
+    cli.main(argv[1:])
     out_a = capsys.readouterr().out
 
     argv[-1] = str(file_b)
-    monkeypatch.setattr(sys, "argv", argv)
-    cli.main()
+    cli.main(argv[1:])
     out_b = capsys.readouterr().out
 
     assert out_a != out_b
