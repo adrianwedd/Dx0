@@ -17,6 +17,19 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           ./scripts/install_dev_deps.sh
+      - name: Install license tools
+        run: pip install pip-licenses
+      - name: Check licenses
+        run: |
+          pip-licenses --format=markdown \
+            --output-file=licenses.md \
+            --no-license-path \
+            --fail-on="GPL;LGPL;AGPL" \
+            --partial-match
+      - uses: actions/upload-artifact@v4
+        with:
+          name: license-report
+          path: licenses.md
       - name: Run pre-commit
         run: pre-commit run --show-diff-on-failure --color=always --all-files
       - name: Run flake8
