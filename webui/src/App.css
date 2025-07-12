@@ -5,7 +5,7 @@
 }
 
 .panel {
-  border: 1px solid #ddd;
+  border: 1px solid var(--panel-border);
   margin-bottom: 1rem;
   padding: 0.5rem;
 }
@@ -23,6 +23,6 @@
 .log {
   height: 200px;
   overflow-y: auto;
-  border: 1px solid #ccc;
+  border: 1px solid var(--panel-border);
   padding: 0.5rem;
 }
