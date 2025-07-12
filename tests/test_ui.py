@@ -433,3 +433,60 @@ async def test_ws_budget_query_param(monkeypatch):
     thread.join()
 
     assert captured["limit"] == 42.0
+
+
+@pytest.mark.asyncio
+async def test_ws_rate_limit(monkeypatch):
+    monkeypatch.setattr(ui_app, "MESSAGE_RATE_LIMIT", 2)
+    monkeypatch.setattr(ui_app, "MESSAGE_RATE_WINDOW", 1)
+    ui_app.MESSAGE_HISTORY.clear()
+
+    class DummyBudgetManager:
+        def __init__(self, *_, **__):
+            self.budget = None
+            self.spent = 0.0
+
+        def add_test(self, *_args, **_kwargs):
+            return None
+
+        def over_budget(self) -> bool:
+            return False
+
+    class DummyOrchestrator:
+        def __init__(self, *_, **kwargs):
+            self.budget_manager = kwargs.get("budget_manager")
+            self.spent = 0.0
+            self.ordered_tests = []
+
+        def run_turn(self, *_args, **_kwargs):
+            return "ok"
+
+    monkeypatch.setattr(ui_app, "BudgetManager", DummyBudgetManager)
+    monkeypatch.setattr(ui_app, "Orchestrator", DummyOrchestrator)
+
+    config = uvicorn.Config(app, host="127.0.0.1", port=8015, log_level="error")
+    server = uvicorn.Server(config)
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    while not server.started:
+        await asyncio.sleep(0.01)
+
+    async with httpx.AsyncClient(base_url="http://127.0.0.1:8015") as client:
+        res = await client.post(
+            "/api/v1/login",
+            json={"username": "physician", "password": "secret"},
+        )
+        token = res.json()["token"]
+        async with aconnect_ws(
+            f"ws://127.0.0.1:8015/api/v1/ws?token={token}",
+            client,
+        ) as ws:
+            for _ in range(2):
+                await ws.send_json({"action": "question", "content": "hi"})
+                await ws.receive_json()
+            await ws.send_json({"action": "question", "content": "hi"})
+            data = await ws.receive_json()
+            assert "error" in data
+
+    server.should_exit = True
+    thread.join()

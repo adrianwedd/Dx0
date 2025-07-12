@@ -1085,7 +1085,7 @@ phases:
   area: protection
   dependencies: [63]
   priority: 2
-  status: pending
+  status: done
   actionable_steps:
     - Track login failures per IP and temporarily block after 5 attempts.
     - Enforce a per-session message rate using a sliding window counter.
