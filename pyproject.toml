@@ -58,3 +58,6 @@ optimist = "sdb.plugins.optimist_plugin:optimistic_chain"
 [project.entry-points."sdb.retrieval_plugins"]
 sentence-transformer = "sdb.retrieval:SentenceTransformerIndex"
 faiss = "sdb.retrieval:FaissIndex"
+
+[project.entry-points."dx0.cost_estimators"]
+csv = "sdb.cost_estimator:load_csv_estimator"

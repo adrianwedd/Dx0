@@ -1,7 +1,7 @@
 """SDBench framework and MAI-DxO skeleton implementation."""
 
 from .case_database import Case, CaseDatabase, SQLiteCaseDatabase
-from .cost_estimator import CostEstimator, CptCost
+from .cost_estimator import CostEstimator, CptCost, load_cost_estimator
 from .gatekeeper import Gatekeeper
 from .judge import Judge
 from .protocol import ActionType, build_action
@@ -42,6 +42,7 @@ __all__ = [
     "SQLiteCaseDatabase",
     "CostEstimator",
     "CptCost",
+    "load_cost_estimator",
     "Gatekeeper",
     "Judge",
     "ActionType",

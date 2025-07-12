@@ -17,6 +17,7 @@ from sdb import (
     BudgetManager,
     CaseDatabase,
     CostEstimator,
+    load_cost_estimator,
     DiagnosisResult,
     Evaluator,
     Gatekeeper,
@@ -170,6 +171,12 @@ def batch_eval_main(argv: list[str]) -> None:
         default=None,
         help="CSV file mapping test names to costs",
     )
+    parser.add_argument(
+        "--cost-estimator",
+        dest="cost_estimator",
+        default=None,
+        help="Cost estimator plugin name",
+    )
     parser.add_argument("--output", required=True, help="CSV file for results")
     parser.add_argument(
         "--results-db",
@@ -271,6 +278,8 @@ def batch_eval_main(argv: list[str]) -> None:
         args.db_sqlite = cfg.case_db_sqlite
     if args.retrieval_backend is None:
         args.retrieval_backend = cfg.retrieval_backend
+    if args.cost_estimator is None:
+        args.cost_estimator = cfg.cost_estimator_plugin
 
     vote_weights = _load_weights_file(args.weights_file)
     if vote_weights is None:
@@ -304,7 +313,7 @@ def batch_eval_main(argv: list[str]) -> None:
     cost_path = args.cost_table or args.costs
     if cost_path is None:
         parser.error("--cost-table or --costs is required")
-    cost_estimator = CostEstimator.load_from_csv(cost_path)
+    cost_estimator = load_cost_estimator(cost_path, plugin_name=args.cost_estimator or "csv")
     judge = Judge(rubric)
     evaluator = Evaluator(
         judge,
@@ -722,6 +731,12 @@ def main() -> None:
         help="CSV file mapping test names to costs",
     )
     parser.add_argument(
+        "--cost-estimator",
+        dest="cost_estimator",
+        default=None,
+        help="Cost estimator plugin name",
+    )
+    parser.add_argument(
         "--correct-threshold",
         type=int,
         default=4,
@@ -928,7 +943,7 @@ def main() -> None:
     )
     gatekeeper.register_test_result("complete blood count", "normal")
 
-    cost_estimator = CostEstimator.load_from_csv(cost_path)
+    cost_estimator = load_cost_estimator(cost_path, plugin_name=args.cost_estimator or "csv")
 
     with open(args.rubric, "r", encoding="utf-8") as fh:
         rubric = json.load(fh)

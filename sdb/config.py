@@ -16,6 +16,7 @@ class Settings(BaseModel):
     semantic_retrieval: bool = False
     cross_encoder_model: Optional[str] = None
     retrieval_backend: Optional[str] = None
+    cost_estimator_plugin: Optional[str] = None
     retrieval_cache_ttl: int = 300
     case_db: Optional[str] = None
     case_db_sqlite: Optional[str] = None
@@ -77,6 +78,8 @@ def load_settings(path: str | None = None) -> Settings:
         data["parallel_personas"] = env("SDB_PARALLEL_PERSONAS").lower() == "true"
     if "retrieval_backend" not in data and env("SDB_RETRIEVAL_BACKEND"):
         data["retrieval_backend"] = env("SDB_RETRIEVAL_BACKEND")
+    if "cost_estimator_plugin" not in data and env("SDB_COST_ESTIMATOR"):
+        data["cost_estimator_plugin"] = env("SDB_COST_ESTIMATOR")
     if "retrieval_cache_ttl" not in data and env("SDB_RETRIEVAL_CACHE_TTL"):
         try:
             data["retrieval_cache_ttl"] = int(env("SDB_RETRIEVAL_CACHE_TTL"))

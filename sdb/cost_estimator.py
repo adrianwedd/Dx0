@@ -1,12 +1,43 @@
 import csv
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple
+
+from importlib import metadata
 
 import structlog
 
 from .cpt_lookup import lookup_cpt
 
 logger = structlog.get_logger(__name__)
+
+
+def load_csv_estimator(path: str) -> "CostEstimator":
+    """Return :class:`CostEstimator` loaded from ``path``.
+
+    This function is registered as the built-in ``csv`` plugin for the
+    ``dx0.cost_estimators`` entry point group.
+    """
+
+    return CostEstimator.load_from_csv(path)
+
+
+def load_cost_estimator(path: str, plugin_name: str = "csv") -> "CostEstimator":
+    """Return a cost estimator using the plugin ``plugin_name``.
+
+    Third-party estimators can register a callable under the
+    ``dx0.cost_estimators`` entry point group that accepts the path to a cost
+    table and returns a :class:`CostEstimator` instance.
+    """
+
+    if plugin_name == "csv":
+        return load_csv_estimator(path)
+
+    for ep in metadata.entry_points(group="dx0.cost_estimators"):
+        if ep.name == plugin_name:
+            factory: Callable[[str], CostEstimator] = ep.load()
+            estimator = factory(path)
+            return estimator
+    raise ValueError(f"Cost estimator plugin '{plugin_name}' not found")
 
 
 @dataclass
