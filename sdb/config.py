@@ -16,6 +16,7 @@ class Settings(BaseModel):
     semantic_retrieval: bool = False
     cross_encoder_model: Optional[str] = None
     retrieval_backend: Optional[str] = None
+    retrieval_cache_ttl: int = 300
     case_db: Optional[str] = None
     case_db_sqlite: Optional[str] = None
     parallel_personas: bool = False
@@ -38,6 +39,14 @@ class Settings(BaseModel):
         """Validate that the Jaeger port is in the valid range."""
         if not (1 <= value <= 65535):
             raise ValueError("tracing_port must be between 1 and 65535")
+        return value
+
+    @field_validator("retrieval_cache_ttl")
+    @classmethod
+    def _check_cache_ttl(cls, value: int) -> int:
+        """Ensure the retrieval cache TTL is positive."""
+        if value <= 0:
+            raise ValueError("retrieval_cache_ttl must be positive")
         return value
 
 
@@ -68,6 +77,11 @@ def load_settings(path: str | None = None) -> Settings:
         data["parallel_personas"] = env("SDB_PARALLEL_PERSONAS").lower() == "true"
     if "retrieval_backend" not in data and env("SDB_RETRIEVAL_BACKEND"):
         data["retrieval_backend"] = env("SDB_RETRIEVAL_BACKEND")
+    if "retrieval_cache_ttl" not in data and env("SDB_RETRIEVAL_CACHE_TTL"):
+        try:
+            data["retrieval_cache_ttl"] = int(env("SDB_RETRIEVAL_CACHE_TTL"))
+        except ValueError:
+            pass
     if "tracing" not in data and env("SDB_TRACING_ENABLED"):
         data["tracing"] = env("SDB_TRACING_ENABLED").lower() == "true"
     if "tracing_host" not in data and env("SDB_TRACING_HOST"):

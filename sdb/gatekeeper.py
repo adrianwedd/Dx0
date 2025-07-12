@@ -50,6 +50,7 @@ class Gatekeeper:
         use_semantic_retrieval: bool | None = None,
         cross_encoder_name: str | None = None,
         retrieval_backend: str | None = None,
+        retrieval_cache_ttl: float | None = None,
     ):
         """Bind the gatekeeper to a case and set up test cache.
 
@@ -64,6 +65,9 @@ class Gatekeeper:
         retrieval_backend:
             Name of retrieval plugin to instantiate. Defaults to
             ``settings.retrieval_backend``.
+        retrieval_cache_ttl:
+            Time-to-live in seconds for cached retrieval results. Defaults to
+            ``settings.retrieval_cache_ttl``.
         """
 
         if use_semantic_retrieval is None:
@@ -72,6 +76,8 @@ class Gatekeeper:
             cross_encoder_name = settings.cross_encoder_model
         if retrieval_backend is None:
             retrieval_backend = settings.retrieval_backend
+        if retrieval_cache_ttl is None:
+            retrieval_cache_ttl = settings.retrieval_cache_ttl
 
         self.case = db.get_case(case_id)
         self.known_tests: Dict[str, str] = {}
@@ -88,6 +94,7 @@ class Gatekeeper:
                 docs,
                 plugin_name=retrieval_backend,
                 cross_encoder_name=cross_encoder_name,
+                cache_ttl=retrieval_cache_ttl,
             )
 
     def load_results_from_json(self, path: str) -> None:

@@ -1,4 +1,6 @@
 import re
+import time
+import hashlib
 from typing import Dict, List, Tuple, Optional, Type, Protocol
 from importlib import metadata
 
@@ -38,6 +40,25 @@ class BaseRetrievalIndex(Protocol):
 
 
 _BUILTIN_PLUGINS: Dict[str, Type[BaseRetrievalIndex]] = {}
+
+
+class CachedRetrievalIndex:
+    """Wrap a retrieval index with an in-memory TTL cache."""
+
+    def __init__(self, backend: BaseRetrievalIndex, ttl: float = 300.0) -> None:
+        self.backend = backend
+        self.ttl = ttl
+        self.cache: Dict[str, Tuple[float, List[Tuple[str, float]]]] = {}
+
+    def query(self, text: str, top_k: int = 1) -> List[Tuple[str, float]]:
+        key = hashlib.sha1(f"{text}|{top_k}".encode("utf-8")).hexdigest()
+        now = time.time()
+        hit = self.cache.get(key)
+        if hit and now - hit[0] < self.ttl:
+            return hit[1]
+        results = self.backend.query(text, top_k=top_k)
+        self.cache[key] = (now, results)
+        return results
 
 
 def _tokenize(text: str) -> List[str]:
@@ -302,6 +323,7 @@ def load_retrieval_index(
     documents: List[str],
     *,
     plugin_name: Optional[str] = None,
+    cache_ttl: float | None = None,
     **kwargs: object,
 ) -> BaseRetrievalIndex:
     """Instantiate the retrieval index specified by configuration."""
@@ -311,4 +333,7 @@ def load_retrieval_index(
     if plugin_name is None:
         plugin_name = "faiss" if FAISS_AVAILABLE else "sentence-transformer"
     index_cls = get_retrieval_plugin(plugin_name)
-    return index_cls(documents, **kwargs)
+    index = index_cls(documents, **kwargs)
+    if cache_ttl is not None:
+        index = CachedRetrievalIndex(index, ttl=cache_ttl)
+    return index

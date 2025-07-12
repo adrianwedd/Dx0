@@ -94,6 +94,7 @@ def test_cross_encoder_name_passed(monkeypatch):
             cross_encoder_name=None,
             rerank_k=5,
             plugin_name=None,
+            **_ignored,
         ):
             captured["name"] = cross_encoder_name
 
