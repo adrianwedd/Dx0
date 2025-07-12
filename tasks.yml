@@ -1460,3 +1460,98 @@ phases:
   command: null
   epic: Phase 6
   assigned_to: null
+
+- id: 86
+  title: Deployment Automation
+  description: >
+    Create container orchestration scripts and CI pipelines for publishing release images.
+  component: devops
+  area: deployment
+  dependencies: []
+  priority: 3
+  status: todo
+  actionable_steps:
+    - Create Docker Compose or Kubernetes scripts.
+    - Add a CI workflow that builds and publishes Docker images.
+  acceptance_criteria:
+    - "Services deploy via orchestration scripts."
+    - "CI publishes release images automatically."
+  command: null
+  epic: Phase 6
+  assigned_to: null
+
+- id: 87
+  title: UI Test Coverage
+  description: >
+    Add end-to-end tests for accessibility and dark-mode styling.
+  component: testing
+  area: frontend
+  dependencies: []
+  priority: 3
+  status: todo
+  actionable_steps:
+    - Implement Playwright or Cypress tests covering keyboard navigation and ARIA labels.
+    - Verify dark mode styles in automated tests.
+  acceptance_criteria:
+    - "UI tests pass validating accessibility and themes."
+  command: null
+  epic: Phase 6
+  assigned_to: null
+
+- id: 88
+  title: Security Review
+  description: >
+    Perform a dependency audit and document threat mitigations.
+  component: security
+  area: audit
+  dependencies: []
+  priority: 2
+  status: todo
+  actionable_steps:
+    - Run a tool like `safety` or `pip-audit` on dependencies.
+    - Document mitigations for any flagged issues.
+    - Add threat-model documentation for authentication, data storage, and logging.
+  acceptance_criteria:
+    - "Dependency audit reports are stored with documented mitigations."
+    - "Threat model documentation covers key security aspects."
+  command: null
+  epic: Phase 6
+  assigned_to: null
+
+- id: 89
+  title: Plugin Ecosystem Guide
+  description: >
+    Document best practices for developing and packaging plugins.
+  component: docs
+  area: plugins
+  dependencies: []
+  priority: 3
+  status: todo
+  actionable_steps:
+    - Expand plugin documentation with packaging and versioning advice.
+    - Provide example repositories for retrieval, persona, and cost estimator plugins.
+  acceptance_criteria:
+    - "Developers can follow the guide to build compatible plugins."
+  command: null
+  epic: Phase 6
+  assigned_to: null
+
+- id: 90
+  title: Performance Benchmarks
+  description: >
+    Measure latency of services under load and supply dashboard templates.
+  component: performance
+  area: monitoring
+  dependencies: []
+  priority: 3
+  status: todo
+  actionable_steps:
+    - Benchmark retrieval, LLM calls, and caching latency.
+    - Provide scripts and Grafana dashboards for monitoring.
+  acceptance_criteria:
+    - "Benchmark results identify performance bottlenecks."
+    - "Grafana dashboards visualize service latency."
+  command: null
+  epic: Phase 6
+  assigned_to: null
+
