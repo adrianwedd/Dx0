@@ -2,10 +2,18 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 import re
 import json
 from typing import List, Set
+
+from tqdm import tqdm
+
+try:
+    import aiohttp
+except Exception:  # pragma: no cover - optional
+    aiohttp = None
 
 try:
     import requests
@@ -54,6 +62,24 @@ def fetch_case_text(pmid: str) -> str:
     return resp.text.strip()
 
 
+async def fetch_case_text_async(
+    session: "aiohttp.ClientSession", pmid: str
+) -> str:
+    """Download case abstract text asynchronously."""
+    if aiohttp is None:  # pragma: no cover - optional dependency
+        raise RuntimeError("aiohttp package is required for collection")
+    params = {
+        "db": "pubmed",
+        "id": pmid,
+        "retmode": "text",
+        "rettype": "abstract",
+    }
+    async with session.get(PUBMED_FETCH_URL, params=params, timeout=30) as resp:
+        resp.raise_for_status()
+        text = await resp.text()
+    return text.strip()
+
+
 def save_case_text(case_id: int, text: str, dest_dir: str) -> str:
     """Write ``text`` to ``case_<id>.txt`` in ``dest_dir``."""
     os.makedirs(dest_dir, exist_ok=True)
@@ -63,21 +89,56 @@ def save_case_text(case_id: int, text: str, dest_dir: str) -> str:
     return filename
 
 
-def collect_cases(
-    dest_dir: str = "data/raw_cases", count: int = 304
+async def _download_cases_async(
+    pmids: List[str], dest_dir: str, start_id: int, concurrency: int
 ) -> List[str]:
-    """Download CPC cases and store them in ``dest_dir``."""
-    pmids = fetch_case_pmids(count)
-    paths = []
-    for idx, pmid in enumerate(pmids, 1):
-        try:
-            text = fetch_case_text(pmid)
-        except Exception as exc:  # pragma: no cover - network errors
-            print(f"Failed to fetch PMID {pmid}: {exc}")
-            continue
-        path = save_case_text(idx, text, dest_dir)
-        paths.append(path)
+    """Download ``pmids`` concurrently and write them to ``dest_dir``."""
+    if aiohttp is None:  # pragma: no cover - optional dependency
+        raise RuntimeError("aiohttp package is required for collection")
+
+    semaphore = asyncio.Semaphore(concurrency)
+    paths: List[str] = []
+    connector = aiohttp.TCPConnector(limit=concurrency)
+    async with aiohttp.ClientSession(connector=connector) as session:
+        async def fetch_and_save(idx: int, pmid: str) -> str | None:
+            async with semaphore:
+                try:
+                    text = await fetch_case_text_async(session, pmid)
+                except Exception as exc:  # pragma: no cover - network errors
+                    print(f"Failed to fetch PMID {pmid}: {exc}")
+                    return None
+            return save_case_text(start_id + idx, text, dest_dir)
+        tasks = [
+            asyncio.create_task(fetch_and_save(i, pmid))
+            for i, pmid in enumerate(pmids)
+        ]
+        for coro in tqdm(
+            asyncio.as_completed(tasks), total=len(tasks), desc="Fetching cases"
+        ):
+            result = await coro
+            if result:
+                paths.append(result)
     return paths
+
+
+def collect_cases(
+    dest_dir: str = "data/raw_cases", count: int = 304, concurrency: int = 3
+) -> List[str]:
+    """Download CPC cases and store them in ``dest_dir``.
+
+    Parameters
+    ----------
+    dest_dir:
+        Destination directory for raw case text files.
+    count:
+        Number of cases to retrieve.
+    concurrency:
+        Maximum number of concurrent downloads.
+    """
+    pmids = fetch_case_pmids(count)
+    return asyncio.run(
+        _download_cases_async(pmids, dest_dir, start_id=1, concurrency=concurrency)
+    )
 
 
 PMID_RE = re.compile(r"PMID:\s*(\d+)")
@@ -119,25 +180,27 @@ def _next_case_id(raw_dir: str) -> int:
     return highest + 1
 
 
-def collect_new_cases(dest_dir: str = "data/raw_cases") -> List[str]:
-    """Download only new CPC cases into ``dest_dir``."""
+def collect_new_cases(
+    dest_dir: str = "data/raw_cases", concurrency: int = 3
+) -> List[str]:
+    """Download only new CPC cases into ``dest_dir``.
+
+    Parameters
+    ----------
+    dest_dir:
+        Directory that will receive new case files.
+    concurrency:
+        Maximum number of concurrent downloads.
+    """
 
     existing = _existing_pmids(dest_dir)
     next_id = _next_case_id(dest_dir)
-    pmids = fetch_case_pmids(count=1000)
-    paths = []
-    for pmid in pmids:
-        if pmid in existing:
-            continue
-        try:
-            text = fetch_case_text(pmid)
-        except Exception as exc:  # pragma: no cover - network errors
-            print(f"Failed to fetch PMID {pmid}: {exc}")
-            continue
-        path = save_case_text(next_id, text, dest_dir)
-        next_id += 1
-        paths.append(path)
-    return paths
+    pmids = [pmid for pmid in fetch_case_pmids(count=1000) if pmid not in existing]
+    if not pmids:
+        return []
+    return asyncio.run(
+        _download_cases_async(pmids, dest_dir, start_id=next_id, concurrency=concurrency)
+    )
 
 
 def run_pipeline(
@@ -146,11 +209,28 @@ def run_pipeline(
     output_dir: str = "data/sdbench/cases",
     hidden_dir: str | None = "data/sdbench/hidden_cases",
     fetch: bool = True,
+    concurrency: int = 3,
     sqlite_path: str | None = None,
 ) -> List[str]:
-    """Run the full ingestion pipeline."""
+    """Run the full ingestion pipeline.
+
+    Parameters
+    ----------
+    raw_dir:
+        Directory containing raw case text files.
+    output_dir:
+        Directory that will receive converted JSON cases.
+    hidden_dir:
+        Directory for held-out cases from 2024–2025.
+    fetch:
+        Whether to download cases before conversion.
+    concurrency:
+        Maximum number of concurrent downloads when ``fetch`` is ``True``.
+    sqlite_path:
+        Optional path to a SQLite database where case summaries will be stored.
+    """
     if fetch:
-        collect_cases(raw_dir)
+        collect_cases(raw_dir, concurrency=concurrency)
     paths = convert_directory(raw_dir, output_dir, hidden_dir)
     if sqlite_path:
         json_dirs = [output_dir]
@@ -181,16 +261,32 @@ def update_dataset(
     raw_dir: str = "data/raw_cases",
     output_dir: str = "data/sdbench/cases",
     hidden_dir: str | None = "data/sdbench/hidden_cases",
+    concurrency: int = 3,
     sqlite_path: str | None = None,
 ) -> List[str]:
-    """Fetch newly released cases and convert the entire dataset."""
+    """Fetch newly released cases and convert the entire dataset.
 
-    collect_new_cases(raw_dir)
+    Parameters
+    ----------
+    raw_dir:
+        Directory for raw case text files.
+    output_dir:
+        Directory for converted JSON cases.
+    hidden_dir:
+        Directory for held-out cases from 2024–2025.
+    concurrency:
+        Maximum number of concurrent downloads when fetching new cases.
+    sqlite_path:
+        Optional path to a SQLite database where case summaries will be stored.
+    """
+
+    collect_new_cases(raw_dir, concurrency=concurrency)
     return run_pipeline(
         raw_dir=raw_dir,
         output_dir=output_dir,
         hidden_dir=hidden_dir,
         fetch=False,
+        concurrency=concurrency,
         sqlite_path=sqlite_path,
     )
 

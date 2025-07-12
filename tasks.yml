@@ -1148,7 +1148,7 @@ phases:
   area: performance
   dependencies: []
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
     - Use `asyncio` and `aiohttp` to fetch PubMed abstracts in parallel.
     - Limit concurrency to avoid API rate limits.

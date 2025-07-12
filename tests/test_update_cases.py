@@ -10,7 +10,10 @@ def test_collect_new_cases(tmp_path, monkeypatch):
     monkeypatch.setattr(
         pl, "fetch_case_pmids", lambda count=304: ["111", "222"]
     )
-    monkeypatch.setattr(pl, "fetch_case_text", lambda pmid: f"PMID: {pmid}")
+    async def fake_fetch(session, pmid):
+        return f"PMID: {pmid}"
+
+    monkeypatch.setattr(pl, "fetch_case_text_async", fake_fetch)
 
     paths = pl.collect_new_cases(str(raw_dir))
     assert len(paths) == 1
