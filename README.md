@@ -261,6 +261,36 @@ while not orc.finished:
 print(orc.final_diagnosis, orc.spent)
 ```
 
+### Advanced Orchestrator Settings
+
+Dx0 exposes several configuration hooks for fine-tuning panel behavior.
+
+**Budgets**
+
+- Pass a `BudgetManager` to :class:`Orchestrator` to enforce a spending limit.
+- Use the `--budget` flag when running in budgeted mode or `--budget-limit` for
+  other modes. The Physician UI reads `UI_BUDGET_LIMIT` for its default cap.
+
+```python
+costs = CostEstimator.load_from_csv("data/sdbench/costs.csv")
+bm = BudgetManager(costs, budget=250)
+orc = Orchestrator(VirtualPanel(), gatekeeper, budget_manager=bm)
+```
+
+**Personas**
+
+- Custom persona chains can be loaded from plugins registered under the
+  ``dx0.personas`` entry point group. Instantiate a panel with
+  ``VirtualPanel(persona_chain="optimist")`` or your own plugin name.
+- See [docs/persona_plugins.md](docs/persona_plugins.md) for plugin creation
+  details.
+
+```python
+panel = VirtualPanel(persona_chain="my-chain")
+orc = Orchestrator(panel, gatekeeper)
+```
+
+
 ### Running Tests
 
 The test suite depends on additional packages such as `httpx`,
