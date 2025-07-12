@@ -1292,7 +1292,7 @@ phases:
   area: data
   dependencies: []
   priority: 2
-  status: pending
+  status: done
   actionable_steps:
     - Define a results schema and migration script.
     - Update evaluator to write metrics after each run.
@@ -1312,7 +1312,7 @@ phases:
   area: monitoring
   dependencies: [49]
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
     - Provide dashboard JSON files under docs/.
     - Include setup instructions for Prometheus and Grafana.
@@ -1352,7 +1352,7 @@ phases:
   area: performance
   dependencies: []
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
     - Refactor network utilities to reuse an `httpx.Client` instance.
     - Measure request latency before and after the change.

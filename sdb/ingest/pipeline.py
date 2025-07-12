@@ -15,10 +15,7 @@ try:
 except Exception:  # pragma: no cover - optional
     aiohttp = None
 
-try:
-    import requests
-except Exception:  # pragma: no cover - optional
-    requests = None
+from ..http_utils import get_client
 
 from .convert import convert_directory
 from ..sqlite_db import save_to_sqlite
@@ -33,15 +30,14 @@ PUBMED_FETCH_URL = (
 
 def fetch_case_pmids(count: int = 304) -> List[str]:
     """Return PubMed IDs for the latest CPC cases."""
-    if requests is None:  # pragma: no cover - optional dependency
-        raise RuntimeError("requests package is required for collection")
+    client = get_client()
     params = {
         "db": "pubmed",
         "term": "Case Records of the Massachusetts General Hospital[Title]",
         "retmax": str(count),
         "sort": "pub+date",
     }
-    resp = requests.get(PUBMED_SEARCH_URL, params=params, timeout=30)
+    resp = client.get(PUBMED_SEARCH_URL, params=params)
     resp.raise_for_status()
     pmids = re.findall(r"<Id>(\d+)</Id>", resp.text)
     return pmids[:count]
@@ -49,15 +45,14 @@ def fetch_case_pmids(count: int = 304) -> List[str]:
 
 def fetch_case_text(pmid: str) -> str:
     """Download case abstract text from PubMed."""
-    if requests is None:  # pragma: no cover - optional dependency
-        raise RuntimeError("requests package is required for collection")
+    client = get_client()
     params = {
         "db": "pubmed",
         "id": pmid,
         "retmode": "text",
         "rettype": "abstract",
     }
-    resp = requests.get(PUBMED_FETCH_URL, params=params, timeout=30)
+    resp = client.get(PUBMED_FETCH_URL, params=params)
     resp.raise_for_status()
     return resp.text.strip()
 
