@@ -1128,7 +1128,7 @@ phases:
   area: build
   dependencies: []
   priority: 2
-  status: pending
+  status: done
   actionable_steps:
     - Split dependency installation and runtime layers into separate stages.
     - Remove development tools from the final image.
@@ -1190,7 +1190,7 @@ phases:
   area: compliance
   dependencies: [53]
   priority: 2
-  status: pending
+  status: done
   actionable_steps:
     - Install a tool like `licensecheck` or `pip-licenses` during CI.
     - Generate a license report for all packages in `requirements.lock`.
