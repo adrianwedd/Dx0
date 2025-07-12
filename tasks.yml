@@ -1272,7 +1272,7 @@ phases:
   area: performance
   dependencies: []
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
     - Add an in-memory cache keyed by query hash.
     - Expire cached items after a configurable TTL.
