@@ -1371,7 +1371,7 @@ phases:
   area: extensibility
   dependencies: []
   priority: 4
-  status: pending
+  status: done
   actionable_steps:
     - Define an entry point group `dx0.cost_estimators`.
     - Load the selected estimator from plugins at runtime.

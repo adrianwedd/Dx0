@@ -99,3 +99,28 @@ def test_lookup_cost_missing():
     ce = CostEstimator({})
     with pytest.raises(KeyError):
         ce.lookup_cost("unknown")
+
+
+def test_plugin_loader(monkeypatch):
+    captured: dict[str, str] = {}
+
+    def dummy_factory(path: str) -> CostEstimator:
+        captured["path"] = path
+        return CostEstimator({})
+
+    class DummyEP:
+        name = "dummy"
+        value = "dummy:factory"
+        group = "dx0.cost_estimators"
+
+        def load(self):
+            return dummy_factory
+
+    monkeypatch.setattr(
+        ce_mod.metadata,
+        "entry_points",
+        lambda group=None: [DummyEP()] if group == "dx0.cost_estimators" else [],
+    )
+    estimator = ce_mod.load_cost_estimator("table.csv", plugin_name="dummy")
+    assert isinstance(estimator, CostEstimator)
+    assert captured["path"] == "table.csv"
