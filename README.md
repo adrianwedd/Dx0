@@ -78,11 +78,16 @@ pip install -r requirements.lock
 ```
 
 See [Dependency Management](docs/dependency_updates.md) for details on
-updating and auditing requirements. You can also build a Docker image with:
+updating and auditing requirements. You can build a Docker image using the
+multi-stage `Dockerfile`:
 
 ```bash
 docker build -t clinical-ai-suite .
 ```
+
+The new build installs development tools only in the first stage and keeps the
+runtime image lean (about 800 MB instead of roughly 1.5 GB in the previous
+single-stage build).
 
 ---
 
