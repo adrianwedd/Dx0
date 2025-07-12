@@ -1169,7 +1169,7 @@ phases:
   area: evaluation
   dependencies: []
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
     - Generate queries from case summaries or questions.
     - Compare returned passages against ground truth excerpts.

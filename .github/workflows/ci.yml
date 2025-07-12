@@ -23,6 +23,8 @@ jobs:
         run: flake8 .
       - name: Run tests
         run: pytest -q
+      - name: Retrieval evaluation
+        run: python scripts/retrieval_eval.py tests/retrieval_eval_cases.json --top-k 3
 
   docker:
     runs-on: ubuntu-latest
