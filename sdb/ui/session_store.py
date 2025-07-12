@@ -23,6 +23,7 @@ class SessionStore:
                     "(session_id TEXT PRIMARY KEY, "
                     "refresh_token TEXT NOT NULL, "
                     "username TEXT NOT NULL, "
+                    "group_name TEXT, "
                     "issue_time REAL NOT NULL)"
                 )
             )
@@ -36,17 +37,28 @@ class SessionStore:
                         "(session_id TEXT PRIMARY KEY, "
                         "refresh_token TEXT NOT NULL, "
                         "username TEXT NOT NULL, "
+                        "group_name TEXT, "
                         "issue_time REAL NOT NULL, "
                         "budget_limit REAL, amount_spent REAL DEFAULT 0)"
                     )
                 )
-                cols = ["session_id", "refresh_token", "username", "issue_time", "budget_limit", "amount_spent"]
+                cols = [
+                    "session_id",
+                    "refresh_token",
+                    "username",
+                    "group_name",
+                    "issue_time",
+                    "budget_limit",
+                    "amount_spent",
+                ]
             if "budget_limit" not in cols:
                 conn.execute("ALTER TABLE sessions ADD COLUMN budget_limit REAL")
             if "amount_spent" not in cols:
                 conn.execute(
                     "ALTER TABLE sessions ADD COLUMN amount_spent REAL DEFAULT 0"
                 )
+            if "group_name" not in cols:
+                conn.execute("ALTER TABLE sessions ADD COLUMN group_name TEXT")
             conn.commit()
 
     def add(
@@ -58,6 +70,7 @@ class SessionStore:
         *,
         budget_limit: Optional[float] = None,
         amount_spent: float = 0.0,
+        group: str = "default",
     ) -> None:
         """Insert or update a session record."""
 
@@ -66,11 +79,19 @@ class SessionStore:
             conn.execute(
                 (
                     "INSERT OR REPLACE INTO sessions "
-                    "(session_id, refresh_token, username, issue_time, "
+                    "(session_id, refresh_token, username, group_name, issue_time, "
                     "budget_limit, amount_spent) "
-                    "VALUES (?, ?, ?, ?, ?, ?)"
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)"
                 ),
-                (session_id, refresh_token, username, ts, budget_limit, amount_spent),
+                (
+                    session_id,
+                    refresh_token,
+                    username,
+                    group,
+                    ts,
+                    budget_limit,
+                    amount_spent,
+                ),
             )
             conn.commit()
 
@@ -79,20 +100,20 @@ class SessionStore:
             conn.execute("DELETE FROM sessions WHERE refresh_token=?", (refresh_token,))
             conn.commit()
 
-    def get(self, session_id: str) -> Optional[str]:
+    def get(self, session_id: str) -> Optional[tuple[str, str]]:
         with self._connect() as conn:
             cur = conn.execute(
-                "SELECT username, issue_time FROM sessions WHERE session_id=?",
+                "SELECT username, group_name, issue_time FROM sessions WHERE session_id=?",
                 (session_id,),
             )
             row = cur.fetchone()
         if not row:
             return None
-        username, issue_time = row
+        username, group_name, issue_time = row
         if time.time() - issue_time > self.ttl:
             self.remove_by_session(session_id)
             return None
-        return username
+        return username, group_name
 
     def remove_by_session(self, session_id: str) -> None:
         with self._connect() as conn:
@@ -108,16 +129,18 @@ class SessionStore:
             row = cur.fetchone()
         return row[0] if row else None
 
-    def find_by_refresh(self, refresh_token: str) -> Optional[tuple[str, str]]:
+    def find_by_refresh(self, refresh_token: str) -> Optional[tuple[str, str, str]]:
         with self._connect() as conn:
             cur = conn.execute(
-                "SELECT session_id, username FROM sessions WHERE refresh_token=?",
+                "SELECT session_id, username, group_name FROM sessions WHERE refresh_token=?",
                 (refresh_token,),
             )
             row = cur.fetchone()
         return tuple(row) if row else None
 
-    def update_refresh(self, session_id: str, refresh_token: str, issue_time: float) -> None:
+    def update_refresh(
+        self, session_id: str, refresh_token: str, issue_time: float
+    ) -> None:
         with self._connect() as conn:
             conn.execute(
                 "UPDATE sessions SET refresh_token=?, issue_time=? WHERE session_id=?",

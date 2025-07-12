@@ -20,8 +20,12 @@ Edit the `users` mapping in `sdb/ui/users.yml` to add a new entry:
 
 ```yaml
 users:
-  physician: "$2b$12$existinghash..."
-  newuser: "$2b$12$generatedhash..."
+  physician:
+    password: "$2b$12$existinghash..."
+    group: admin
+  newuser:
+    password: "$2b$12$generatedhash..."
+    group: default
 ```
 
 ## Custom Credential Paths

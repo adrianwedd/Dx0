@@ -369,9 +369,14 @@ async def test_token_cleanup(tmp_path):
 
 def test_fhir_transcript_endpoint():
     client = TestClient(app)
+    token = client.post(
+        "/api/v1/login",
+        json={"username": "physician", "password": "secret"},
+    ).json()["access_token"]
     data = [["panel", "hi"], ["gatekeeper", "hello"]]
     res = client.post(
         "/api/v1/fhir/transcript",
+        headers={"Authorization": f"Bearer {token}"},
         json={"transcript": data, "patient_id": "p1"},
     )
     assert res.status_code == 200
@@ -382,8 +387,13 @@ def test_fhir_transcript_endpoint():
 
 def test_fhir_tests_endpoint():
     client = TestClient(app)
+    token = client.post(
+        "/api/v1/login",
+        json={"username": "physician", "password": "secret"},
+    ).json()["access_token"]
     res = client.post(
         "/api/v1/fhir/tests",
+        headers={"Authorization": f"Bearer {token}"},
         json={"tests": ["cbc"], "patient_id": "p2"},
     )
     assert res.status_code == 200
