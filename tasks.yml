@@ -333,6 +333,15 @@ phases:
         area: usability
         priority: 2
         status: pending
+      - id: 94
+        title: "Developer Getting Started Guide"
+        description: >
+          Write a concise guide in `docs/getting_started.md` covering environment setup,
+          running tests, and basic commands for new contributors.
+        component: documentation
+        area: onboarding
+        priority: 3
+        status: pending
 
   - name: "Phase 4: LLM Integration and Production Hardening"
     tasks:
@@ -522,6 +531,16 @@ phases:
           - "Improve layout styling for readability."
         acceptance_criteria:
           - "New features are functional and intuitive."
+
+      - id: 95
+        title: "Fine-Tune LLM for Diagnostic Reasoning"
+        description: >
+          Train a domain-specific language model using the NEJM case corpus to improve
+          reasoning accuracy and reduce hallucinations.
+        component: ai
+        area: modeling
+        priority: 2
+        status: pending
 
 - id: 45
   title: Secure Web UI Authentication
