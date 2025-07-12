@@ -1,0 +1,5 @@
+[
+  {"id": "1", "summary": "Patient has a cough and fever.", "full_text": "Patient reports a persistent cough and low-grade fever."},
+  {"id": "2", "summary": "Young male with chest pain after exercise.", "full_text": "A 25-year-old male experienced chest pain following intense exercise."},
+  {"id": "3", "summary": "Elderly female complaining of dizziness.", "full_text": "An elderly female presented with episodes of dizziness and nausea."}
+]
