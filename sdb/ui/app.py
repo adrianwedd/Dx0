@@ -115,7 +115,7 @@ async def stream_reply(
 
     for start in range(0, len(text), chunk_size):
         done = start + chunk_size >= len(text)
-        payload = ChatResponse(
+        payload = MessageOut(
             reply=text[start : start + chunk_size],
             done=done,
             cost=cost if done else None,
@@ -134,22 +134,20 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class ChatMessage(BaseModel):
-    """Incoming websocket message from the UI.
-
-    Parameters
-    ----------
-    action: ActionType
-        The user intent, one of ``question``, ``test``, or ``diagnosis``.
-    content: str
-        Free form user text for the selected ``action``.
-    """
+class MessageIn(BaseModel):
+    """Incoming WebSocket message from the UI."""
 
     action: ActionType = ActionType.QUESTION
     content: str
 
+    @classmethod
+    def parse_obj(cls, obj: dict) -> "MessageIn":
+        """Parse a payload into a ``MessageIn`` instance."""
 
-class ChatResponse(BaseModel):
+        return cls.model_validate(obj)
+
+
+class MessageOut(BaseModel):
     """Outgoing websocket payload with cost information."""
 
     reply: str
@@ -217,11 +215,8 @@ class UserPanel:
         return self.actions.get_nowait()
 
 
-HTML_PATH = static_dir / "react" / "index.html"
-if HTML_PATH.exists():
-    HTML = HTML_PATH.read_text(encoding="utf-8")
-else:
-    HTML = Path(__file__).with_name("templates").joinpath("template.html").read_text(encoding="utf-8")
+HTML_PATH = Path(__file__).with_name("templates").joinpath("template.html")
+HTML = HTML_PATH.read_text(encoding="utf-8")
 
 
 @app.on_event("startup")
@@ -346,10 +341,10 @@ async def websocket_endpoint(ws: WebSocket) -> None:
             while True:
                 try:
                     data = await ws.receive_json()
-                    msg = ChatMessage.model_validate(data)
-                except (ValueError, ValidationError):
-                    await ws.close(code=1003)
-                    return
+                    msg = MessageIn.parse_obj(data)
+                except (ValueError, ValidationError) as err:
+                    await ws.send_json({"error": str(err)})
+                    continue
                 content = msg.content
                 if msg.action == ActionType.TEST:
                     panel.add_action(PanelAction(ActionType.TEST, content))
