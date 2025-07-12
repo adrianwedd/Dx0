@@ -1210,7 +1210,7 @@ phases:
   area: design
   dependencies: [62]
   priority: 2
-  status: pending
+  status: done
   actionable_steps:
     - Define a dark palette in the chosen component library.
     - Provide a toggle or automatic detection of system theme.

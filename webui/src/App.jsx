@@ -10,7 +10,17 @@ export default function App() {
   const [results, setResults] = useState([])
   const [message, setMessage] = useState('')
   const [log, setLog] = useState([])
+  const [theme, setTheme] = useState(() => {
+    const stored = localStorage.getItem('theme')
+    if (stored === 'light' || stored === 'dark') return stored
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  })
   const wsRef = useRef(null)
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    localStorage.setItem('theme', theme)
+  }, [theme])
 
   useEffect(() => {
     if (token) {
@@ -66,6 +76,7 @@ export default function App() {
   return (
     <div id="root">
       <h2>Gatekeeper Chat</h2>
+      <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>Switch to {theme === 'light' ? 'dark' : 'light'} mode</button>
       <CollapsiblePanel title="Case Summary">
         <p>{summary}</p>
       </CollapsiblePanel>
