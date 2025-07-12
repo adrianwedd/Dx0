@@ -1332,7 +1332,7 @@ phases:
   area: tooling
   dependencies: []
   priority: 4
-  status: pending
+  status: done
   actionable_steps:
     - Implement `cli.py export-fhir` with input/output options.
     - Reuse existing FHIR export functions.

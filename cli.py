@@ -1,45 +1,48 @@
 """Command line interface for running a demo diagnostic session."""
 
 import argparse
+import csv
+import getpass
 import json
 import logging
 import os
 import sys
-import getpass
-import bcrypt
 from pathlib import Path
+
+import bcrypt
 import yaml
-from sdb.config import load_settings, settings
+
+from sdb import WeightedVoter  # noqa: F401 - exposed for tests
 from sdb import (
-    CaseDatabase,
-    Gatekeeper,
-    CostEstimator,
-    VirtualPanel,
-    RuleEngine,
-    LLMEngine,
-    OpenAIClient,
-    OllamaClient,
-    Orchestrator,
     BudgetManager,
-    Judge,
-    Evaluator,
+    CaseDatabase,
+    CostEstimator,
     DiagnosisResult,
-    WeightedVoter,  # noqa: F401 - exposed for tests
+    Evaluator,
+    Gatekeeper,
+    Judge,
+    LLMEngine,
     MetaPanel,
+    MetricsDB,
+    OllamaClient,
+    OpenAIClient,
+    Orchestrator,
+    RuleEngine,
+    VirtualPanel,
     batch_evaluate,
+    bundle_to_case,
     configure_logging,
+    diagnostic_report_to_case,
+    load_from_sqlite,
+    load_scores,
+    ordered_tests_to_fhir,
+    permutation_test,
     run_pipeline,
     start_metrics_server,
-    load_scores,
-    permutation_test,
-    load_from_sqlite,
     transcript_to_fhir,
-    ordered_tests_to_fhir,
-    diagnostic_report_to_case,
-    bundle_to_case,
-    MetricsDB,
 )
-import csv
+from sdb.config import load_settings, settings
+
 _ = WeightedVoter
 
 
@@ -439,33 +442,34 @@ def export_fhir_main(argv: list[str]) -> None:
     """Convert a saved transcript to a FHIR bundle file."""
 
     parser = argparse.ArgumentParser(description="Export a transcript to FHIR")
-    parser.add_argument("transcript", help="Path to JSON transcript file")
     parser.add_argument(
-        "--case-id",
-        default="case_001",
-        help="Identifier for the session/case",
+        "-i",
+        "--input",
+        required=True,
+        help="Path to JSON transcript file",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        required=True,
+        help="Destination for the generated bundle",
     )
     parser.add_argument(
         "--patient-id",
         default="example",
         help="Patient identifier used in references",
     )
-    parser.add_argument(
-        "-o",
-        "--output-dir",
-        default="fhir",
-        help="Directory for the generated bundle",
-    )
     args = parser.parse_args(argv)
 
-    with open(args.transcript, "r", encoding="utf-8") as fh:
+    with open(args.input, "r", encoding="utf-8") as fh:
         transcript = json.load(fh)
 
     bundle = transcript_to_fhir(transcript, patient_id=args.patient_id)
 
-    os.makedirs(args.output_dir, exist_ok=True)
-    out_path = os.path.join(args.output_dir, f"{args.case_id}.json")
-    with open(out_path, "w", encoding="utf-8") as fh:
+    out_dir = os.path.dirname(args.output)
+    if out_dir:
+        os.makedirs(out_dir, exist_ok=True)
+    with open(args.output, "w", encoding="utf-8") as fh:
         json.dump(bundle, fh, indent=2)
 
 
@@ -895,7 +899,9 @@ def main() -> None:
     if args.db is None and args.db_sqlite is None:
         parser.error("--db or --db-sqlite is required for a session")
     if any(item is None for item in required):
-        parser.error("--case, --rubric and --cost-table/--costs are required for a session")
+        parser.error(
+            "--case, --rubric and --cost-table/--costs are required for a session"
+        )
 
     level = logging.INFO
     if args.verbose:

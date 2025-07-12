@@ -1,11 +1,12 @@
-import json
 import csv
+import json
 import subprocess
 import sys
+from pathlib import Path
+
 import yaml
 
 import cli
-from pathlib import Path
 from sdb.llm_client import LLMClient
 
 
@@ -1075,20 +1076,18 @@ def test_export_fhir_command(tmp_path):
     with open(t_file, "w", encoding="utf-8") as f:
         json.dump(transcript, f)
 
-    out_dir = tmp_path / "out"
+    out_file = tmp_path / "bundle.json"
     cmd = [
         sys.executable,
         "cli.py",
         "export-fhir",
+        "--input",
         str(t_file),
-        "--case-id",
-        "c1",
-        "--output-dir",
-        str(out_dir),
+        "--output",
+        str(out_file),
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     assert result.returncode == 0
-    out_file = out_dir / "c1.json"
     with open(out_file, "r", encoding="utf-8") as f:
         data = json.load(f)
     assert data["resourceType"] == "Bundle"
