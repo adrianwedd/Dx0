@@ -24,7 +24,7 @@ from .retrieval import (
     CrossEncoderReranker,
     get_retrieval_plugin,
 )
-from .services import BudgetManager, BudgetStore, ResultAggregator
+from .services import BudgetManager, BudgetStore, ResultAggregator, MetricsDB
 from .statistics import load_scores, permutation_test
 from .sqlite_db import load_from_sqlite, save_to_sqlite
 from .fhir_export import transcript_to_fhir, ordered_tests_to_fhir
@@ -59,6 +59,7 @@ __all__ = [
     "BudgetManager",
     "BudgetStore",
     "ResultAggregator",
+    "MetricsDB",
     "Evaluator",
     "convert_directory",
     "translate_directory",
