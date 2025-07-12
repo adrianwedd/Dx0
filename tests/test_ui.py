@@ -30,9 +30,9 @@ async def test_websocket_chat():
             json={"username": "physician", "password": "secret"},
         )
         assert res.status_code == 200
-        token = res.json()["token"]
+        access = res.json()["access_token"]
         async with aconnect_ws(
-            f"ws://127.0.0.1:8000/api/v1/ws?token={token}", client
+            f"ws://127.0.0.1:8000/api/v1/ws?token={access}", client
         ) as ws:
             await ws.send_json({"action": "question", "content": "cough"})
             parts = []
@@ -93,7 +93,23 @@ def test_login_success():
         json={"username": "physician", "password": "secret"},
     )
     assert res.status_code == 200
-    assert "token" in res.json()
+
+
+def test_refresh_token():
+    client = TestClient(app)
+    res = client.post(
+        "/api/v1/login",
+        json={"username": "physician", "password": "secret"},
+    )
+    refresh = res.json()["refresh_token"]
+    res2 = client.post("/api/v1/refresh", json={"refresh_token": refresh})
+    assert res2.status_code == 200
+    data = res2.json()
+    assert "access_token" in data
+    assert "refresh_token" in data
+    assert data["refresh_token"] != refresh
+    assert "access_token" in res.json()
+    assert "refresh_token" in res.json()
 
 
 def test_login_failure():
@@ -171,7 +187,7 @@ async def test_ws_schema_validation():
             "/api/v1/login",
             json={"username": "physician", "password": "secret"},
         )
-        token = res.json()["token"]
+        token = res.json()["access_token"]
         async with aconnect_ws(
             f"ws://127.0.0.1:8002/api/v1/ws?token={token}", client
         ) as ws:
@@ -198,7 +214,7 @@ async def test_ws_missing_field():
             "/api/v1/login",
             json={"username": "physician", "password": "secret"},
         )
-        token = res.json()["token"]
+        token = res.json()["access_token"]
         async with aconnect_ws(
             f"ws://127.0.0.1:8003/api/v1/ws?token={token}", client
         ) as ws:
@@ -225,7 +241,7 @@ async def test_ws_invalid_action():
             "/api/v1/login",
             json={"username": "physician", "password": "secret"},
         )
-        token = res.json()["token"]
+        token = res.json()["access_token"]
         async with aconnect_ws(
             f"ws://127.0.0.1:8004/api/v1/ws?token={token}", client
         ) as ws:
@@ -256,7 +272,7 @@ async def test_token_persistence(tmp_path):
             "/api/v1/login",
             json={"username": "physician", "password": "secret"},
         )
-        token = res.json()["token"]
+        token = res.json()["access_token"]
 
     server.should_exit = True
     thread.join()
@@ -303,7 +319,7 @@ async def test_budget_persistence(tmp_path):
             "/api/v1/login",
             json={"username": "physician", "password": "secret"},
         )
-        token = res.json()["token"]
+        token = res.json()["access_token"]
         async with aconnect_ws(
             f"ws://127.0.0.1:8012/api/v1/ws?token={token}", client
         ) as ws:
@@ -345,7 +361,7 @@ async def test_budget_persistence(tmp_path):
 async def test_token_cleanup(tmp_path):
     path = tmp_path / "sessions.db"
     store = SessionStore(str(path), ttl=1)
-    store.add("tok", "user")
+    store.add("tok", "user", "refresh")
     await asyncio.sleep(1.2)
     store.cleanup()
     assert store.get("tok") is None
@@ -421,7 +437,7 @@ async def test_ws_budget_query_param(monkeypatch):
             "/api/v1/login",
             json={"username": "physician", "password": "secret"},
         )
-        token = res.json()["token"]
+        token = res.json()["access_token"]
         async with aconnect_ws(
             f"ws://127.0.0.1:8014/api/v1/ws?token={token}&budget=42",
             client,
@@ -476,7 +492,7 @@ async def test_ws_rate_limit(monkeypatch):
             "/api/v1/login",
             json={"username": "physician", "password": "secret"},
         )
-        token = res.json()["token"]
+        token = res.json()["access_token"]
         async with aconnect_ws(
             f"ws://127.0.0.1:8015/api/v1/ws?token={token}",
             client,

@@ -10,6 +10,7 @@ def test_collect_new_cases(tmp_path, monkeypatch):
     monkeypatch.setattr(
         pl, "fetch_case_pmids", lambda count=304: ["111", "222"]
     )
+
     async def fake_fetch(session, pmid):
         return f"PMID: {pmid}"
 

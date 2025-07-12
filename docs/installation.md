@@ -143,7 +143,7 @@ You can also override the limit for a specific session by including a
 `budget` query parameter when the client opens the WebSocket connection:
 
 ```
-ws://localhost:8000/api/v1/ws?token=<TOKEN>&budget=500
+ws://localhost:8000/api/v1/ws?token=<ACCESS_TOKEN>&budget=500
 ```
 
 The server tracks failed login attempts per IP address. Adjust the limit and
