@@ -7,6 +7,9 @@ metrics exported by the MAI-DxO demo. Import it into Grafana to visualize
 `llm_request_seconds` histogram to compute the average response time over a
 five-minute window.
 
+See `monitoring_setup.md` for complete setup instructions for Prometheus and
+Grafana, including an additional budget dashboard.
+
 ## Running the Physician UI
 
 Launch the FastAPI server with:
