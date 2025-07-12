@@ -1,0 +1,17 @@
+{
+  "dashboard": {
+    "title": "Budget Metrics",
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "Budget Spent",
+        "targets": [{"expr": "budget_spent"}]
+      },
+      {
+        "type": "timeseries",
+        "title": "Budget Remaining",
+        "targets": [{"expr": "budget_remaining"}]
+      }
+    ]
+  }
+}
