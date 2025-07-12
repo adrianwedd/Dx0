@@ -77,6 +77,9 @@ source venv/bin/activate
 pip install -r requirements.lock
 ```
 
+For details on creating a development environment and running the test suite,
+see [docs/getting_started.md](docs/getting_started.md).
+
 See [Dependency Management](docs/dependency_updates.md) for details on
 updating and auditing requirements. You can build a Docker image using the
 multi-stage `Dockerfile`:
