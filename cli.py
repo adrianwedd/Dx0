@@ -42,6 +42,8 @@ from sdb import (
     transcript_to_fhir,
 )
 from sdb.config import load_settings, settings
+from sdb import token
+from sdb.token import TOKEN_PATH
 
 _ = WeightedVoter
 
@@ -648,6 +650,30 @@ def filter_cases_main(argv: list[str]) -> None:
             json.dump(selected, fh, indent=2)
 
 
+def login_main(argv: list[str]) -> None:
+    """Authenticate with the API and store a session token."""
+
+    parser = argparse.ArgumentParser(description="Login to Dx0 API")
+    parser.add_argument("--api-url", default="http://localhost:8000/api/v1")
+    parser.add_argument("--username", required=True)
+    parser.add_argument("--password", default=None)
+    parser.add_argument(
+        "--token-file",
+        default=str(TOKEN_PATH),
+        help="Path to store the session token",
+    )
+    args = parser.parse_args(argv)
+
+    pwd = args.password or getpass.getpass("Password: ")
+    token.login(
+        args.api_url,
+        args.username,
+        pwd,
+        path=Path(args.token_file),
+    )
+    print(f"Token saved to {args.token_file}")
+
+
 def manage_users_main(argv: list[str]) -> None:
     """Add, remove or list web UI users."""
 
@@ -1042,6 +1068,8 @@ if __name__ == "__main__":
         annotate_case_main(sys.argv[2:])
     elif len(sys.argv) > 1 and sys.argv[1] == "filter-cases":
         filter_cases_main(sys.argv[2:])
+    elif len(sys.argv) > 1 and sys.argv[1] == "login":
+        login_main(sys.argv[2:])
     elif len(sys.argv) > 1 and sys.argv[1] == "manage-users":
         manage_users_main(sys.argv[2:])
     else:

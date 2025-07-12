@@ -1411,7 +1411,7 @@ phases:
   area: security
   dependencies: [74]
   priority: 2
-  status: pending
+  status: done
   actionable_steps:
     - Add `dx0 login` command that obtains a token via the API.
     - Automatically refresh the token when expired.
