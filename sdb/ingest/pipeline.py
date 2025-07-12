@@ -8,6 +8,10 @@ import re
 import json
 from typing import List, Set
 
+import structlog
+
+from ..exceptions import DataIngestionError
+
 from tqdm import tqdm
 
 try:
@@ -19,6 +23,8 @@ from ..http_utils import get_client
 
 from .convert import convert_directory
 from ..sqlite_db import save_to_sqlite
+
+logger = structlog.get_logger(__name__)
 
 PUBMED_SEARCH_URL = (
     "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
@@ -39,6 +45,7 @@ def fetch_case_pmids(count: int = 304) -> List[str]:
     }
     resp = client.get(PUBMED_SEARCH_URL, params=params)
     resp.raise_for_status()
+    logger.info("fetch_pmids", count=count)
     pmids = re.findall(r"<Id>(\d+)</Id>", resp.text)
     return pmids[:count]
 
@@ -54,6 +61,7 @@ def fetch_case_text(pmid: str) -> str:
     }
     resp = client.get(PUBMED_FETCH_URL, params=params)
     resp.raise_for_status()
+    logger.info("fetch_case", pmid=pmid)
     return resp.text.strip()
 
 
@@ -62,7 +70,7 @@ async def fetch_case_text_async(
 ) -> str:
     """Download case abstract text asynchronously."""
     if aiohttp is None:  # pragma: no cover - optional dependency
-        raise RuntimeError("aiohttp package is required for collection")
+        raise DataIngestionError("aiohttp package is required for collection")
     params = {
         "db": "pubmed",
         "id": pmid,
@@ -72,6 +80,7 @@ async def fetch_case_text_async(
     async with session.get(PUBMED_FETCH_URL, params=params, timeout=30) as resp:
         resp.raise_for_status()
         text = await resp.text()
+    logger.info("fetch_case_async", pmid=pmid)
     return text.strip()
 
 
@@ -79,8 +88,13 @@ def save_case_text(case_id: int, text: str, dest_dir: str) -> str:
     """Write ``text`` to ``case_<id>.txt`` in ``dest_dir``."""
     os.makedirs(dest_dir, exist_ok=True)
     filename = os.path.join(dest_dir, f"case_{case_id:03d}.txt")
-    with open(filename, "w", encoding="utf-8") as fh:
-        fh.write(text.strip() + "\n")
+    try:
+        with open(filename, "w", encoding="utf-8") as fh:
+            fh.write(text.strip() + "\n")
+    except OSError as exc:
+        logger.exception("write_error", file=filename)
+        raise DataIngestionError(str(exc)) from exc
+    logger.info("case_saved", file=filename)
     return filename
 
 
@@ -89,7 +103,7 @@ async def _download_cases_async(
 ) -> List[str]:
     """Download ``pmids`` concurrently and write them to ``dest_dir``."""
     if aiohttp is None:  # pragma: no cover - optional dependency
-        raise RuntimeError("aiohttp package is required for collection")
+        raise DataIngestionError("aiohttp package is required for collection")
 
     semaphore = asyncio.Semaphore(concurrency)
     paths: List[str] = []
@@ -99,8 +113,8 @@ async def _download_cases_async(
             async with semaphore:
                 try:
                     text = await fetch_case_text_async(session, pmid)
-                except Exception as exc:  # pragma: no cover - network errors
-                    print(f"Failed to fetch PMID {pmid}: {exc}")
+                except Exception:  # pragma: no cover - network errors
+                    logger.exception("download_failed", pmid=pmid)
                     return None
             return save_case_text(start_id + idx, text, dest_dir)
         tasks = [
@@ -131,6 +145,7 @@ def collect_cases(
         Maximum number of concurrent downloads.
     """
     pmids = fetch_case_pmids(count)
+    logger.info("collect_cases", count=len(pmids))
     return asyncio.run(
         _download_cases_async(pmids, dest_dir, start_id=1, concurrency=concurrency)
     )
@@ -224,8 +239,12 @@ def run_pipeline(
     sqlite_path:
         Optional path to a SQLite database where case summaries will be stored.
     """
+    if not os.path.isdir(raw_dir):
+        logger.error("raw_dir_missing", path=raw_dir)
+        raise DataIngestionError(f"Raw directory not found: {raw_dir}")
     if fetch:
         collect_cases(raw_dir, concurrency=concurrency)
+    logger.info("convert_directory", src=raw_dir)
     paths = convert_directory(raw_dir, output_dir, hidden_dir)
     if sqlite_path:
         json_dirs = [output_dir]
@@ -248,6 +267,7 @@ def run_pipeline(
                     }
                 )
         save_to_sqlite(sqlite_path, cases)
+    logger.info("pipeline_complete", files=len(paths))
     return paths
 
 
@@ -276,6 +296,7 @@ def update_dataset(
     """
 
     collect_new_cases(raw_dir, concurrency=concurrency)
+    logger.info("update_dataset", raw_dir=raw_dir)
     return run_pipeline(
         raw_dir=raw_dir,
         output_dir=output_dir,

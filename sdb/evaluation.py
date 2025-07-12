@@ -3,6 +3,11 @@ from .cost_estimator import CostEstimator
 from .judge import Judge
 from typing import Iterable, Callable, Awaitable
 import asyncio
+import structlog
+
+from .exceptions import EvaluationError
+
+logger = structlog.get_logger(__name__)
 
 
 @dataclass
@@ -80,11 +85,25 @@ class Evaluator:
             Total time spent in the session in seconds.
         """
 
+        if visits < 0:
+            logger.error("invalid_visits", visits=visits)
+            raise EvaluationError("visits must be >= 0")
+        if duration < 0:
+            logger.error("invalid_duration", duration=duration)
+            raise EvaluationError("duration cannot be negative")
+
         judgement = self.judge.evaluate(diagnosis, truth)
         total_cost = visits * self.VISIT_FEE + sum(
             self.cost_estimator.estimate_cost(t) for t in tests
         )
         correct = judgement.score >= self.correct_threshold
+        logger.info(
+            "evaluation_complete",
+            score=judgement.score,
+            correct=correct,
+            visits=visits,
+            tests=len(tests),
+        )
         return SessionResult(
             total_cost=total_cost,
             score=judgement.score,
@@ -119,6 +138,9 @@ async def async_batch_evaluate(
         Result dictionaries sorted by ``id``.
     """
 
+    if concurrency < 1:
+        logger.error("invalid_concurrency", value=concurrency)
+        raise EvaluationError("concurrency must be >= 1")
     sem = asyncio.Semaphore(concurrency)
 
     async def run_one(cid: str) -> dict[str, str]:
@@ -133,6 +155,7 @@ async def async_batch_evaluate(
         results.append(await task)
 
     results.sort(key=lambda r: r.get("id", ""))
+    logger.info("batch_evaluate_complete", count=len(results))
     return results
 
 
@@ -145,7 +168,8 @@ def batch_evaluate(
     concurrency: int = 2,
 ) -> list[dict[str, str]]:
     """Synchronous wrapper for :func:`async_batch_evaluate`."""
-
-    return asyncio.run(
+    results = asyncio.run(
         async_batch_evaluate(case_ids, run_case, concurrency=concurrency)
     )
+    logger.info("batch_evaluate_sync_complete", count=len(results))
+    return results

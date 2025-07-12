@@ -12,6 +12,7 @@ from .protocol import ActionType
 from .prompt_loader import load_prompt
 from .llm_client import LLMClient, OpenAIClient, AsyncLLMClient
 from .config import settings
+from .exceptions import DecisionEngineError
 
 logger = structlog.get_logger(__name__)
 
@@ -167,7 +168,8 @@ class LLMEngine(DecisionEngine):
         self.prompts = {name: load_prompt(name) for name in self.personas}
         for name, text in self.prompts.items():
             if not text.strip():
-                raise ValueError(f"Prompt {name} is empty")
+                logger.error("prompt_empty", name=name)
+                raise DecisionEngineError(f"Prompt {name} is empty")
 
     def _chat(self, messages: list[dict], model: str) -> str | None:
         """Return a chat completion for ``model`` via the configured client."""
