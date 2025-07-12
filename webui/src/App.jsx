@@ -20,6 +20,7 @@ export default function App() {
       const ws = new WebSocket(`/api/v1/ws?token=${token}`)
       ws.onmessage = ev => {
         const data = JSON.parse(ev.data)
+        if (data.error) return
         setLog(l => [...l, {sender: 'Gatekeeper', text: data.reply}])
         if (data.ordered_tests) setResults(data.ordered_tests)
       }

@@ -95,6 +95,10 @@ function App() {
       const socket = new WebSocket(`ws://${location.host}/api/v1/ws?token=${data.token}`);
       socket.onmessage = (ev) => {
         const d = JSON.parse(ev.data);
+        if (d.error) {
+          setToast('Validation error');
+          return;
+        }
         let msgText = '';
         setLog(l => {
           const log = [...l];

@@ -4,7 +4,7 @@ import threading
 import uvicorn
 import asyncio
 import time
-from httpx_ws import aconnect_ws, WebSocketUpgradeError, WebSocketDisconnect
+from httpx_ws import aconnect_ws, WebSocketUpgradeError
 from starlette.testclient import TestClient
 from pathlib import Path
 
@@ -176,8 +176,8 @@ async def test_ws_schema_validation():
             f"ws://127.0.0.1:8002/api/v1/ws?token={token}", client
         ) as ws:
             await ws.send_json({"bad": "data"})
-            with pytest.raises(WebSocketDisconnect):
-                await ws.receive_json()
+            data = await ws.receive_json()
+            assert "error" in data
 
     server.should_exit = True
     thread.join()
@@ -203,8 +203,8 @@ async def test_ws_missing_field():
             f"ws://127.0.0.1:8003/api/v1/ws?token={token}", client
         ) as ws:
             await ws.send_json({"action": "question"})
-            with pytest.raises(WebSocketDisconnect):
-                await ws.receive_json()
+            data = await ws.receive_json()
+            assert "error" in data
 
     server.should_exit = True
     thread.join()
@@ -230,8 +230,8 @@ async def test_ws_invalid_action():
             f"ws://127.0.0.1:8004/api/v1/ws?token={token}", client
         ) as ws:
             await ws.send_json({"action": "invalid", "content": "hi"})
-            with pytest.raises(WebSocketDisconnect):
-                await ws.receive_json()
+            data = await ws.receive_json()
+            assert "error" in data
 
     server.should_exit = True
     thread.join()
