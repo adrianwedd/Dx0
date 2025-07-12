@@ -632,8 +632,9 @@ def test_cli_cost_table_custom(monkeypatch, tmp_path):
     class DummyCostEstimator:
         pass
 
-    def dummy_load(path: str) -> DummyCostEstimator:
+    def dummy_load(path: str, plugin_name: str = "csv") -> DummyCostEstimator:
         captured["path"] = path
+        captured["plugin"] = plugin_name
         return DummyCostEstimator()
 
     class DummyBudgetManager:
@@ -650,7 +651,7 @@ def test_cli_cost_table_custom(monkeypatch, tmp_path):
         def run_turn(self, *_args, **_kwargs):
             return ""
 
-    monkeypatch.setattr(cli.CostEstimator, "load_from_csv", staticmethod(dummy_load))
+    monkeypatch.setattr(cli, "load_cost_estimator", dummy_load)
     monkeypatch.setattr(cli, "BudgetManager", DummyBudgetManager)
     monkeypatch.setattr(cli, "Orchestrator", DummyOrchestrator)
     monkeypatch.setattr(cli, "start_metrics_server", lambda *_: None)
@@ -671,6 +672,7 @@ def test_cli_cost_table_custom(monkeypatch, tmp_path):
 
     assert captured["path"] == str(cost_file)
     assert isinstance(captured["estimator"], DummyCostEstimator)
+    assert captured["plugin"] == "csv"
 
 
 def test_batch_eval_ollama_base_url(monkeypatch, tmp_path):
