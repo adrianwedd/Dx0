@@ -397,6 +397,7 @@ clinical-ai-suite/
 * **CODE_OF_CONDUCT.md**: Community norms and reporting procedures.
 * **docs/persona_plugins.md**: How to create and install persona plugins.
 * **docs/add_users.md**: Adding login accounts for the Physician UI.
+* **docs/cost_estimator_plugins.md**: Implement custom pricing logic via entry points.
 
 ---
 
