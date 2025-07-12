@@ -12,6 +12,8 @@ from collections import defaultdict
 from pathlib import Path
 
 import bcrypt
+import jwt
+from jwt import PyJWTError
 import yaml
 from fastapi import FastAPI, HTTPException, WebSocket, Request
 from fastapi.responses import HTMLResponse
@@ -92,6 +94,9 @@ def load_user_credentials() -> dict[str, str]:
 
 CREDENTIALS = load_user_credentials()
 
+SECRET_KEY = os.environ.get("UI_SECRET_KEY", "change-me")
+ALGORITHM = "HS256"
+
 SESSION_TTL = int(os.environ.get("UI_TOKEN_TTL", "3600"))
 SESSION_DB_PATH = os.environ.get("SESSIONS_DB", "sessions.db")
 SESSION_STORE = SessionStore(SESSION_DB_PATH, ttl=SESSION_TTL)
@@ -105,6 +110,19 @@ FAILED_LOGINS: dict[str, list[float]] = defaultdict(list)
 MESSAGE_RATE_LIMIT = int(os.environ.get("MESSAGE_RATE_LIMIT", "30"))
 MESSAGE_RATE_WINDOW = int(os.environ.get("MESSAGE_RATE_WINDOW", "60"))
 MESSAGE_HISTORY: dict[str, list[float]] = defaultdict(list)
+
+
+def create_access_token(username: str, session_id: str) -> str:
+    """Return a signed JWT for ``username`` and ``session_id``."""
+
+    payload = {"sub": username, "sid": session_id, "exp": int(time.time()) + SESSION_TTL}
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def decode_access_token(token: str) -> dict:
+    """Decode ``token`` and return the payload."""
+
+    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
 
 async def stream_reply(
@@ -164,15 +182,22 @@ class MessageOut(BaseModel):
 
 
 class TokenResponse(BaseModel):
-    """Session token returned after login."""
+    """Tokens returned after login or refresh."""
 
-    token: str
+    access_token: str
+    refresh_token: str
 
 
 class LogoutRequest(BaseModel):
     """Request body for logout."""
 
-    token: str
+    refresh_token: str
+
+
+class RefreshRequest(BaseModel):
+    """Request body for refresh."""
+
+    refresh_token: str
 
 
 class CaseSummary(BaseModel):
@@ -278,7 +303,7 @@ async def fhir_tests(req: FhirTestsRequest) -> dict:
 
 @app.post("/api/v1/login", response_model=TokenResponse)
 async def login(request: Request, req: LoginRequest) -> TokenResponse:
-    """Authenticate a user and return a session token."""
+    """Authenticate a user and return access and refresh tokens."""
     with tracer.start_as_current_span("login"):
         now = time.time()
         ip = request.client.host if request.client else "unknown"
@@ -296,21 +321,38 @@ async def login(request: Request, req: LoginRequest) -> TokenResponse:
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
         FAILED_LOGINS.pop(ip, None)
-        token = secrets.token_hex(16)
+        session_id = secrets.token_hex(16)
+        refresh_token = secrets.token_hex(32)
         SESSION_STORE.add(
-            token,
+            session_id,
             req.username,
+            refresh_token,
             budget_limit=DEFAULT_BUDGET_LIMIT,
             amount_spent=0.0,
         )
-        return TokenResponse(token=token)
+        access = create_access_token(req.username, session_id)
+        return TokenResponse(access_token=access, refresh_token=refresh_token)
 
 
 @app.post("/api/v1/logout")
 async def logout(req: LogoutRequest) -> None:
-    """Invalidate a session token."""
+    """Invalidate a refresh token and its session."""
     with tracer.start_as_current_span("logout"):
-        SESSION_STORE.remove(req.token)
+        SESSION_STORE.remove(req.refresh_token)
+
+
+@app.post("/api/v1/refresh", response_model=TokenResponse)
+async def refresh(req: RefreshRequest) -> TokenResponse:
+    """Rotate ``req.refresh_token`` and return a new token pair."""
+    with tracer.start_as_current_span("refresh"):
+        found = SESSION_STORE.find_by_refresh(req.refresh_token)
+        if not found:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        session_id, username = found
+        new_refresh = secrets.token_hex(32)
+        SESSION_STORE.update_refresh(session_id, new_refresh, time.time())
+        access = create_access_token(username, session_id)
+        return TokenResponse(access_token=access, refresh_token=new_refresh)
 
 
 @app.websocket("/api/v1/ws")
@@ -318,7 +360,16 @@ async def websocket_endpoint(ws: WebSocket) -> None:
     """Handle websocket chat with the Gatekeeper."""
     with tracer.start_as_current_span("websocket"):
         token = ws.query_params.get("token")
-        if not token or SESSION_STORE.get(token) is None:
+        if not token:
+            await ws.close(code=1008)
+            return
+        try:
+            payload = decode_access_token(token)
+        except PyJWTError:
+            await ws.close(code=1008)
+            return
+        session_id = payload.get("sid")
+        if not session_id or SESSION_STORE.get(session_id) is None:
             await ws.close(code=1008)
             return
 
@@ -339,9 +390,9 @@ async def websocket_endpoint(ws: WebSocket) -> None:
                 cost_estimator,
                 budget=limit,
                 session_db=SESSION_STORE,
-                session_token=token,
+                session_token=session_id,
             ),
-            session_id=token,
+            session_id=session_id,
         )
         try:
             while True:
@@ -352,15 +403,15 @@ async def websocket_endpoint(ws: WebSocket) -> None:
                     await ws.send_json({"error": str(err)})
                     continue
                 now = time.time()
-                history = MESSAGE_HISTORY.get(token, [])
+                history = MESSAGE_HISTORY.get(session_id, [])
                 history = [ts for ts in history if now - ts < MESSAGE_RATE_WINDOW]
                 if len(history) >= MESSAGE_RATE_LIMIT:
                     await ws.send_json({"error": "Rate limit exceeded"})
                     await ws.close(code=1013)
-                    MESSAGE_HISTORY[token] = history
+                    MESSAGE_HISTORY[session_id] = history
                     return
                 history.append(now)
-                MESSAGE_HISTORY[token] = history
+                MESSAGE_HISTORY[session_id] = history
                 content = msg.content
                 if msg.action == ActionType.TEST:
                     panel.add_action(PanelAction(ActionType.TEST, content))
@@ -389,6 +440,6 @@ async def websocket_endpoint(ws: WebSocket) -> None:
                 import sentry_sdk
 
                 with sentry_sdk.push_scope() as scope:
-                    scope.set_tag("session_id", token)
+                    scope.set_tag("session_id", session_id)
                     sentry_sdk.capture_exception(exc)
             raise

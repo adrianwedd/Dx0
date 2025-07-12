@@ -27,6 +27,7 @@ dependencies = [
     "structlog",
     "filelock",
     "pydantic>=2.11",
+    "PyJWT>=2.8",
 ]
 
 [project.urls]

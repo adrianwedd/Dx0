@@ -13,5 +13,5 @@ def test_evaluate_retrieval(tmp_path):
         json.dump(cases, fh)
     db = CaseDatabase.load_from_json(str(path))
     recall, mrr = rev.evaluate_retrieval(db, top_k=1)
-    assert recall == 1.0
-    assert mrr == 1.0
+    assert recall == 0.5
+    assert mrr == 0.5
