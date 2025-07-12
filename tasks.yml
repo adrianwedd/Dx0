@@ -257,6 +257,13 @@ phases:
         description: "Visualize trade-offs by plotting the Pareto frontier."
         done: true
 
+      - id: 24
+        title: "Expand Evaluation Framework Tests"
+        description: >
+          Add unit tests for the Judge agent, CostEstimator, and evaluation metrics generation.
+        labels: [test, evaluation]
+        status: pending
+
   - name: "Phase 3: Production Readiness & Advanced Features"
     tasks:
       - id: "T23"
@@ -309,6 +316,23 @@ phases:
           - "Develop a 'Meta-Panel' agent that reviews the diagnoses and reasoning chains from all parallel runs to produce a final, synthesized diagnosis."
           - "Explore cost-adjusted utility functions to select a final diagnosis that optimizes for both accuracy and cost-effectiveness."
         done: true
+
+      - id: 92
+        title: "Centralized Error Handling and Logging"
+        description: >
+          Introduce a unified error handling framework with custom exceptions and structured logging.
+        component: backend
+        area: robustness
+        priority: 2
+        status: pending
+      - id: 93
+        title: "Refactor CLI with Typer"
+        description: >
+          Replace argparse with Typer to provide a modern CLI with type validation and rich help output.
+        component: cli
+        area: usability
+        priority: 2
+        status: pending
 
   - name: "Phase 4: LLM Integration and Production Hardening"
     tasks:
