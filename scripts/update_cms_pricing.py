@@ -11,8 +11,16 @@ import tempfile
 import zipfile
 from typing import Dict
 
-import requests
+from sdb.http_utils import get_client
 from sdb.cost_estimator import CostEstimator
+
+
+class _RequestsCompat:
+    def get(self, url: str, timeout: int = 60):
+        return get_client().get(url, timeout=timeout)
+
+
+requests = _RequestsCompat()
 
 
 def default_cms_url() -> str:

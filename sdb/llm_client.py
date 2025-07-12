@@ -21,7 +21,7 @@ try:
 except Exception:  # pragma: no cover - optional dependency
     openai = None
 
-import requests
+from .http_utils import get_client
 from .metrics import LLM_LATENCY, LLM_TOKENS
 
 logger = structlog.get_logger(__name__)
@@ -208,7 +208,8 @@ class OllamaClient(LLMClient):
         url = f"{self.base_url}/api/chat"
         payload = {"model": model, "messages": messages}
         try:
-            resp = requests.post(url, json=payload, timeout=30)
+            client = get_client()
+            resp = client.post(url, json=payload)
             resp.raise_for_status()
             data = resp.json()
             return data.get("message", {}).get("content")

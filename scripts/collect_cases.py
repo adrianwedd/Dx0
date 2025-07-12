@@ -3,8 +3,8 @@
 This script queries PubMed for Case Records of the Massachusetts General
 Hospital articles, downloads the article abstract or full text when
 available, and stores each case in ``data/raw_cases/`` as
-``case_<id>.txt``. The script is intentionally simple and only relies on
-``requests`` for HTTP access.
+``case_<id>.txt``. The script is intentionally simple and relies on
+``httpx`` for HTTP access.
 
 Examples
 --------
@@ -20,7 +20,7 @@ import os
 import re
 from typing import Iterable, List
 
-import requests
+from sdb.http_utils import get_client
 
 
 PUBMED_SEARCH_URL = (
@@ -40,7 +40,8 @@ def fetch_case_pmids(count: int = 304) -> List[str]:
         "retmax": str(count),
         "sort": "pub+date",
     }
-    resp = requests.get(PUBMED_SEARCH_URL, params=params, timeout=30)
+    client = get_client()
+    resp = client.get(PUBMED_SEARCH_URL, params=params)
     resp.raise_for_status()
     pmids = re.findall(r"<Id>(\d+)</Id>", resp.text)
     return pmids[:count]
@@ -55,7 +56,8 @@ def fetch_case_text(pmid: str) -> str:
         "retmode": "text",
         "rettype": "abstract",
     }
-    resp = requests.get(PUBMED_FETCH_URL, params=params, timeout=30)
+    client = get_client()
+    resp = client.get(PUBMED_FETCH_URL, params=params)
     resp.raise_for_status()
     return resp.text.strip()
 
