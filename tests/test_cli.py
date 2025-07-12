@@ -1093,3 +1093,52 @@ def test_export_fhir_command(tmp_path):
         data = json.load(f)
     assert data["resourceType"] == "Bundle"
     assert data["entry"][0]["resource"]["sender"]["display"] == "panel"
+
+
+def test_manage_users_command(tmp_path):
+    cred = tmp_path / "users.yml"
+    cmd_add = [
+        sys.executable,
+        "cli.py",
+        "manage-users",
+        "--file",
+        str(cred),
+        "add",
+        "alice",
+        "--password",
+        "secret",
+    ]
+    result = subprocess.run(cmd_add, capture_output=True, text=True)
+    assert result.returncode == 0
+
+    with open(cred, "r", encoding="utf-8") as fh:
+        data = yaml.safe_load(fh)
+    assert "alice" in data.get("users", {})
+    assert data["users"]["alice"].startswith("$2b$")
+
+    cmd_list = [
+        sys.executable,
+        "cli.py",
+        "manage-users",
+        "--file",
+        str(cred),
+        "list",
+    ]
+    result = subprocess.run(cmd_list, capture_output=True, text=True)
+    assert result.returncode == 0
+    assert "alice" in result.stdout
+
+    cmd_remove = [
+        sys.executable,
+        "cli.py",
+        "manage-users",
+        "--file",
+        str(cred),
+        "remove",
+        "alice",
+    ]
+    result = subprocess.run(cmd_remove, capture_output=True, text=True)
+    assert result.returncode == 0
+    with open(cred, "r", encoding="utf-8") as fh:
+        data = yaml.safe_load(fh)
+    assert "alice" not in data.get("users", {})

@@ -174,6 +174,17 @@ The screenshot file is base64 encoded. Decode it with:
 base64 -d docs/images/ui.png.b64 > ui.png
 ```
 
+### Managing UI Users
+
+The web interface reads credentials from `sdb/ui/users.yml`. Use the CLI to add
+or remove accounts without editing the file directly:
+
+```bash
+python cli.py manage-users add alice --password secret
+python cli.py manage-users list
+python cli.py manage-users remove alice
+```
+
 ### Exporting Traces to Jaeger
 
 Tracing is disabled by default. To collect spans and send them to a running

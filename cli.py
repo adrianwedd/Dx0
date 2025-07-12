@@ -5,6 +5,9 @@ import json
 import logging
 import os
 import sys
+import getpass
+import bcrypt
+from pathlib import Path
 import yaml
 from sdb.config import load_settings, settings
 from sdb import (
@@ -622,6 +625,59 @@ def filter_cases_main(argv: list[str]) -> None:
             json.dump(selected, fh, indent=2)
 
 
+def manage_users_main(argv: list[str]) -> None:
+    """Add, remove or list web UI users."""
+
+    parser = argparse.ArgumentParser(description="Manage UI users")
+    parser.add_argument(
+        "--file",
+        default=os.environ.get(
+            "UI_USERS_FILE",
+            str(Path(__file__).parent / "sdb" / "ui" / "users.yml"),
+        ),
+        help="Path to credentials YAML file",
+    )
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    add_p = sub.add_parser("add", help="Add a user")
+    add_p.add_argument("username")
+    add_p.add_argument("--password", default=None, help="User password")
+
+    rem_p = sub.add_parser("remove", help="Remove a user")
+    rem_p.add_argument("username")
+
+    sub.add_parser("list", help="List users")
+
+    args = parser.parse_args(argv)
+
+    data = {"users": {}}
+    if os.path.exists(args.file):
+        with open(args.file, "r", encoding="utf-8") as fh:
+            data = yaml.safe_load(fh) or {"users": {}}
+    users = data.get("users", {})
+
+    if args.cmd == "add":
+        pwd = args.password or getpass.getpass("Password: ")
+        hashed = bcrypt.hashpw(pwd.encode(), bcrypt.gensalt()).decode()
+        users[args.username] = hashed
+        data["users"] = users
+        os.makedirs(os.path.dirname(args.file), exist_ok=True)
+        with open(args.file, "w", encoding="utf-8") as fh:
+            yaml.safe_dump(data, fh)
+        print(f"Added user {args.username}")
+    elif args.cmd == "remove":
+        if users.pop(args.username, None) is not None:
+            data["users"] = users
+            with open(args.file, "w", encoding="utf-8") as fh:
+                yaml.safe_dump(data, fh)
+            print(f"Removed user {args.username}")
+        else:
+            print(f"User {args.username} not found", file=sys.stderr)
+    else:  # list
+        for name in sorted(users):
+            print(name)
+
+
 def main() -> None:
     """Run a demo diagnostic session using the virtual panel."""
 
@@ -944,5 +1000,7 @@ if __name__ == "__main__":
         annotate_case_main(sys.argv[2:])
     elif len(sys.argv) > 1 and sys.argv[1] == "filter-cases":
         filter_cases_main(sys.argv[2:])
+    elif len(sys.argv) > 1 and sys.argv[1] == "manage-users":
+        manage_users_main(sys.argv[2:])
     else:
         main()

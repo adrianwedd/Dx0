@@ -958,7 +958,7 @@ phases:
   area: accessibility
   dependencies: [59]
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
     - Refactor the grid layout to adapt to tablet viewports.
     - Adjust the color palette to satisfy contrast ratios.
@@ -1041,7 +1041,7 @@ phases:
   area: persistence
   dependencies: [45, 63]
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
     - Create a `SessionStore` class backed by SQLite.
     - Replace the in-memory `SESSIONS` dict with `SessionStore` operations.
@@ -1063,7 +1063,7 @@ phases:
   area: validation
   dependencies: [56]
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
     - Create `MessageIn` and `MessageOut` models describing the schema.
     - Parse incoming JSON payloads using `MessageIn.parse_obj`.
@@ -1107,7 +1107,7 @@ phases:
   area: tooling
   dependencies: [45]
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
     - Implement a `manage-users` command under `cli.py`.
     - Support subcommands `add`, `remove`, and `list` with appropriate args.
