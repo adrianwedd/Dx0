@@ -146,6 +146,22 @@ You can also override the limit for a specific session by including a
 ws://localhost:8000/api/v1/ws?token=<TOKEN>&budget=500
 ```
 
+The server tracks failed login attempts per IP address. Adjust the limit and
+cooldown with environment variables:
+
+```bash
+export FAILED_LOGIN_LIMIT=5       # attempts before blocking
+export FAILED_LOGIN_COOLDOWN=300  # seconds to wait before retry
+```
+
+Message rates are also throttled per session. Configure the sliding window
+limits with:
+
+```bash
+export MESSAGE_RATE_LIMIT=30      # messages per window
+export MESSAGE_RATE_WINDOW=60     # window size in seconds
+```
+
 Log in with username `physician` and password `secret`. After authentication the
 interface calls the `/case` endpoint to display the vignette in the **Case
 Summary** panel. The **Ordered Tests** list and **Diagnostic Flow** log update as

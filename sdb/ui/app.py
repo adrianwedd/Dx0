@@ -13,7 +13,7 @@ from pathlib import Path
 
 import bcrypt
 import yaml
-from fastapi import FastAPI, HTTPException, WebSocket
+from fastapi import FastAPI, HTTPException, WebSocket, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from opentelemetry import trace
@@ -100,6 +100,11 @@ SESSION_STORE = SessionStore(SESSION_DB_PATH, ttl=SESSION_TTL)
 FAILED_LOGIN_LIMIT = int(os.environ.get("FAILED_LOGIN_LIMIT", "5"))
 FAILED_LOGIN_COOLDOWN = int(os.environ.get("FAILED_LOGIN_COOLDOWN", "300"))
 FAILED_LOGINS: dict[str, list[float]] = defaultdict(list)
+
+# Per-session message rate limits
+MESSAGE_RATE_LIMIT = int(os.environ.get("MESSAGE_RATE_LIMIT", "30"))
+MESSAGE_RATE_WINDOW = int(os.environ.get("MESSAGE_RATE_WINDOW", "60"))
+MESSAGE_HISTORY: dict[str, list[float]] = defaultdict(list)
 
 
 async def stream_reply(
@@ -272,11 +277,12 @@ async def fhir_tests(req: FhirTestsRequest) -> dict:
 
 
 @app.post("/api/v1/login", response_model=TokenResponse)
-async def login(req: LoginRequest) -> TokenResponse:
+async def login(request: Request, req: LoginRequest) -> TokenResponse:
     """Authenticate a user and return a session token."""
     with tracer.start_as_current_span("login"):
         now = time.time()
-        attempts = FAILED_LOGINS.get(req.username, [])
+        ip = request.client.host if request.client else "unknown"
+        attempts = FAILED_LOGINS.get(ip, [])
         attempts = [ts for ts in attempts if now - ts < FAILED_LOGIN_COOLDOWN]
         if len(attempts) >= FAILED_LOGIN_LIMIT:
             raise HTTPException(
@@ -286,10 +292,10 @@ async def login(req: LoginRequest) -> TokenResponse:
         hashed = CREDENTIALS.get(req.username)
         if not hashed or not bcrypt.checkpw(req.password.encode(), hashed.encode()):
             attempts.append(now)
-            FAILED_LOGINS[req.username] = attempts
+            FAILED_LOGINS[ip] = attempts
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
-        FAILED_LOGINS.pop(req.username, None)
+        FAILED_LOGINS.pop(ip, None)
         token = secrets.token_hex(16)
         SESSION_STORE.add(
             token,
@@ -345,6 +351,16 @@ async def websocket_endpoint(ws: WebSocket) -> None:
                 except (ValueError, ValidationError) as err:
                     await ws.send_json({"error": str(err)})
                     continue
+                now = time.time()
+                history = MESSAGE_HISTORY.get(token, [])
+                history = [ts for ts in history if now - ts < MESSAGE_RATE_WINDOW]
+                if len(history) >= MESSAGE_RATE_LIMIT:
+                    await ws.send_json({"error": "Rate limit exceeded"})
+                    await ws.close(code=1013)
+                    MESSAGE_HISTORY[token] = history
+                    return
+                history.append(now)
+                MESSAGE_HISTORY[token] = history
                 content = msg.content
                 if msg.action == ActionType.TEST:
                     panel.add_action(PanelAction(ActionType.TEST, content))
