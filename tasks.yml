@@ -1431,7 +1431,7 @@ phases:
   area: documentation
   dependencies: []
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
     - Describe configuration options for budgets and personas.
     - Provide examples for plugin-based panels.

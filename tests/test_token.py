@@ -2,7 +2,6 @@ import json
 import time
 
 import httpx
-import pytest
 from starlette.testclient import TestClient
 
 import sdb.ui.app as ui_app
