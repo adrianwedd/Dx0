@@ -1391,7 +1391,7 @@ phases:
   area: authentication
   dependencies: [68]
   priority: 3
-  status: pending
+  status: done
   actionable_steps:
     - Extend the credentials model with a group field.
     - Enforce permissions when accessing protected endpoints.

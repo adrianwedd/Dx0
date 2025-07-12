@@ -1115,7 +1115,9 @@ def test_manage_users_command(tmp_path):
     with open(cred, "r", encoding="utf-8") as fh:
         data = yaml.safe_load(fh)
     assert "alice" in data.get("users", {})
-    assert data["users"]["alice"].startswith("$2b$")
+    entry = data["users"]["alice"]
+    assert isinstance(entry, dict)
+    assert entry["password"].startswith("$2b$")
 
     cmd_list = [
         sys.executable,

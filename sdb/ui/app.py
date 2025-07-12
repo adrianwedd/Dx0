@@ -15,9 +15,10 @@ import bcrypt
 import jwt
 from jwt import PyJWTError
 import yaml
-from fastapi import FastAPI, HTTPException, WebSocket, Request
+from fastapi import FastAPI, HTTPException, WebSocket, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from opentelemetry import trace
 from pydantic import BaseModel, ValidationError
 from starlette.websockets import WebSocketDisconnect
@@ -31,6 +32,14 @@ from sdb.panel import PanelAction
 from sdb.protocol import ActionType
 from sdb.services import BudgetManager
 from sdb.ui.session_store import SessionStore
+
+
+class Credential(BaseModel):
+    """Stored password hash and group."""
+
+    password: str
+    group: str = "default"
+
 
 app = FastAPI(title="SDBench Physician UI")
 tracer = trace.get_tracer(__name__)
@@ -78,8 +87,8 @@ if os.getenv("SENTRY_DSN"):
         pass
 
 
-def load_user_credentials() -> dict[str, str]:
-    """Load user credential hashes from YAML configuration."""
+def load_user_credentials() -> dict[str, Credential]:
+    """Load credential hashes and groups from YAML configuration."""
 
     path = os.environ.get(
         "UI_USERS_FILE",
@@ -89,7 +98,16 @@ def load_user_credentials() -> dict[str, str]:
         return {}
     with open(path, "r", encoding="utf-8") as fh:
         data = yaml.safe_load(fh) or {}
-    return data.get("users", {})
+    creds: dict[str, Credential] = {}
+    for name, val in data.get("users", {}).items():
+        if isinstance(val, str):
+            creds[name] = Credential(password=val)
+        elif isinstance(val, dict):
+            creds[name] = Credential(
+                password=val.get("password", ""),
+                group=val.get("group", "default"),
+            )
+    return creds
 
 
 CREDENTIALS = load_user_credentials()
@@ -111,11 +129,41 @@ MESSAGE_RATE_LIMIT = int(os.environ.get("MESSAGE_RATE_LIMIT", "30"))
 MESSAGE_RATE_WINDOW = int(os.environ.get("MESSAGE_RATE_WINDOW", "60"))
 MESSAGE_HISTORY: dict[str, list[float]] = defaultdict(list)
 
+security = HTTPBearer()
 
-def create_access_token(username: str, session_id: str) -> str:
+
+def require_group(group: str):
+    """Dependency to ensure the session belongs to ``group``."""
+
+    async def _check(
+        creds: HTTPAuthorizationCredentials = Depends(security),
+    ) -> str:
+        try:
+            payload = decode_access_token(creds.credentials)
+        except PyJWTError:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        session_id = payload.get("sid")
+        user_group = payload.get("grp")
+        if not session_id or not user_group:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        if SESSION_STORE.get(session_id) is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        if user_group != group:
+            raise HTTPException(status_code=403, detail="Forbidden")
+        return session_id
+
+    return _check
+
+
+def create_access_token(username: str, session_id: str, group: str) -> str:
     """Return a signed JWT for ``username`` and ``session_id``."""
 
-    payload = {"sub": username, "sid": session_id, "exp": int(time.time()) + SESSION_TTL}
+    payload = {
+        "sub": username,
+        "sid": session_id,
+        "grp": group,
+        "exp": int(time.time()) + SESSION_TTL,
+    }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
@@ -288,14 +336,20 @@ async def get_tests() -> TestList:
 
 
 @app.post("/api/v1/fhir/transcript", response_model=dict)
-async def fhir_transcript(req: FhirTranscriptRequest) -> dict:
+async def fhir_transcript(
+    req: FhirTranscriptRequest,
+    _session: str = Depends(require_group("admin")),
+) -> dict:
     """Convert a chat transcript to a FHIR Bundle."""
     with tracer.start_as_current_span("fhir_transcript"):
         return transcript_to_fhir(req.transcript, patient_id=req.patient_id)
 
 
 @app.post("/api/v1/fhir/tests", response_model=dict)
-async def fhir_tests(req: FhirTestsRequest) -> dict:
+async def fhir_tests(
+    req: FhirTestsRequest,
+    _session: str = Depends(require_group("admin")),
+) -> dict:
     """Convert ordered tests to a FHIR Bundle."""
     with tracer.start_as_current_span("fhir_tests"):
         return ordered_tests_to_fhir(req.tests, patient_id=req.patient_id)
@@ -314,8 +368,10 @@ async def login(request: Request, req: LoginRequest) -> TokenResponse:
                 status_code=429, detail="Too many failed login attempts"
             )
 
-        hashed = CREDENTIALS.get(req.username)
-        if not hashed or not bcrypt.checkpw(req.password.encode(), hashed.encode()):
+        cred = CREDENTIALS.get(req.username)
+        if not cred or not bcrypt.checkpw(
+            req.password.encode(), cred.password.encode()
+        ):
             attempts.append(now)
             FAILED_LOGINS[ip] = attempts
             raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -329,8 +385,9 @@ async def login(request: Request, req: LoginRequest) -> TokenResponse:
             refresh_token,
             budget_limit=DEFAULT_BUDGET_LIMIT,
             amount_spent=0.0,
+            group=cred.group,
         )
-        access = create_access_token(req.username, session_id)
+        access = create_access_token(req.username, session_id, cred.group)
         return TokenResponse(access_token=access, refresh_token=refresh_token)
 
 
@@ -348,10 +405,10 @@ async def refresh(req: RefreshRequest) -> TokenResponse:
         found = SESSION_STORE.find_by_refresh(req.refresh_token)
         if not found:
             raise HTTPException(status_code=401, detail="Invalid token")
-        session_id, username = found
+        session_id, username, group_name = found
         new_refresh = secrets.token_hex(32)
         SESSION_STORE.update_refresh(session_id, new_refresh, time.time())
-        access = create_access_token(username, session_id)
+        access = create_access_token(username, session_id, group_name)
         return TokenResponse(access_token=access, refresh_token=new_refresh)
 
 
@@ -369,9 +426,11 @@ async def websocket_endpoint(ws: WebSocket) -> None:
             await ws.close(code=1008)
             return
         session_id = payload.get("sid")
-        if not session_id or SESSION_STORE.get(session_id) is None:
+        sess = SESSION_STORE.get(session_id) if session_id else None
+        if not sess:
             await ws.close(code=1008)
             return
+        _, group_name = sess
 
         limit_str = ws.query_params.get("budget") or os.environ.get("UI_BUDGET_LIMIT")
         limit = None

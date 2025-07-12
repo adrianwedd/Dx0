@@ -16,7 +16,6 @@ from sdb import WeightedVoter  # noqa: F401 - exposed for tests
 from sdb import (
     BudgetManager,
     CaseDatabase,
-    CostEstimator,
     load_cost_estimator,
     DiagnosisResult,
     Evaluator,
@@ -313,7 +312,9 @@ def batch_eval_main(argv: list[str]) -> None:
     cost_path = args.cost_table or args.costs
     if cost_path is None:
         parser.error("--cost-table or --costs is required")
-    cost_estimator = load_cost_estimator(cost_path, plugin_name=args.cost_estimator or "csv")
+    cost_estimator = load_cost_estimator(
+        cost_path, plugin_name=args.cost_estimator or "csv"
+    )
     judge = Judge(rubric)
     evaluator = Evaluator(
         judge,
@@ -664,6 +665,7 @@ def manage_users_main(argv: list[str]) -> None:
     add_p = sub.add_parser("add", help="Add a user")
     add_p.add_argument("username")
     add_p.add_argument("--password", default=None, help="User password")
+    add_p.add_argument("--group", default="default", help="User group")
 
     rem_p = sub.add_parser("remove", help="Remove a user")
     rem_p.add_argument("username")
@@ -681,7 +683,7 @@ def manage_users_main(argv: list[str]) -> None:
     if args.cmd == "add":
         pwd = args.password or getpass.getpass("Password: ")
         hashed = bcrypt.hashpw(pwd.encode(), bcrypt.gensalt()).decode()
-        users[args.username] = hashed
+        users[args.username] = {"password": hashed, "group": args.group}
         data["users"] = users
         os.makedirs(os.path.dirname(args.file), exist_ok=True)
         with open(args.file, "w", encoding="utf-8") as fh:
@@ -943,7 +945,9 @@ def main() -> None:
     )
     gatekeeper.register_test_result("complete blood count", "normal")
 
-    cost_estimator = load_cost_estimator(cost_path, plugin_name=args.cost_estimator or "csv")
+    cost_estimator = load_cost_estimator(
+        cost_path, plugin_name=args.cost_estimator or "csv"
+    )
 
     with open(args.rubric, "r", encoding="utf-8") as fh:
         rubric = json.load(fh)
