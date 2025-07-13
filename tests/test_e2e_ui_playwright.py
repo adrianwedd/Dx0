@@ -2,6 +2,8 @@ import threading
 import time
 import uvicorn
 
+import pytest
+
 from playwright.sync_api import sync_playwright
 
 import sdb.ui.app as ui_app
@@ -24,11 +26,12 @@ def _stop_server(server: uvicorn.Server, thread: threading.Thread) -> None:
     thread.join()
 
 
-def test_accessibility_roles():
-    """UI exposes regions and focus outlines."""
+@pytest.mark.parametrize("browser_name", ["chromium", "firefox", "webkit"])
+def test_accessibility_roles(browser_name: str):
+    """UI exposes regions and focus outlines across browsers."""
     server, thread = _start_server(8020)
     with sync_playwright() as pw:
-        browser = pw.chromium.launch()
+        browser = getattr(pw, browser_name).launch()
         page = browser.new_page()
         page.goto("http://127.0.0.1:8020/static/react/index.html")
         regions = page.locator("[role=region]")
@@ -40,11 +43,12 @@ def test_accessibility_roles():
     _stop_server(server, thread)
 
 
-def test_dark_mode_colors():
-    """Dark theme sets expected background color."""
+@pytest.mark.parametrize("browser_name", ["chromium", "firefox", "webkit"])
+def test_dark_mode_colors(browser_name: str):
+    """Dark theme sets expected background color across browsers."""
     server, thread = _start_server(8021)
     with sync_playwright() as pw:
-        browser = pw.chromium.launch()
+        browser = getattr(pw, browser_name).launch()
         page = browser.new_page()
         page.goto("http://127.0.0.1:8021/static/react/index.html")
         page.evaluate("document.documentElement.setAttribute('data-theme','dark')")
@@ -54,11 +58,12 @@ def test_dark_mode_colors():
     _stop_server(server, thread)
 
 
-def test_keyboard_navigation_and_aria_labels():
+@pytest.mark.parametrize("browser_name", ["chromium", "firefox", "webkit"])
+def test_keyboard_navigation_and_aria_labels(browser_name: str):
     """Keyboard tab order matches ARIA labels on login form."""
     server, thread = _start_server(8022)
     with sync_playwright() as pw:
-        browser = pw.chromium.launch()
+        browser = getattr(pw, browser_name).launch()
         page = browser.new_page()
         page.goto("http://127.0.0.1:8022/static/react/index.html")
         page.wait_for_selector("input[name='user']")
@@ -75,5 +80,19 @@ def test_keyboard_navigation_and_aria_labels():
         page.keyboard.press("Tab")
         tag = page.evaluate("document.activeElement.tagName")
         assert tag == "BUTTON"
+        browser.close()
+    _stop_server(server, thread)
+
+
+@pytest.mark.parametrize("browser_name", ["chromium", "firefox"])
+def test_responsive_layout(browser_name: str):
+    """Layout adapts to mobile viewport without horizontal scroll."""
+    server, thread = _start_server(8023)
+    with sync_playwright() as pw:
+        browser = getattr(pw, browser_name).launch()
+        page = browser.new_page(viewport={"width": 375, "height": 812})
+        page.goto("http://127.0.0.1:8023/static/react/index.html")
+        width = page.evaluate("document.body.scrollWidth")
+        assert width <= 375
         browser.close()
     _stop_server(server, thread)
