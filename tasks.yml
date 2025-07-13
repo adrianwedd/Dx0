@@ -1558,7 +1558,7 @@ phases:
   area: plugins
   dependencies: []
   priority: 3
-  status: todo
+  status: done
   actionable_steps:
     - Expand plugin documentation with packaging and versioning advice.
     - Provide example repositories for retrieval, persona, and cost estimator plugins.
