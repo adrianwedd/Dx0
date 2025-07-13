@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dx0-example-persona"
+version = "0.1.0"
+dependencies = ["sdb"]
+
+[project.entry-points."dx0.personas"]
+cheerleader = "my_persona:cheerleader_persona"

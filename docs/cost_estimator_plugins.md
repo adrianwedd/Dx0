@@ -53,5 +53,6 @@ my_estimator/
 ├── pyproject.toml
 └── my_package.py
 ```
+An example implementation is available in `examples/cost_estimator_plugin/`.
 
 Select the plugin with `--cost-estimator` or set `SDB_COST_ESTIMATOR` in the environment. The default `csv` plugin uses `CostEstimator.load_from_csv`.
