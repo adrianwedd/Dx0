@@ -22,11 +22,11 @@ This document outlines the process for validating the web interface across suppo
    - Use the browser dev tools to simulate widths from 320 px up to 1920 px.
    - Ensure content remains readable and controls remain usable across breakpoints.
 4. **Accessibility**
- - Run `npx axe` or a similar tool on the main pages to detect WCAG issues.
-  - Navigate key workflows using only the keyboard and confirm focus styling is visible.
-  - Verify that form controls have descriptive labels for screen readers.
-  - Execute the automated Playwright suite with `pytest tests/test_e2e_ui_playwright.py` for cross-browser checks.
-  - Ensure Playwright browsers are installed via `playwright install` before running the tests.
+   - Run `npx axe` or a similar tool on the main pages to detect WCAG issues.
+   - Navigate key workflows using only the keyboard and confirm focus styling is visible.
+   - Verify that form controls have descriptive labels for screen readers.
+   - Execute the automated Playwright suite with `pytest tests/test_e2e_ui_playwright.py` for cross-browser checks.
+   - Ensure Playwright browsers are installed via `playwright install` before running the tests.
 5. **Defect Tracking**
    - Record any issues in the issue tracker with screenshots and reproduction steps.
    - Prioritize accessibility and functional defects ahead of visual polish.
