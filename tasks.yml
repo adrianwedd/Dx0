@@ -1646,3 +1646,113 @@ phases:
     - "- **Defect Resolution:** All critical or high-priority defects discovered during the QA process have been resolved and verified."
   epic: System Validation
   assigned_to: null
+- id: 201
+  title: "Pin and Audit All Project Dependencies"
+  description: >
+      The project's dependencies in `requirements.txt` and `pyproject.toml` are not pinned to specific versions. This creates a risk of breaking changes from upstream libraries and makes the project difficult to reproduce reliably. All dependencies should be pinned to their latest stable versions, and `pip-audit` should be integrated into the CI/CD pipeline to continuously scan for vulnerabilities.
+  component: build
+  area: dependencies
+  priority: 1
+  status: pending
+  epic: Phase 1
+  assigned_to: null
+- id: 202
+  title: "Establish a Comprehensive Test Suite"
+  description: >
+      The project currently lacks any form of automated testing. A comprehensive test suite should be established using a framework like `pytest`. This should include unit tests for business logic, integration tests for API endpoints, and end-to-end tests for user flows. A good starting point would be to add tests for the CPT code lookup and cost estimation logic.
+  component: testing
+  area: enhancement
+  priority: 1
+  status: pending
+  epic: Phase 1
+  assigned_to: null
+- id: 203
+  title: "Implement Centralized Configuration Management"
+  description: >
+      The project has hardcoded configuration values scattered throughout the codebase. This makes it difficult to manage different environments (development, staging, production). A centralized configuration management system should be implemented. A good choice would be to use a library like `python-dotenv` to load configuration from environment variables and `.env` files.
+  component: backend
+  area: refactor
+  priority: 2
+  status: pending
+  epic: Phase 1
+  assigned_to: null
+- id: 204
+  title: "Harden XML Parsing in Gatekeeper with defusedxml"
+  description: >
+      The `sdb/gatekeeper.py` file uses the standard `xml.etree.ElementTree` library for parsing, which is vulnerable to XML External Entity (XXE) attacks and other XML-based threats. This should be replaced with the `defusedxml` library, which is a drop-in replacement that provides hardened XML parsing.
+  component: backend
+  area: security
+  priority: 1
+  status: pending
+  epic: Phase 2
+  assigned_to: null
+- id: 205
+  title: "Refactor Session Management to Use a Scalable Solution"
+  description: >
+      The UI backend in `sdb/ui/app.py` uses global variables for session management, which is not thread-safe and will not scale to multiple users. This should be refactored to use a more robust session management solution, such as `Flask-Session`, which can be configured to use a variety of backends like Redis or a database.
+  component: backend
+  area: refactor
+  priority: 1
+  status: pending
+  epic: Phase 2
+  assigned_to: null
+- id: 206
+  title: "Implement Structured and Consistent Logging"
+  description: >
+      The project's logging is ad-hoc and inconsistent. A structured logging library, such as `structlog`, should be implemented to provide consistent, machine-readable logs. This will make it easier to debug issues and monitor the application's health.
+  component: backend
+  area: enhancement
+  priority: 2
+  status: pending
+  epic: Phase 2
+  assigned_to: null
+- id: 207
+  title: "Update OpenAI API Usage to the Latest Version"
+  description: >
+      The `sdb/cpt_lookup.py` file uses the deprecated `openai.ChatCompletion.create` method. This should be updated to use the new `client.chat.completions.create` method from the latest version of the `openai` library. All API calls should be updated to match the new syntax and data structures.
+  component: backend
+  area: refactor
+  priority: 1
+  status: pending
+  epic: Phase 3
+  assigned_to: null
+- id: 208
+  title: "Consolidate Frontend into a Single, Modern UI"
+  description: >
+      The project has two separate frontend directories, `frontend/` and `webui/`. This is confusing and increases the maintenance overhead. The two frontends should be merged into a single, modern UI. The `webui/` directory appears to be the more modern of the two, so it should be used as the base, and any necessary features from `frontend/` should be ported over.
+  component: frontend
+  area: refactor
+  priority: 1
+  status: pending
+  epic: Phase 3
+  assigned_to: null
+- id: 209
+  title: "Improve Cost Estimation with a Predictive Model"
+  description: >
+      When a CPT code is not found, the cost estimator falls back to a simple average of known prices, which can be inaccurate. A more sophisticated model should be implemented to provide a more accurate estimate. A good first step would be to train a simple linear regression model on the existing CPT codes and their prices. In the long term, a more advanced machine learning model could be developed.
+  component: backend
+  area: enhancement
+  priority: 2
+  status: pending
+  epic: Phase 3
+  assigned_to: null
+- id: 210
+  title: "Create Comprehensive API and User Documentation"
+  description: >
+      The project's documentation is incomplete and outdated. It should be updated to reflect the current state of the code and expanded to cover all of the project's features in detail. This should include both user-facing documentation for the frontend and technical documentation for the API endpoints.
+  component: documentation
+  area: enhancement
+  priority: 2
+  status: pending
+  epic: Phase 4
+  assigned_to: null
+- id: 211
+  title: "Improve Error Handling and User Feedback"
+  description: >
+      The error handling in the application is basic. More specific exception handling should be implemented throughout the backend, and the frontend should be updated to display user-friendly error messages. This will improve the user experience and make it easier to diagnose problems.
+  component: frontend
+  area: enhancement
+  priority: 3
+  status: pending
+  epic: Phase 4
+  assigned_to: null
