@@ -205,6 +205,16 @@ docker run -p 6831:6831/udp -p 16686:16686 jaegertracing/all-in-one
 
 Browse to `http://localhost:16686` to view the collected traces.
 
+## Docker Compose Setup
+
+Use the provided `docker-compose.yml` to start the demo alongside Prometheus and Grafana:
+
+```bash
+docker compose up
+```
+
+The Dx0 API is available on [http://localhost:8000](http://localhost:8000), Prometheus on port `9090`, and Grafana on `3000`.
+
 ## Testing
 
 Install the development dependencies and run the test suite:
