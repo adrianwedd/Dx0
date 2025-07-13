@@ -1580,9 +1580,11 @@ phases:
   actionable_steps:
     - Benchmark retrieval, LLM calls, and caching latency.
     - Provide scripts and Grafana dashboards for monitoring.
+    - Store baseline results so regressions can be detected.
   acceptance_criteria:
     - "Benchmark results identify performance bottlenecks."
     - "Grafana dashboards visualize service latency."
+    - "Baseline metrics persist for comparison across releases."
   command: null
   epic: Phase 6
   assigned_to: null
