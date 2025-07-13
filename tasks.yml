@@ -1576,7 +1576,7 @@ phases:
   area: monitoring
   dependencies: []
   priority: 3
-  status: todo
+  status: done
   actionable_steps:
     - Benchmark retrieval, LLM calls, and caching latency.
     - Provide scripts and Grafana dashboards for monitoring.

@@ -5,6 +5,7 @@ from typing import Dict, List, Tuple, Optional, Type, Protocol
 from importlib import metadata
 
 from .config import settings
+from .metrics import RETRIEVAL_LATENCY, RETRIEVAL_CACHE_HITS
 
 try:  # pragma: no cover - trivial import handling
     import numpy as np
@@ -55,8 +56,12 @@ class CachedRetrievalIndex:
         now = time.time()
         hit = self.cache.get(key)
         if hit and now - hit[0] < self.ttl:
+            RETRIEVAL_CACHE_HITS.inc()
             return hit[1]
+        start = time.perf_counter()
         results = self.backend.query(text, top_k=top_k)
+        duration = time.perf_counter() - start
+        RETRIEVAL_LATENCY.observe(duration)
         self.cache[key] = (now, results)
         return results
 

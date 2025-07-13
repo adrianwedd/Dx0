@@ -39,6 +39,7 @@ Add Prometheus as a data source at `http://localhost:9090` and import the dashbo
 
 - `grafana-dashboard.json` for general metrics
 - `budget-dashboard.json` for budget tracking
+- `performance-dashboard.json` for latency metrics
 
 The screenshots below show the two dashboards after importing.
 
