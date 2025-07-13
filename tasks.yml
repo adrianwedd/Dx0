@@ -1501,7 +1501,7 @@ phases:
   area: deployment
   dependencies: []
   priority: 3
-  status: todo
+  status: done
   actionable_steps:
     - Create Docker Compose or Kubernetes scripts.
     - Add a CI workflow that builds and publishes Docker images.
