@@ -29,6 +29,16 @@ LLM_TOKENS = Counter(
     "Total number of tokens processed by the LLM.",
 )
 
+# Retrieval query metrics
+RETRIEVAL_LATENCY = Histogram(
+    "retrieval_query_seconds",
+    "Latency of retrieval index queries in seconds.",
+)
+RETRIEVAL_CACHE_HITS = Counter(
+    "retrieval_cache_hits_total",
+    "Number of retrieval queries served from cache.",
+)
+
 # Tokens present in each user message sent to the orchestrator.
 USER_MESSAGE_TOKENS = Counter(
     "user_message_tokens_total",

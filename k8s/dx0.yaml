@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dx0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dx0
+  template:
+    metadata:
+      labels:
+        app: dx0
+    spec:
+      containers:
+        - name: dx0
+          image: ghcr.io/mai-dxo/dx0:latest
+          command: ["uvicorn", "sdb.ui.app:app", "--host", "0.0.0.0", "--port", "8000"]
+          ports:
+            - containerPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dx0
+spec:
+  selector:
+    app: dx0
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000

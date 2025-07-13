@@ -31,4 +31,42 @@ my-index = "my_plugin:MyIndex"
 pip install -e path/to/my_plugin
 ```
 
-Set `retrieval_backend` in `settings.yaml` (or the `SDB_RETRIEVAL_BACKEND` environment variable) to `my-index` and enable semantic retrieval to use your custom backend.
+## Packaging & Versioning
+
+Create a small Python package with a `pyproject.toml` describing your plugin.
+Give the package a unique name (for example `sdb-my-index`) and list `sdb` as a
+dependency:
+
+```toml
+[project]
+name = "sdb-my-index"
+version = "0.1.0"
+dependencies = ["sdb"]
+
+[project.entry-points."sdb.retrieval_plugins"]
+my-index = "my_plugin:MyIndex"
+```
+
+Use [semantic versioning](https://semver.org/) when updating your plugin. Install
+the package in editable mode while developing:
+
+```bash
+pip install -e .
+```
+
+When publishing a new release, build a wheel with `python -m build` and upload it
+to PyPI using `twine upload dist/*`. Tag releases in Git so version history is
+clear.
+
+## Example Repository Layout
+
+```
+my_index/
+├── pyproject.toml
+└── my_plugin.py
+```
+
+An example implementation is provided in `examples/retrieval_plugin/`. After
+installation, set `retrieval_backend` in `settings.yaml` (or the
+`SDB_RETRIEVAL_BACKEND` environment variable) to `my-index` and enable semantic
+retrieval to use your custom backend.

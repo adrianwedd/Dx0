@@ -1,6 +1,8 @@
 """Command line interface for running a demo diagnostic session."""
 
-import argparse
+from enum import Enum
+
+import typer
 import csv
 import getpass
 import json
@@ -8,6 +10,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import bcrypt
 import yaml
@@ -46,6 +49,32 @@ from sdb import token
 from sdb.token import TOKEN_PATH
 
 _ = WeightedVoter
+
+
+class PanelEngine(str, Enum):
+    """Decision engine options for the virtual panel."""
+
+    RULE = "rule"
+    LLM = "llm"
+
+
+class Verbosity(str, Enum):
+    """Logging verbosity levels."""
+
+    QUIET = "quiet"
+    INFO = "info"
+    DEBUG = "debug"
+
+
+class LLMProvider(str, Enum):
+    """Available LLM service providers."""
+
+    OPENAI = "openai"
+    OLLAMA = "ollama"
+    HF_LOCAL = "hf-local"
+
+
+app = typer.Typer(help="Dx0 command line interface")
 
 
 def _load_weights(arg: str | None) -> dict[str, float] | None:
@@ -130,155 +159,96 @@ def _load_case_dicts(path: str) -> list[dict[str, object]]:
     return data
 
 
-def stats_main(argv: list[str]) -> None:
+@app.command()
+def stats(
+    baseline: str,
+    variant: str,
+    config: str | None = typer.Option(None, help="YAML settings file"),
+    column: str = typer.Option("score", help="CSV column containing numeric scores"),
+    rounds: int = typer.Option(1000, help="Number of permutations"),
+) -> None:
     """Run a permutation test on two result CSV files."""
 
-    parser = argparse.ArgumentParser(description="Run significance test")
-    parser.add_argument("baseline", help="CSV file for baseline results")
-    parser.add_argument("variant", help="CSV file for variant results")
-    parser.add_argument("--config", default=None, help="YAML settings file")
-    parser.add_argument(
-        "--column",
-        default="score",
-        help="CSV column containing numeric scores",
-    )
-    parser.add_argument(
-        "--rounds",
-        type=int,
-        default=1000,
-        help="Number of permutations",
-    )
-    args = parser.parse_args(argv)
-    load_settings(args.config)
+    load_settings(config)
 
-    a = load_scores(args.baseline, args.column)
-    b = load_scores(args.variant, args.column)
-    p = permutation_test(a, b, num_rounds=args.rounds)
+    a = load_scores(baseline, column)
+    b = load_scores(variant, column)
+    p = permutation_test(a, b, num_rounds=rounds)
     print(f"p-value: {p:.4f}")
 
 
-def batch_eval_main(argv: list[str]) -> None:
+@app.command("batch-eval")
+def batch_eval(
+    config: str | None = typer.Option(None, help="YAML settings file"),
+    db: str | None = typer.Option(None, help="Path to case JSON, CSV or directory"),
+    db_sqlite: str | None = typer.Option(None, help="Path to case SQLite database"),
+    rubric: str = typer.Option(..., help="Scoring rubric JSON"),
+    costs: str | None = typer.Option(None, help="Test cost table CSV"),
+    cost_table: str | None = typer.Option(None, help="CSV file mapping test names to costs"),
+    cost_estimator: str | None = typer.Option(None, help="Cost estimator plugin name"),
+    output: str = typer.Option(..., help="CSV file for results"),
+    results_db: str | None = typer.Option(None, help="SQLite database file to store metrics"),
+    concurrency: int = typer.Option(2, help="Number of concurrent sessions"),
+    correct_threshold: int = typer.Option(4, help="Judge score required for a correct diagnosis"),
+    panel_engine: PanelEngine = typer.Option(PanelEngine.RULE, help="Decision engine"),
+    llm_provider: LLMProvider = typer.Option(LLMProvider.OPENAI, help="LLM provider"),
+    llm_model: str = typer.Option("gpt-4", help="Model name"),
+    hf_model: str | None = typer.Option(None, help="Local HF model path"),
+    persona_models: str | None = typer.Option(None, help="JSON string or file with persona to model mapping"),
+    ollama_base_url: str = typer.Option("http://localhost:11434", help="Base URL for the Ollama server"),
+    cache: bool = typer.Option(False, help="Cache LLM responses"),
+    cache_size: int = typer.Option(128, help="Maximum number of responses to keep in the cache"),
+    budget_limit: float | None = typer.Option(None, help="Maximum total spend allowed during the session"),
+    budget: float | None = typer.Option(None, help="Budget limit for budgeted mode"),
+    mode: str = typer.Option("unconstrained", help="Run mode"),
+    vote_weights: str | None = typer.Option(None, help="JSON string or path with run ID weights for ensemble voting"),
+    weights_file: str | None = typer.Option(None, help="JSON or YAML file mapping run IDs to vote weights"),
+    semantic: bool = typer.Option(False, help="Enable semantic retrieval"),
+    cross_encoder_model: str | None = typer.Option(None, help="Cross-encoder model name for semantic retrieval"),
+    retrieval_backend: str | None = typer.Option(None, help="Retrieval plugin name"),
+    verbosity: Verbosity = typer.Option(Verbosity.INFO, help="Logging verbosity"),
+) -> None:
     """Run evaluations for multiple cases concurrently."""
 
-    parser = argparse.ArgumentParser(description="Batch evaluate cases")
-    parser.add_argument("--config", default=None, help="YAML settings file")
-    parser.add_argument("--db", help="Path to case JSON, CSV or directory")
-    parser.add_argument("--db-sqlite", help="Path to case SQLite database")
-    parser.add_argument("--rubric", required=True, help="Scoring rubric JSON")
-    parser.add_argument("--costs", help="Test cost table CSV")
-    parser.add_argument(
-        "--cost-table",
-        dest="cost_table",
-        default=None,
-        help="CSV file mapping test names to costs",
+    args = SimpleNamespace(
+        config=config,
+        db=db,
+        db_sqlite=db_sqlite,
+        rubric=rubric,
+        costs=costs,
+        cost_table=cost_table,
+        cost_estimator=cost_estimator,
+        output=output,
+        results_db=results_db,
+        concurrency=concurrency,
+        correct_threshold=correct_threshold,
+        panel_engine=panel_engine.value,
+        llm_provider=llm_provider,
+        llm_model=llm_model,
+        hf_model=hf_model,
+        persona_models=persona_models,
+        ollama_base_url=ollama_base_url,
+        cache=cache,
+        cache_size=cache_size,
+        budget_limit=budget_limit,
+        budget=budget,
+        mode=mode,
+        vote_weights=vote_weights,
+        weights_file=weights_file,
+        semantic=semantic,
+        cross_encoder_model=cross_encoder_model,
+        retrieval_backend=retrieval_backend,
+        verbose=verbosity == Verbosity.DEBUG,
+        quiet=verbosity == Verbosity.QUIET,
     )
-    parser.add_argument(
-        "--cost-estimator",
-        dest="cost_estimator",
-        default=None,
-        help="Cost estimator plugin name",
-    )
-    parser.add_argument("--output", required=True, help="CSV file for results")
-    parser.add_argument(
-        "--results-db",
-        default=None,
-        help="SQLite database file to store metrics",
-    )
-    parser.add_argument(
-        "--concurrency",
-        type=int,
-        default=2,
-        help="Number of concurrent sessions",
-    )
-    parser.add_argument(
-        "--correct-threshold",
-        type=int,
-        default=4,
-        help="Judge score required for a correct diagnosis",
-    )
-    parser.add_argument(
-        "--panel-engine",
-        choices=["rule", "llm"],
-        default="rule",
-    )
-    parser.add_argument(
-        "--llm-provider", choices=["openai", "ollama"], default="openai"
-    )
-    parser.add_argument("--llm-model", default="gpt-4")
-    parser.add_argument(
-        "--persona-models",
-        default=None,
-        help="JSON string or file with persona to model mapping",
-    )
-    parser.add_argument(
-        "--ollama-base-url",
-        default="http://localhost:11434",
-        help="Base URL for the Ollama server",
-    )
-    parser.add_argument(
-        "--cache",
-        action="store_true",
-        help="Cache LLM responses",
-    )
-    parser.add_argument(
-        "--cache-size",
-        type=int,
-        default=128,
-        help="Maximum number of responses to keep in the cache",
-    )
-    parser.add_argument(
-        "--budget-limit",
-        type=float,
-        default=None,
-        help="Maximum total spend allowed during the session",
-    )
-    parser.add_argument("--budget", type=float, default=None)
-    parser.add_argument(
-        "--mode",
-        choices=["unconstrained", "budgeted", "question-only", "instant"],
-        default="unconstrained",
-    )
-    parser.add_argument(
-        "--vote-weights",
-        default=None,
-        help=("JSON string or path with run ID weights for ensemble voting"),
-    )
-    parser.add_argument(
-        "--weights-file",
-        default=None,
-        help="JSON or YAML file mapping run IDs to vote weights",
-    )
-    semantic = parser.add_mutually_exclusive_group()
-    semantic.add_argument(
-        "--semantic-retrieval",
-        dest="semantic",
-        action="store_true",
-    )
-    semantic.add_argument(
-        "--no-semantic-retrieval",
-        dest="semantic",
-        action="store_false",
-    )
-    parser.set_defaults(semantic=False)
-    parser.add_argument(
-        "--cross-encoder-model",
-        default=None,
-        help="Cross-encoder model name for semantic retrieval",
-    )
-    parser.add_argument(
-        "--retrieval-backend",
-        default=None,
-        help="Retrieval plugin name to use when semantic retrieval is enabled",
-    )
-    parser.add_argument("--verbose", action="store_true")
-    parser.add_argument("--quiet", action="store_true")
-    args = parser.parse_args(argv)
     cfg = load_settings(args.config)
     if args.db is None and args.db_sqlite is None:
         args.db = cfg.case_db
         args.db_sqlite = cfg.case_db_sqlite
     if args.retrieval_backend is None:
         args.retrieval_backend = cfg.retrieval_backend
+    if args.hf_model is None:
+        args.hf_model = cfg.hf_model
     if args.cost_estimator is None:
         args.cost_estimator = cfg.cost_estimator_plugin
 
@@ -297,7 +267,7 @@ def batch_eval_main(argv: list[str]) -> None:
     configure_logging(level)
 
     if args.db is None and args.db_sqlite is None:
-        parser.error("--db or --db-sqlite is required")
+        raise SystemExit("--db or --db-sqlite is required")
 
     if args.db_sqlite:
         db = load_from_sqlite(args.db_sqlite, lazy=True)
@@ -313,7 +283,7 @@ def batch_eval_main(argv: list[str]) -> None:
 
     cost_path = args.cost_table or args.costs
     if cost_path is None:
-        parser.error("--cost-table or --costs is required")
+        raise SystemExit("--cost-table or --costs is required")
     cost_estimator = load_cost_estimator(
         cost_path, plugin_name=args.cost_estimator or "csv"
     )
@@ -336,9 +306,15 @@ def batch_eval_main(argv: list[str]) -> None:
             engine = RuleEngine()
         else:
             cache_path = "llm_cache.jsonl" if args.cache else None
-            if args.llm_provider == "ollama":
+            if args.llm_provider == LLMProvider.OLLAMA:
                 client = OllamaClient(
                     base_url=args.ollama_base_url or settings.ollama_base_url,
+                    cache_path=cache_path,
+                    cache_size=args.cache_size,
+                )
+            elif args.llm_provider == LLMProvider.HF_LOCAL:
+                client = HFLocalClient(
+                    model_path=args.hf_model or settings.hf_model,
                     cache_path=cache_path,
                     cache_size=args.cache_size,
                 )
@@ -414,136 +390,97 @@ def batch_eval_main(argv: list[str]) -> None:
         writer.writerows(results)
 
 
-def fhir_export_main(argv: list[str]) -> None:
+@app.command("fhir-export")
+def fhir_export(
+    transcript: str,
+    tests: str,
+    patient_id: str = typer.Option("example", help="Patient identifier used in references"),
+    output: str | None = typer.Option(None, help="File path for the output bundle (defaults to stdout)"),
+) -> None:
     """Serialize a transcript and ordered tests as a FHIR bundle."""
-
-    parser = argparse.ArgumentParser(description="Export session data to FHIR")
-    parser.add_argument("transcript", help="Path to JSON transcript file")
-    parser.add_argument("tests", help="Path to JSON ordered tests file")
-    parser.add_argument(
-        "--patient-id",
-        default="example",
-        help="Patient identifier used in references",
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        default=None,
-        help="File path for the output bundle (defaults to stdout)",
-    )
-    args = parser.parse_args(argv)
 
     with open(args.transcript, "r", encoding="utf-8") as fh:
         transcript = json.load(fh)
     with open(args.tests, "r", encoding="utf-8") as fh:
         tests = json.load(fh)
 
-    bundle = transcript_to_fhir(transcript, patient_id=args.patient_id)
-    test_bundle = ordered_tests_to_fhir(tests, patient_id=args.patient_id)
+    bundle = transcript_to_fhir(transcript, patient_id=patient_id)
+    test_bundle = ordered_tests_to_fhir(tests, patient_id=patient_id)
     bundle["entry"].extend(test_bundle["entry"])
 
-    output = json.dumps(bundle, indent=2)
-    if args.output:
-        with open(args.output, "w", encoding="utf-8") as fh:
-            fh.write(output)
+    output_text = json.dumps(bundle, indent=2)
+    if output:
+        with open(output, "w", encoding="utf-8") as fh:
+            fh.write(output_text)
     else:
-        print(output)
+        print(output_text)
 
 
-def export_fhir_main(argv: list[str]) -> None:
+@app.command("export-fhir")
+def export_fhir(
+    input: str = typer.Option(..., "-i", help="Path to JSON transcript file"),
+    output: str = typer.Option(..., "-o", help="Destination for the generated bundle"),
+    patient_id: str = typer.Option("example", help="Patient identifier used in references"),
+) -> None:
     """Convert a saved transcript to a FHIR bundle file."""
 
-    parser = argparse.ArgumentParser(description="Export a transcript to FHIR")
-    parser.add_argument(
-        "-i",
-        "--input",
-        required=True,
-        help="Path to JSON transcript file",
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        required=True,
-        help="Destination for the generated bundle",
-    )
-    parser.add_argument(
-        "--patient-id",
-        default="example",
-        help="Patient identifier used in references",
-    )
-    args = parser.parse_args(argv)
-
-    with open(args.input, "r", encoding="utf-8") as fh:
+    with open(input, "r", encoding="utf-8") as fh:
         transcript = json.load(fh)
 
-    bundle = transcript_to_fhir(transcript, patient_id=args.patient_id)
+    bundle = transcript_to_fhir(transcript, patient_id=patient_id)
 
-    out_dir = os.path.dirname(args.output)
+    out_dir = os.path.dirname(output)
     if out_dir:
         os.makedirs(out_dir, exist_ok=True)
-    with open(args.output, "w", encoding="utf-8") as fh:
+    with open(output, "w", encoding="utf-8") as fh:
         json.dump(bundle, fh, indent=2)
 
 
-def fhir_import_main(argv: list[str]) -> None:
+@app.command("fhir-import")
+def fhir_import(
+    input: str,
+    case_id: str = typer.Option("case_001", help="Identifier for the generated case"),
+    output: str | None = typer.Option(None, "-o", help="File path for the output case (defaults to stdout)"),
+) -> None:
     """Convert a FHIR bundle or DiagnosticReport to case JSON."""
 
-    parser = argparse.ArgumentParser(description="Import case from FHIR")
-    parser.add_argument("input", help="Path to FHIR JSON file")
-    parser.add_argument(
-        "--case-id",
-        default="case_001",
-        help="Identifier for the generated case",
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        default=None,
-        help="File path for the output case (defaults to stdout)",
-    )
-    args = parser.parse_args(argv)
-
-    with open(args.input, "r", encoding="utf-8") as fh:
+    with open(input, "r", encoding="utf-8") as fh:
         data = json.load(fh)
 
     if data.get("resourceType") == "Bundle":
-        case = bundle_to_case(data, case_id=args.case_id)
+        case = bundle_to_case(data, case_id=case_id)
     else:
-        case = diagnostic_report_to_case(data, case_id=args.case_id)
+        case = diagnostic_report_to_case(data, case_id=case_id)
 
-    output = json.dumps(case, indent=2)
-    if args.output:
-        with open(args.output, "w", encoding="utf-8") as fh:
-            fh.write(output)
+    output_text = json.dumps(case, indent=2)
+    if output:
+        with open(output, "w", encoding="utf-8") as fh:
+            fh.write(output_text)
     else:
-        print(output)
+        print(output_text)
 
 
-def annotate_case_main(argv: list[str]) -> None:
+@app.command("annotate-case")
+def annotate_case(
+    case: str = typer.Option(..., help="Case identifier"),
+    config: str | None = typer.Option(None, help="YAML settings file"),
+    db: str | None = typer.Option(None, help="Path to case JSON, CSV or directory"),
+    db_sqlite: str | None = typer.Option(None, help="Path to case SQLite database"),
+    notes: str | None = typer.Option(None, help="Free text notes or path to a text file"),
+    test_mapping: str | None = typer.Option(None, help="JSON file mapping aliases to canonical test names"),
+    output: str | None = typer.Option(None, "-o", help="Destination for the annotated case (defaults to annotations/<id>.json)"),
+) -> None:
     """Add notes or test mappings to a case JSON file."""
 
-    parser = argparse.ArgumentParser(description="Annotate a case")
-    parser.add_argument("--config", default=None, help="YAML settings file")
-    parser.add_argument("--db", help="Path to case JSON, CSV or directory")
-    parser.add_argument("--db-sqlite", help="Path to case SQLite database")
-    parser.add_argument("--case", required=True, help="Case identifier")
-    parser.add_argument(
-        "--notes",
-        default=None,
-        help="Free text notes or path to a text file",
+    args = SimpleNamespace(
+        case=case,
+        config=config,
+        db=db,
+        db_sqlite=db_sqlite,
+        notes=notes,
+        test_mapping=test_mapping,
+        output=output,
     )
-    parser.add_argument(
-        "--test-mapping",
-        default=None,
-        help="JSON file mapping aliases to canonical test names",
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        default=None,
-        help=("Destination for the annotated case (defaults to annotations/<id>.json)"),
-    )
-    args = parser.parse_args(argv)
 
     cfg = load_settings(args.config)
     if args.db is None and args.db_sqlite is None:
@@ -582,28 +519,25 @@ def annotate_case_main(argv: list[str]) -> None:
         json.dump(data, fh, indent=2)
 
 
-def filter_cases_main(argv: list[str]) -> None:
+@app.command("filter-cases")
+def filter_cases(
+    output: str = typer.Option(..., "-o", help="Destination JSON or CSV file for the filtered cases"),
+    config: str | None = typer.Option(None, help="YAML settings file"),
+    db: str | None = typer.Option(None, help="Path to case JSON or CSV file"),
+    db_sqlite: str | None = typer.Option(None, help="Path to case SQLite database"),
+    keywords: str | None = typer.Option(None, help="Comma separated keywords to match"),
+    metadata: str | None = typer.Option(None, help="JSON string or file with key/value filters"),
+) -> None:
     """Select cases by keywords or metadata."""
 
-    parser = argparse.ArgumentParser(description="Filter cases")
-    parser.add_argument("--config", default=None, help="YAML settings file")
-    parser.add_argument("--db", help="Path to case JSON or CSV file")
-    parser.add_argument("--db-sqlite", help="Path to case SQLite database")
-    parser.add_argument(
-        "--keywords", default=None, help="Comma separated keywords to match"
+    args = SimpleNamespace(
+        output=output,
+        config=config,
+        db=db,
+        db_sqlite=db_sqlite,
+        keywords=keywords,
+        metadata=metadata,
     )
-    parser.add_argument(
-        "--metadata",
-        default=None,
-        help="JSON string or file with key/value filters",
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        required=True,
-        help="Destination JSON or CSV file for the filtered cases",
-    )
-    args = parser.parse_args(argv)
 
     cfg = load_settings(args.config)
     if args.db is None and args.db_sqlite is None:
@@ -650,267 +584,149 @@ def filter_cases_main(argv: list[str]) -> None:
             json.dump(selected, fh, indent=2)
 
 
-def login_main(argv: list[str]) -> None:
+@app.command("login")
+def login(
+    username: str,
+    api_url: str = typer.Option("http://localhost:8000/api/v1"),
+    password: str | None = typer.Option(None),
+    token_file: str = typer.Option(str(TOKEN_PATH), help="Path to store the session token"),
+) -> None:
     """Authenticate with the API and store a session token."""
 
-    parser = argparse.ArgumentParser(description="Login to Dx0 API")
-    parser.add_argument("--api-url", default="http://localhost:8000/api/v1")
-    parser.add_argument("--username", required=True)
-    parser.add_argument("--password", default=None)
-    parser.add_argument(
-        "--token-file",
-        default=str(TOKEN_PATH),
-        help="Path to store the session token",
-    )
-    args = parser.parse_args(argv)
-
-    pwd = args.password or getpass.getpass("Password: ")
+    pwd = password or getpass.getpass("Password: ")
     token.login(
-        args.api_url,
-        args.username,
+        api_url,
+        username,
         pwd,
-        path=Path(args.token_file),
+        path=Path(token_file),
     )
-    print(f"Token saved to {args.token_file}")
+    print(f"Token saved to {token_file}")
 
 
-def manage_users_main(argv: list[str]) -> None:
-    """Add, remove or list web UI users."""
-
-    parser = argparse.ArgumentParser(description="Manage UI users")
-    parser.add_argument(
-        "--file",
-        default=os.environ.get(
+@app.command("manage-users")
+def manage_users(
+    cmd: str = typer.Argument(..., help="add, remove or list"),
+    username: str | None = typer.Argument(None),
+    password: str | None = typer.Option(None),
+    group: str = typer.Option("default", help="User group"),
+    file: str = typer.Option(
+        os.environ.get(
             "UI_USERS_FILE",
             str(Path(__file__).parent / "sdb" / "ui" / "users.yml"),
         ),
         help="Path to credentials YAML file",
-    )
-    sub = parser.add_subparsers(dest="cmd", required=True)
-
-    add_p = sub.add_parser("add", help="Add a user")
-    add_p.add_argument("username")
-    add_p.add_argument("--password", default=None, help="User password")
-    add_p.add_argument("--group", default="default", help="User group")
-
-    rem_p = sub.add_parser("remove", help="Remove a user")
-    rem_p.add_argument("username")
-
-    sub.add_parser("list", help="List users")
-
-    args = parser.parse_args(argv)
+    ),
+) -> None:
+    """Add, remove or list web UI users."""
 
     data = {"users": {}}
-    if os.path.exists(args.file):
-        with open(args.file, "r", encoding="utf-8") as fh:
+    if os.path.exists(file):
+        with open(file, "r", encoding="utf-8") as fh:
             data = yaml.safe_load(fh) or {"users": {}}
     users = data.get("users", {})
 
-    if args.cmd == "add":
-        pwd = args.password or getpass.getpass("Password: ")
+    if cmd == "add":
+        pwd = password or getpass.getpass("Password: ")
         hashed = bcrypt.hashpw(pwd.encode(), bcrypt.gensalt()).decode()
-        users[args.username] = {"password": hashed, "group": args.group}
+        if not username:
+            raise SystemExit("Username required")
+        users[username] = {"password": hashed, "group": group}
         data["users"] = users
-        os.makedirs(os.path.dirname(args.file), exist_ok=True)
-        with open(args.file, "w", encoding="utf-8") as fh:
+        os.makedirs(os.path.dirname(file), exist_ok=True)
+        with open(file, "w", encoding="utf-8") as fh:
             yaml.safe_dump(data, fh)
-        print(f"Added user {args.username}")
-    elif args.cmd == "remove":
-        if users.pop(args.username, None) is not None:
+        print(f"Added user {username}")
+    elif cmd == "remove":
+        if username and users.pop(username, None) is not None:
             data["users"] = users
-            with open(args.file, "w", encoding="utf-8") as fh:
+            with open(file, "w", encoding="utf-8") as fh:
                 yaml.safe_dump(data, fh)
-            print(f"Removed user {args.username}")
+            print(f"Removed user {username}")
         else:
-            print(f"User {args.username} not found", file=sys.stderr)
+            print(f"User {username} not found", file=sys.stderr)
     else:  # list
         for name in sorted(users):
             print(name)
 
 
-def main() -> None:
+@app.callback(invoke_without_command=True)
+def _main(
+    ctx: typer.Context,
+    config: str | None = typer.Option(None, help="YAML settings file"),
+    db: str | None = typer.Option(None, help="Path to case JSON, CSV or directory"),
+    db_sqlite: str | None = typer.Option(None, help="Path to case SQLite database"),
+    case: str | None = typer.Option(None, help="Case identifier"),
+    rubric: str | None = typer.Option(None, help="Path to scoring rubric JSON"),
+    costs: str | None = typer.Option(None, help="Path to test cost table CSV"),
+    cost_table: str | None = typer.Option(None, help="CSV file mapping test names to costs"),
+    cost_estimator: str | None = typer.Option(None, help="Cost estimator plugin name"),
+    correct_threshold: int = typer.Option(4, help="Judge score required for a correct diagnosis"),
+    panel_engine: PanelEngine = typer.Option(PanelEngine.RULE, help="Decision engine to use for the panel"),
+    llm_provider: LLMProvider = typer.Option(LLMProvider.OPENAI, help="LLM provider for LLM engine"),
+    llm_model: str = typer.Option("gpt-4", help="Model name for LLM engine"),
+    hf_model: str | None = typer.Option(None, help="Local HF model path"),
+    persona_models: str | None = typer.Option(None, help="JSON string or file with persona to model mapping"),
+    ollama_base_url: str = typer.Option("http://localhost:11434", help="Base URL for the Ollama server"),
+    cache: bool = typer.Option(False, help="Cache LLM responses"),
+    cache_size: int = typer.Option(128, help="Maximum number of responses to keep in the cache"),
+    budget_limit: float | None = typer.Option(None, help="Maximum total spend allowed during the session"),
+    semantic: bool = typer.Option(False, help="Enable semantic retrieval for Gatekeeper"),
+    cross_encoder_model: str | None = typer.Option(None, help="Cross-encoder model name for semantic retrieval"),
+    retrieval_backend: str | None = typer.Option(None, help="Retrieval plugin name"),
+    convert: bool = typer.Option(False, help="Convert raw cases to JSON"),
+    raw_dir: str = typer.Option("data/raw_cases", help="Directory with raw text cases for conversion"),
+    output_dir: str = typer.Option("data/sdbench/cases", help="Destination for converted JSON cases"),
+    hidden_dir: str = typer.Option("data/sdbench/hidden_cases", help="Directory for held-out cases from 2024-2025"),
+    export_sqlite: str | None = typer.Option(None, help="Path to SQLite file when using --convert"),
+    results_db: str | None = typer.Option(None, help="SQLite database to store evaluation metrics"),
+    budget: float | None = typer.Option(None, help="Budget limit for Budgeted mode"),
+    mode: str = typer.Option("unconstrained", help="Run mode"),
+    vote_weights: str | None = typer.Option(None, help="JSON string or path with run ID weights for ensemble voting"),
+    weights_file: str | None = typer.Option(None, help="JSON or YAML file mapping run IDs to vote weights"),
+    metrics_port: int | None = typer.Option(None, help="Port for Prometheus metrics server (default 8000)"),
+    verbosity: Verbosity = typer.Option(Verbosity.INFO, help="Logging verbosity"),
+) -> None:
     """Run a demo diagnostic session using the virtual panel."""
 
-    parser = argparse.ArgumentParser(
-        description="Run a simple diagnostic session",
+    if ctx.invoked_subcommand:
+        return
+
+    args = SimpleNamespace(
+        config=config,
+        db=db,
+        db_sqlite=db_sqlite,
+        case=case,
+        rubric=rubric,
+        costs=costs,
+        cost_table=cost_table,
+        cost_estimator=cost_estimator,
+        correct_threshold=correct_threshold,
+        panel_engine=panel_engine.value,
+        llm_provider=llm_provider,
+        llm_model=llm_model,
+        hf_model=hf_model,
+        persona_models=persona_models,
+        ollama_base_url=ollama_base_url,
+        cache=cache,
+        cache_size=cache_size,
+        budget_limit=budget_limit,
+        semantic=semantic,
+        cross_encoder_model=cross_encoder_model,
+        retrieval_backend=retrieval_backend,
+        convert=convert,
+        raw_dir=raw_dir,
+        output_dir=output_dir,
+        hidden_dir=hidden_dir,
+        export_sqlite=export_sqlite,
+        results_db=results_db,
+        budget=budget,
+        mode=mode,
+        vote_weights=vote_weights,
+        weights_file=weights_file,
+        metrics_port=metrics_port,
+        verbose=verbosity == Verbosity.DEBUG,
+        quiet=verbosity == Verbosity.QUIET,
     )
-    parser.add_argument("--config", default=None, help="YAML settings file")
-    parser.add_argument(
-        "--db",
-        help="Path to case JSON, CSV or directory",
-    )
-    parser.add_argument(
-        "--db-sqlite",
-        help="Path to case SQLite database",
-    )
-    parser.add_argument("--case", help="Case identifier")
-    parser.add_argument(
-        "--rubric",
-        help="Path to scoring rubric JSON",
-    )
-    parser.add_argument(
-        "--costs",
-        help="Path to test cost table CSV",
-    )
-    parser.add_argument(
-        "--cost-table",
-        dest="cost_table",
-        default=None,
-        help="CSV file mapping test names to costs",
-    )
-    parser.add_argument(
-        "--cost-estimator",
-        dest="cost_estimator",
-        default=None,
-        help="Cost estimator plugin name",
-    )
-    parser.add_argument(
-        "--correct-threshold",
-        type=int,
-        default=4,
-        help="Judge score required for a correct diagnosis",
-    )
-    parser.add_argument(
-        "--panel-engine",
-        choices=["rule", "llm"],
-        default="rule",
-        help="Decision engine to use for the panel",
-    )
-    parser.add_argument(
-        "--llm-provider",
-        choices=["openai", "ollama"],
-        default="openai",
-        help="LLM provider for LLM engine",
-    )
-    parser.add_argument(
-        "--llm-model",
-        default="gpt-4",
-        help="Model name for LLM engine",
-    )
-    parser.add_argument(
-        "--persona-models",
-        default=None,
-        help="JSON string or file with persona to model mapping",
-    )
-    parser.add_argument(
-        "--ollama-base-url",
-        default="http://localhost:11434",
-        help="Base URL for the Ollama server",
-    )
-    parser.add_argument(
-        "--cache",
-        action="store_true",
-        help="Cache LLM responses",
-    )
-    parser.add_argument(
-        "--cache-size",
-        type=int,
-        default=128,
-        help="Maximum number of responses to keep in the cache",
-    )
-    parser.add_argument(
-        "--budget-limit",
-        type=float,
-        default=None,
-        help="Maximum total spend allowed during the session",
-    )
-    semantic = parser.add_mutually_exclusive_group()
-    semantic.add_argument(
-        "--semantic-retrieval",
-        dest="semantic",
-        action="store_true",
-        help="Enable semantic retrieval for Gatekeeper",
-    )
-    semantic.add_argument(
-        "--no-semantic-retrieval",
-        dest="semantic",
-        action="store_false",
-        help="Disable semantic retrieval for Gatekeeper",
-    )
-    parser.set_defaults(semantic=False)
-    parser.add_argument(
-        "--cross-encoder-model",
-        default=None,
-        help="Cross-encoder model name for semantic retrieval",
-    )
-    parser.add_argument(
-        "--retrieval-backend",
-        default=None,
-        help="Retrieval plugin name to use when semantic retrieval is enabled",
-    )
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Enable debug logging",
-    )
-    parser.add_argument(
-        "--quiet",
-        action="store_true",
-        help="Reduce logging noise",
-    )
-    parser.add_argument(
-        "--convert", action="store_true", help="Convert raw cases to JSON"
-    )
-    parser.add_argument(
-        "--raw-dir",
-        default="data/raw_cases",
-        help="Directory with raw text cases for conversion",
-    )
-    parser.add_argument(
-        "--output-dir",
-        default="data/sdbench/cases",
-        help="Destination for converted JSON cases",
-    )
-    parser.add_argument(
-        "--hidden-dir",
-        default="data/sdbench/hidden_cases",
-        help="Directory for held-out cases from 2024-2025",
-    )
-    parser.add_argument(
-        "--export-sqlite",
-        default=None,
-        help="Path to SQLite file when using --convert",
-    )
-    parser.add_argument(
-        "--results-db",
-        default=None,
-        help="SQLite database to store evaluation metrics",
-    )
-    parser.add_argument(
-        "--budget",
-        type=float,
-        default=None,
-        help="Budget limit for Budgeted mode",
-    )
-    parser.add_argument(
-        "--mode",
-        choices=[
-            "unconstrained",
-            "budgeted",
-            "question-only",
-            "instant",
-            "ensemble",
-        ],
-        default="unconstrained",
-        help="Run mode",
-    )
-    parser.add_argument(
-        "--vote-weights",
-        default=None,
-        help=("JSON string or path with run ID weights for ensemble voting"),
-    )
-    parser.add_argument(
-        "--weights-file",
-        default=None,
-        help="JSON or YAML file mapping run IDs to vote weights",
-    )
-    parser.add_argument(
-        "--metrics-port",
-        type=int,
-        default=None,
-        help="Port for Prometheus metrics server (default 8000)",
-    )
-    args = parser.parse_args()
     cfg = load_settings(args.config)
     if args.db is None and args.db_sqlite is None:
         args.db = cfg.case_db
@@ -940,9 +756,9 @@ def main() -> None:
     cost_path = args.cost_table or args.costs
     required = [args.case, args.rubric, cost_path]
     if args.db is None and args.db_sqlite is None:
-        parser.error("--db or --db-sqlite is required for a session")
+        raise SystemExit("--db or --db-sqlite is required for a session")
     if any(item is None for item in required):
-        parser.error(
+        raise SystemExit(
             "--case, --rubric and --cost-table/--costs are required for a session"
         )
 
@@ -989,9 +805,15 @@ def main() -> None:
         engine = RuleEngine()
     else:
         cache_path = "llm_cache.jsonl" if args.cache else None
-        if args.llm_provider == "ollama":
+        if args.llm_provider == LLMProvider.OLLAMA:
             client = OllamaClient(
                 base_url=args.ollama_base_url or settings.ollama_base_url,
+                cache_path=cache_path,
+                cache_size=args.cache_size,
+            )
+        elif args.llm_provider == LLMProvider.HF_LOCAL:
+            client = HFLocalClient(
+                model_path=args.hf_model or settings.hf_model,
                 cache_path=cache_path,
                 cache_size=args.cache_size,
             )
@@ -1053,24 +875,15 @@ def main() -> None:
     print(f"Total time: {result.duration:.2f}s")
 
 
+def main(argv: list[str] | None = None) -> None:
+    """Entry point for programmatic invocation."""
+
+    from typer.main import get_command
+
+    get_command(app).main(args=argv or sys.argv[1:], standalone_mode=False)
+
+
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "stats":
-        stats_main(sys.argv[2:])
-    elif len(sys.argv) > 1 and sys.argv[1] == "batch-eval":
-        batch_eval_main(sys.argv[2:])
-    elif len(sys.argv) > 1 and sys.argv[1] == "fhir-export":
-        fhir_export_main(sys.argv[2:])
-    elif len(sys.argv) > 1 and sys.argv[1] == "fhir-import":
-        fhir_import_main(sys.argv[2:])
-    elif len(sys.argv) > 1 and sys.argv[1] == "export-fhir":
-        export_fhir_main(sys.argv[2:])
-    elif len(sys.argv) > 1 and sys.argv[1] == "annotate-case":
-        annotate_case_main(sys.argv[2:])
-    elif len(sys.argv) > 1 and sys.argv[1] == "filter-cases":
-        filter_cases_main(sys.argv[2:])
-    elif len(sys.argv) > 1 and sys.argv[1] == "login":
-        login_main(sys.argv[2:])
-    elif len(sys.argv) > 1 and sys.argv[1] == "manage-users":
-        manage_users_main(sys.argv[2:])
-    else:
-        main()
+    from typer.main import get_command
+
+    get_command(app).main(args=sys.argv[1:])

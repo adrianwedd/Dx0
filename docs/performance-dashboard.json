@@ -1,0 +1,31 @@
+{
+  "dashboard": {
+    "title": "Latency Metrics",
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "LLM Request Latency",
+        "targets": [
+          {"expr": "rate(llm_request_seconds_sum[5m]) / rate(llm_request_seconds_count[5m])"}
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Retrieval Query Latency",
+        "targets": [
+          {"expr": "rate(retrieval_query_seconds_sum[5m]) / rate(retrieval_query_seconds_count[5m])"}
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Retrieval Cache Hits",
+        "targets": [{"expr": "retrieval_cache_hits_total"}]
+      },
+      {
+        "type": "timeseries",
+        "title": "CPT Cache Hits",
+        "targets": [{"expr": "cpt_cache_hits_total"}]
+      }
+    ]
+  }
+}

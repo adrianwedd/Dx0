@@ -215,3 +215,25 @@ class OllamaClient(LLMClient):
             return data.get("message", {}).get("content")
         except Exception:  # pragma: no cover - network or server issues
             return None
+
+
+class HFLocalClient(LLMClient):
+    """Client for Hugging Face models loaded locally."""
+
+    def __init__(self, model_path: str, cache_path: str | None = None, cache_size: int = 128) -> None:
+        super().__init__(cache_path=cache_path, cache_size=cache_size)
+        from transformers import pipeline  # type: ignore
+
+        self.generator = pipeline("text-generation", model=model_path)
+
+    def _chat(self, messages: List[dict], model: str) -> str | None:
+        prompt = "\n".join(m.get("content", "") for m in messages)
+        try:
+            out = self.generator(prompt, max_new_tokens=64)
+        except Exception:  # pragma: no cover - model errors
+            return None
+        if not out:
+            return None
+        text = out[0].get("generated_text", "")
+        return text[len(prompt) :].strip()
+

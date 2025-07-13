@@ -1,4 +1,5 @@
 from sdb.judge import Judge
+import pytest
 
 
 class DummyClient:
@@ -63,3 +64,28 @@ def test_judge_bad_response():
     j = Judge({}, client=BadResponseClient())
     res = j.evaluate("foo", "bar")
     assert res.score == 1
+
+
+class StaticClient:
+    def __init__(self, reply):
+        self.reply = reply
+
+    def chat(self, messages, model):
+        return self.reply
+
+
+def test_llm_score_parses_numeric_reply():
+    j = Judge({}, client=StaticClient("Score: 4"))
+    assert j._llm_score("a", "b") == 4
+
+
+def test_llm_score_none_reply():
+    j = Judge({}, client=StaticClient(None))
+    with pytest.raises(RuntimeError):
+        j._llm_score("a", "b")
+
+
+def test_llm_score_bad_reply():
+    j = Judge({}, client=StaticClient("no digits"))
+    with pytest.raises(ValueError):
+        j._llm_score("a", "b")

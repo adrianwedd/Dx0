@@ -266,6 +266,7 @@ phases:
         priority: 2
         status: done
 
+
   - name: "Phase 3: Production Readiness & Advanced Features"
     tasks:
       - id: "T23"
@@ -344,6 +345,7 @@ phases:
         area: onboarding
         priority: 3
         status: done
+
 
   - name: "Phase 4: LLM Integration and Production Hardening"
     tasks:
@@ -1593,9 +1595,11 @@ phases:
   actionable_steps:
     - Benchmark retrieval, LLM calls, and caching latency.
     - Provide scripts and Grafana dashboards for monitoring.
+    - Store baseline results so regressions can be detected.
   acceptance_criteria:
     - "Benchmark results identify performance bottlenecks."
     - "Grafana dashboards visualize service latency."
+    - "Baseline metrics persist for comparison across releases."
   command: null
   epic: Phase 6
   assigned_to: null

@@ -77,6 +77,9 @@ source venv/bin/activate
 pip install -r requirements.lock
 ```
 
+For details on creating a development environment and running the test suite,
+see [docs/getting_started.md](docs/getting_started.md).
+
 See [Dependency Management](docs/dependency_updates.md) for details on
 updating and auditing requirements. You can build a Docker image using the
 multi-stage `Dockerfile`:
@@ -136,6 +139,15 @@ python -m dx0.cli \
   --ollama-base-url http://localhost:11434 ...
 ```
 
+For a locally fine-tuned Hugging Face model, use `--llm-provider hf-local` and
+point `--hf-model` to the model directory:
+
+```bash
+python -m dx0.cli \
+  --llm-provider hf-local \
+  --hf-model /models/nejm-lora ...
+```
+
 ### Configuration
 
 You can load common settings from a YAML file using `--config`:
@@ -143,6 +155,7 @@ You can load common settings from a YAML file using `--config`:
 ```yaml
 openai_api_key: sk-your-key
 openai_model: gpt-4
+hf_model: /models/nejm-lora
 ollama_base_url: http://localhost:11434
 metrics_port: 8000
 case_db: data/sdbench/cases

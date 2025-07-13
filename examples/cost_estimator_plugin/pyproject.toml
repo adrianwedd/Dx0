@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dx0-example-estimator"
+version = "0.1.0"
+dependencies = ["sdb"]
+
+[project.entry-points."dx0.cost_estimators"]
+fixed = "my_estimator:fixed_price_estimator"

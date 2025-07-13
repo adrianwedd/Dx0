@@ -8,10 +8,21 @@ from .protocol import ActionType, build_action
 from .actions import PanelAction, parse_panel_action
 from .panel import VirtualPanel
 from .decision import DecisionEngine, RuleEngine, LLMEngine
-from .llm_client import LLMClient, OpenAIClient, OllamaClient
+from .llm_client import (
+    LLMClient,
+    OpenAIClient,
+    OllamaClient,
+    HFLocalClient,
+)
 from .orchestrator import Orchestrator
 from .evaluation import Evaluator, async_batch_evaluate, batch_evaluate
 from .logging_config import configure_logging
+from .exceptions import (
+    SDBenchError,
+    DataIngestionError,
+    DecisionEngineError,
+    EvaluationError,
+)
 from .ingest.convert import convert_directory
 from .ingest.pipeline import run_pipeline, update_dataset
 from .ingest.translate import translate_directory
@@ -56,6 +67,7 @@ __all__ = [
     "LLMClient",
     "OpenAIClient",
     "OllamaClient",
+    "HFLocalClient",
     "VirtualPanel",
     "Orchestrator",
     "BudgetManager",
@@ -89,6 +101,10 @@ __all__ = [
     "async_batch_evaluate",
     "batch_evaluate",
     "configure_logging",
+    "SDBenchError",
+    "DataIngestionError",
+    "DecisionEngineError",
+    "EvaluationError",
     "PluginInfo",
     "validate_plugins",
 ]
