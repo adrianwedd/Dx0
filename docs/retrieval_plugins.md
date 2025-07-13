@@ -33,7 +33,9 @@ pip install -e path/to/my_plugin
 
 ## Packaging & Versioning
 
-Create a small Python package with a `pyproject.toml` describing your plugin:
+Create a small Python package with a `pyproject.toml` describing your plugin.
+Give the package a unique name (for example `sdb-my-index`) and list `sdb` as a
+dependency:
 
 ```toml
 [project]
@@ -45,7 +47,16 @@ dependencies = ["sdb"]
 my-index = "my_plugin:MyIndex"
 ```
 
-Use [semantic versioning](https://semver.org/) when updating your plugin. Install it in editable mode while developing or build a wheel with `python -m build` for distribution.
+Use [semantic versioning](https://semver.org/) when updating your plugin. Install
+the package in editable mode while developing:
+
+```bash
+pip install -e .
+```
+
+When publishing a new release, build a wheel with `python -m build` and upload it
+to PyPI using `twine upload dist/*`. Tag releases in Git so version history is
+clear.
 
 ## Example Repository Layout
 
@@ -55,4 +66,7 @@ my_index/
 └── my_plugin.py
 ```
 
-After installation, set `retrieval_backend` in `settings.yaml` (or the `SDB_RETRIEVAL_BACKEND` environment variable) to `my-index` and enable semantic retrieval to use your custom backend.
+An example implementation is provided in `examples/retrieval_plugin/`. After
+installation, set `retrieval_backend` in `settings.yaml` (or the
+`SDB_RETRIEVAL_BACKEND` environment variable) to `my-index` and enable semantic
+retrieval to use your custom backend.

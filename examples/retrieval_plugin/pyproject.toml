@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sdb-example-index"
+version = "0.1.0"
+dependencies = ["sdb"]
+
+[project.entry-points."sdb.retrieval_plugins"]
+example-index = "my_plugin:ExampleIndex"

@@ -32,3 +32,13 @@ pip install -e path/to/my_plugin
 
 After installation, you can instantiate a panel with
 `VirtualPanel(persona_chain="my-chain")`.
+
+## Example Repository Layout
+
+```
+persona_plugin/
+├── pyproject.toml
+└── my_persona.py
+```
+
+A minimal implementation lives in `examples/persona_plugin/`.
