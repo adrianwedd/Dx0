@@ -198,10 +198,12 @@ class LLMEngine(DecisionEngine):
             model = self.persona_models.get(name, self.model)
             reply = self._chat(messages, model)
             if reply is None:
+                logger.warning("llm_fallback", reason="no_reply")
                 return self.fallback.decide(context)
             messages.append({"role": "assistant", "content": reply})
         action = parse_panel_action(messages[-1]["content"])
         if action is None:
+            logger.warning("llm_fallback", reason="parse")
             return self.fallback.decide(context)
         logger.info(
             "llm_decision",
@@ -228,6 +230,7 @@ class LLMEngine(DecisionEngine):
             for system, user, reply in results:
                 messages.extend([system, user])
                 if reply is None:
+                    logger.warning("llm_fallback", reason="no_reply")
                     return await asyncio.to_thread(self.fallback.decide, context)
                 messages.append({"role": "assistant", "content": reply})
         else:
@@ -238,10 +241,12 @@ class LLMEngine(DecisionEngine):
                 model = self.persona_models.get(name, self.model)
                 reply = await self._achat(messages, model)
                 if reply is None:
+                    logger.warning("llm_fallback", reason="no_reply")
                     return await asyncio.to_thread(self.fallback.decide, context)
                 messages.append({"role": "assistant", "content": reply})
         action = parse_panel_action(messages[-1]["content"])
         if action is None:
+            logger.warning("llm_fallback", reason="parse")
             return await asyncio.to_thread(self.fallback.decide, context)
         logger.info(
             "llm_decision",
