@@ -591,7 +591,7 @@ phases:
   epic: Phase 5
   assigned_to: null
 
-- id: 75
+- id: 96
   title: Provide Case Translation Utility
   description: >
     Add a script to translate case JSON files using an LLM and store localized
@@ -621,7 +621,7 @@ phases:
   priority: 2
   status: done
 
-- id: 75
+- id: 97
   title: Extract Budget Management Service
   description: >
     Move budgeting logic out of the Orchestrator into a dedicated service
@@ -664,7 +664,7 @@ phases:
   epic: Phase 5
   assigned_to: null
 
-- id: 65
+- id: 99
   title: Use SQLite for Lazy Case Loading
   description: >
     Implement a SQLite-backed case database and migration script so large
@@ -1079,7 +1079,7 @@ phases:
   command: null
   epic: Phase 5
   assigned_to: null
-- id: 65
+- id: 100
   title: Persist UI Sessions in SQLite
   description: >
     Store session tokens in a SQLite database so that authentication persists
@@ -1292,7 +1292,7 @@ phases:
   assigned_to: null
 
 
-- id: 75
+- id: 98
   title: Slurm Batch Evaluation Helper
   description: |
     Provide a script for submitting `batch_evaluate` jobs as a Slurm array to ease large scale experiments.
@@ -1310,7 +1310,7 @@ phases:
   epic: Phase 5
   assigned_to: null
 
-- id: 76
+- id: 102
   title: Enable Retrieval Result Caching
   description: >
     Introduce a simple caching layer for retrieval responses to
