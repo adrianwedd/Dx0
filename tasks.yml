@@ -261,8 +261,11 @@ phases:
         title: "Expand Evaluation Framework Tests"
         description: >
           Add unit tests for the Judge agent, CostEstimator, and evaluation metrics generation.
-        labels: [test, evaluation]
-        status: pending
+        component: evaluation
+        area: testing
+        priority: 2
+        status: done
+
 
   - name: "Phase 3: Production Readiness & Advanced Features"
     tasks:
@@ -324,7 +327,7 @@ phases:
         component: backend
         area: robustness
         priority: 2
-        status: pending
+        status: done
       - id: 93
         title: "Refactor CLI with Typer"
         description: >
@@ -332,7 +335,17 @@ phases:
         component: cli
         area: usability
         priority: 2
-        status: pending
+        status: done
+      - id: 94
+        title: "Developer Getting Started Guide"
+        description: >
+          Write a concise guide in `docs/getting_started.md` covering environment setup,
+          running tests, and basic commands for new contributors.
+        component: documentation
+        area: onboarding
+        priority: 3
+        status: done
+
 
   - name: "Phase 4: LLM Integration and Production Hardening"
     tasks:
@@ -523,12 +536,14 @@ phases:
         acceptance_criteria:
           - "New features are functional and intuitive."
 
-      - id: "T45"
-        title: "Fine-tune Domain-Specific LLM"
+      - id: 95
+        title: "Fine-Tune LLM for Diagnostic Reasoning"
         description: >
-          Train a custom language model on the NEJM case corpus and
-          integrate it through the multi-provider LLM engine.
-        labels: [feature, ai, data]
+          Train a domain-specific language model using the NEJM case corpus to improve
+          reasoning accuracy and reduce hallucinations.
+        component: ai
+        area: modeling
+        priority: 2
         status: done
 
 - id: 45
@@ -1538,7 +1553,7 @@ phases:
   area: audit
   dependencies: []
   priority: 2
-  status: todo
+  status: done
   actionable_steps:
     - Run a tool like `safety` or `pip-audit` on dependencies.
     - Document mitigations for any flagged issues.
