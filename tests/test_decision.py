@@ -1,5 +1,8 @@
 from sdb.panel import VirtualPanel
 from sdb.protocol import ActionType
+from sdb.decision import LLMEngine, Context, RuleEngine
+from sdb.llm_client import LLMClient
+import pytest
 
 
 def test_fever_triggers_blood_culture():
@@ -56,3 +59,25 @@ def test_dizziness_triggers_bp_measurement():
     action = panel.deliberate("further details")
     assert action.action_type == ActionType.TEST
     assert action.content == "blood pressure measurement"
+
+
+class NoneClient(LLMClient):
+    def _chat(self, messages, model):
+        return None
+
+
+class BadXMLClient(LLMClient):
+    def _chat(self, messages, model):
+        return "<invalid>"
+
+
+@pytest.mark.parametrize("client", [NoneClient(), BadXMLClient()])
+def test_llm_fallback_matches_rule_engine(client):
+    ctx1 = Context(turn=2, past_infos=["info"], triggered_keywords=set())
+    expected = RuleEngine().decide(ctx1)
+
+    ctx2 = Context(turn=2, past_infos=["info"], triggered_keywords=set())
+    engine = LLMEngine(client=client)
+    action = engine.decide(ctx2)
+
+    assert action == expected
