@@ -1627,6 +1627,7 @@ phases:
     - "  - **Visual Integrity:** Confirm that layouts, styles, and all visual elements render correctly and without defects."
     - "  - **Functional Correctness:** Verify that all interactive elements (buttons, forms, controls) are fully functional and produce the expected outcomes."
     - "  - Document all defects with clear, reproducible steps, noting the environment where the issue was observed."
+    - "  - Install Playwright browsers with `playwright install` before executing automated UI tests."
     - "**3. Verify Responsive Design:**"
     - "  - Using appropriate tools, simulate a wide range of viewport sizes (from small mobile to large desktop)."
     - "  - Ensure the UI layout adapts gracefully to all supported screen sizes without data loss, unreadability, or broken functionality."
