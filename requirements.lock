@@ -191,6 +191,8 @@ googleapis-common-protos==1.59.1
     # via opentelemetry-exporter-jaeger-proto-grpc
 grandalf==0.8
     # via dvc
+greenlet==3.0.3
+    # via playwright
 grpcio==1.73.1
     # via opentelemetry-exporter-jaeger-proto-grpc
 gto==1.7.2
@@ -371,6 +373,8 @@ platformdirs==4.3.8
     #   black
     #   dvc
     #   virtualenv
+playwright==1.43.0
+    # via -r requirements-dev.txt
 pluggy==1.6.0
     # via pytest
 pre-commit==4.2.0
@@ -403,6 +407,8 @@ pydantic-core==2.33.2
     # via pydantic
 pydot==4.0.1
     # via dvc
+pyee==11.1.0
+    # via playwright
 pyflakes==3.4.0
     # via flake8
 pygit2==1.18.0
@@ -417,6 +423,8 @@ pygtrie==2.5.0
     #   dvc-data
     #   scmrepo
     #   sqltrie
+pyjwt==2.8.0
+    # via -r requirements-dev.txt
 pyparsing==3.2.3
     # via
     #   dvc
@@ -559,6 +567,7 @@ typing-extensions==4.14.1
     #   opentelemetry-semantic-conventions
     #   pydantic
     #   pydantic-core
+    #   pyee
     #   sentence-transformers
     #   torch
     #   typer

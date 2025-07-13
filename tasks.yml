@@ -1520,7 +1520,7 @@ phases:
   area: frontend
   dependencies: []
   priority: 3
-  status: todo
+  status: done
   actionable_steps:
     - Implement Playwright or Cypress tests covering keyboard navigation and ARIA labels.
     - Verify dark mode styles in automated tests.
