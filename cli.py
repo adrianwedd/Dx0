@@ -203,12 +203,21 @@ def batch_eval(
     mode: str = typer.Option("unconstrained", help="Run mode"),
     vote_weights: str | None = typer.Option(None, help="JSON string or path with run ID weights for ensemble voting"),
     weights_file: str | None = typer.Option(None, help="JSON or YAML file mapping run IDs to vote weights"),
-    semantic: bool = typer.Option(False, help="Enable semantic retrieval"),
+    semantic: bool = typer.Option(
+        False,
+        "--semantic",
+        "--semantic-retrieval",
+        help="Enable semantic retrieval",
+    ),
     cross_encoder_model: str | None = typer.Option(None, help="Cross-encoder model name for semantic retrieval"),
     retrieval_backend: str | None = typer.Option(None, help="Retrieval plugin name"),
     verbosity: Verbosity = typer.Option(Verbosity.INFO, help="Logging verbosity"),
 ) -> None:
     """Run evaluations for multiple cases concurrently."""
+
+    if isinstance(config, list):
+        # Called programmatically with a list of CLI arguments
+        return main(["batch-eval", *config])
 
     args = SimpleNamespace(
         config=config,
@@ -399,13 +408,13 @@ def fhir_export(
 ) -> None:
     """Serialize a transcript and ordered tests as a FHIR bundle."""
 
-    with open(args.transcript, "r", encoding="utf-8") as fh:
-        transcript = json.load(fh)
-    with open(args.tests, "r", encoding="utf-8") as fh:
-        tests = json.load(fh)
+    with open(transcript, "r", encoding="utf-8") as fh:
+        transcript_data = json.load(fh)
+    with open(tests, "r", encoding="utf-8") as fh:
+        tests_data = json.load(fh)
 
-    bundle = transcript_to_fhir(transcript, patient_id=patient_id)
-    test_bundle = ordered_tests_to_fhir(tests, patient_id=patient_id)
+    bundle = transcript_to_fhir(transcript_data, patient_id=patient_id)
+    test_bundle = ordered_tests_to_fhir(tests_data, patient_id=patient_id)
     bundle["entry"].extend(test_bundle["entry"])
 
     output_text = json.dumps(bundle, indent=2)
@@ -418,8 +427,12 @@ def fhir_export(
 
 @app.command("export-fhir")
 def export_fhir(
-    input: str = typer.Option(..., "-i", help="Path to JSON transcript file"),
-    output: str = typer.Option(..., "-o", help="Destination for the generated bundle"),
+    input: str = typer.Option(
+        ..., "-i", "--input", help="Path to JSON transcript file"
+    ),
+    output: str = typer.Option(
+        ..., "-o", "--output", help="Destination for the generated bundle"
+    ),
     patient_id: str = typer.Option("example", help="Patient identifier used in references"),
 ) -> None:
     """Convert a saved transcript to a FHIR bundle file."""
@@ -468,7 +481,12 @@ def annotate_case(
     db_sqlite: str | None = typer.Option(None, help="Path to case SQLite database"),
     notes: str | None = typer.Option(None, help="Free text notes or path to a text file"),
     test_mapping: str | None = typer.Option(None, help="JSON file mapping aliases to canonical test names"),
-    output: str | None = typer.Option(None, "-o", help="Destination for the annotated case (defaults to annotations/<id>.json)"),
+    output: str | None = typer.Option(
+        None,
+        "-o",
+        "--output",
+        help="Destination for the annotated case (defaults to annotations/<id>.json)",
+    ),
 ) -> None:
     """Add notes or test mappings to a case JSON file."""
 
@@ -521,7 +539,9 @@ def annotate_case(
 
 @app.command("filter-cases")
 def filter_cases(
-    output: str = typer.Option(..., "-o", help="Destination JSON or CSV file for the filtered cases"),
+    output: str = typer.Option(
+        ..., "-o", "--output", help="Destination JSON or CSV file for the filtered cases"
+    ),
     config: str | None = typer.Option(None, help="YAML settings file"),
     db: str | None = typer.Option(None, help="Path to case JSON or CSV file"),
     db_sqlite: str | None = typer.Option(None, help="Path to case SQLite database"),
@@ -670,7 +690,12 @@ def _main(
     cache: bool = typer.Option(False, help="Cache LLM responses"),
     cache_size: int = typer.Option(128, help="Maximum number of responses to keep in the cache"),
     budget_limit: float | None = typer.Option(None, help="Maximum total spend allowed during the session"),
-    semantic: bool = typer.Option(False, help="Enable semantic retrieval for Gatekeeper"),
+    semantic: bool = typer.Option(
+        False,
+        "--semantic",
+        "--semantic-retrieval",
+        help="Enable semantic retrieval for Gatekeeper",
+    ),
     cross_encoder_model: str | None = typer.Option(None, help="Cross-encoder model name for semantic retrieval"),
     retrieval_backend: str | None = typer.Option(None, help="Retrieval plugin name"),
     convert: bool = typer.Option(False, help="Convert raw cases to JSON"),

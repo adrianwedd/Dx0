@@ -232,7 +232,8 @@ kubectl port-forward service/dx0 8000:8000
 
 ## Testing
 
-Install the development dependencies and run the test suite:
+Install the development dependencies and run the test suite. The helper script
+also downloads the browsers used by the Playwright UI tests:
 
 ```bash
 ./scripts/install_dev_deps.sh
