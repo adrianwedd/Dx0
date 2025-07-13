@@ -14,3 +14,7 @@ This repository contains a minimal demonstration of the SDBench framework and th
 - The high‑level roadmap lives in `tasks.yml`. Keep it updated when adding major features.
 - When adding or modifying tasks, summarize the changes in the commit title/body.
   Example: "Add Phase 1–4 backlog tasks to tasks.yml."
+
+## Commit Messages
+- Summarize the purpose of the change in the commit title (e.g., "Fix retrieval cache timing for tests").
+- Reference the relevant task ID from `tasks.yml` in the commit body when applicable.
