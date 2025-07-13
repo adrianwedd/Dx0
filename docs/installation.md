@@ -215,6 +215,21 @@ docker compose up
 
 The Dx0 API is available on [http://localhost:8000](http://localhost:8000), Prometheus on port `9090`, and Grafana on `3000`.
 
+## Kubernetes Setup
+
+If you prefer Kubernetes, apply the manifests in the `k8s` directory:
+
+```bash
+kubectl apply -f k8s/
+```
+
+Port-forward the API service with:
+
+```bash
+kubectl port-forward service/dx0 8000:8000
+```
+
+
 ## Testing
 
 Install the development dependencies and run the test suite:
