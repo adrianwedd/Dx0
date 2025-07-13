@@ -9,4 +9,5 @@ cd "$repo_root"
 pip install -r requirements.lock
 
 # Install browsers for the Playwright test suite
-playwright install chromium
+# Install all supported browsers (chromium, firefox, and webkit)
+playwright install
