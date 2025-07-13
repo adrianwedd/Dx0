@@ -30,7 +30,7 @@ def test_accessibility_roles():
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
         page = browser.new_page()
-        page.goto("http://127.0.0.1:8020/api/v1")
+        page.goto("http://127.0.0.1:8020/static/react/index.html")
         regions = page.locator("[role=region]")
         assert regions.count() >= 4
         page.locator("button").first.focus()
@@ -46,9 +46,34 @@ def test_dark_mode_colors():
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
         page = browser.new_page()
-        page.goto("http://127.0.0.1:8021/api/v1")
+        page.goto("http://127.0.0.1:8021/static/react/index.html")
         page.evaluate("document.documentElement.setAttribute('data-theme','dark')")
         bg = page.evaluate("getComputedStyle(document.body).backgroundColor")
         assert bg == "rgb(36, 36, 36)"
+        browser.close()
+    _stop_server(server, thread)
+
+
+def test_keyboard_navigation_and_aria_labels():
+    """Keyboard tab order matches ARIA labels on login form."""
+    server, thread = _start_server(8022)
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch()
+        page = browser.new_page()
+        page.goto("http://127.0.0.1:8022/static/react/index.html")
+        page.wait_for_selector("input[name='user']")
+        page.keyboard.press("Tab")
+        label = page.evaluate(
+            "document.activeElement.getAttribute('aria-label')"
+        )
+        assert label == "Username"
+        page.keyboard.press("Tab")
+        label = page.evaluate(
+            "document.activeElement.getAttribute('aria-label')"
+        )
+        assert label == "Password"
+        page.keyboard.press("Tab")
+        tag = page.evaluate("document.activeElement.tagName")
+        assert tag == "BUTTON"
         browser.close()
     _stop_server(server, thread)
