@@ -1180,6 +1180,7 @@ def test_batch_eval_records_metrics(tmp_path):
     conn.close()
     assert count == 1
 
+
 def test_batch_eval_hf_local(monkeypatch, tmp_path):
     cases = [{"id": "1", "summary": "s", "full_text": "t"}]
     case_file = tmp_path / "cases.json"
@@ -1245,4 +1246,3 @@ def test_batch_eval_hf_local(monkeypatch, tmp_path):
     ]
     cli.batch_eval(argv)
     assert captured["model"] == "model-path"
-

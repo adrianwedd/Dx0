@@ -3,10 +3,9 @@ import sys
 import types
 import importlib.util
 import pathlib
-import pytest
 
-import logging
 import structlog
+from sdb.protocol import ActionType
 
 sys.modules.setdefault("xmlschema", types.ModuleType("xmlschema"))
 sys.modules.setdefault("opentelemetry", types.ModuleType("opentelemetry"))
@@ -19,6 +18,7 @@ pkg = importlib.util.module_from_spec(spec)
 pkg.__path__ = [str(pkg_path)]
 sys.modules["sdb"] = pkg
 
+
 def configure_logging():
     logging.basicConfig(level=logging.WARNING, format="%(message)s")
     structlog.configure(
@@ -29,6 +29,7 @@ def configure_logging():
             structlog.processors.JSONRenderer(),
         ],
     )
+
 
 configure_logging()
 
@@ -43,7 +44,6 @@ DECISION_SPEC.loader.exec_module(decision)
 LLMEngine = decision.LLMEngine
 Context = decision.Context
 LLMClient = decision.LLMClient
-from sdb.protocol import ActionType
 
 
 class NoneReplyClient(LLMClient):
