@@ -30,5 +30,28 @@ my-estimator = "my_package:my_estimator"
 pip install -e path/to/my_package
 ```
 
-Select the plugin with `--cost-estimator` or set `SDB_COST_ESTIMATOR` in the
-environment. The default `csv` plugin uses `CostEstimator.load_from_csv`.
+## Packaging & Versioning
+
+Define your plugin as a Python package with a `pyproject.toml` file:
+
+```toml
+[project]
+name = "dx0-my-estimator"
+version = "0.1.0"
+dependencies = ["sdb"]
+
+[project.entry-points."dx0.cost_estimators"]
+my-estimator = "my_package:my_estimator"
+```
+
+Increment the version using semantic versioning as the API changes. Build a wheel with `python -m build` when publishing.
+
+## Example Repository Layout
+
+```
+my_estimator/
+├── pyproject.toml
+└── my_package.py
+```
+
+Select the plugin with `--cost-estimator` or set `SDB_COST_ESTIMATOR` in the environment. The default `csv` plugin uses `CostEstimator.load_from_csv`.
