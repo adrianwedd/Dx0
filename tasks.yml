@@ -546,1213 +546,1214 @@ phases:
         priority: 2
         status: done
 
-- id: 45
-  title: Secure Web UI Authentication
-  description: >
-    Replace the hardcoded credential store in `sdb/ui/app.py` with a
-    configuration-based approach using hashed passwords. Credentials should be
-    loaded from environment variables or an external file and verified using a
-    secure hashing algorithm. Add tests covering authentication success and
-    failure cases.
-  component: ui
-  area: security
-  dependencies: []
-  priority: 1
-  status: done
-  actionable_steps:
-    - Remove the `USERS` dict from the codebase.
-    - Load user credentials from a config file or environment variable.
-    - Store and verify passwords using a strong hash (e.g., bcrypt).
-    - Update login logic and add unit tests.
-  acceptance_criteria:
-    - "No plaintext passwords remain in the repository."
-    - "Login succeeds with valid credentials and fails otherwise."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 75
-  title: Enable Pluggable Retrieval Indexes
-  description: >
-    Allow third-party retrieval backends to register via entry points so
-    alternative index implementations can be swapped in without modifying
-    the core code base.
-  component: retrieval
-  area: extensibility
-  dependencies: []
-  priority: 3
-  status: done
-  actionable_steps:
-    - Define `sdb.retrieval_plugins` entry point group.
-    - Refactor built-in indexes as plugins and update documentation.
-  acceptance_criteria:
-    - "Custom retrieval index packages can be discovered and used by Gatekeeper."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 96
-  title: Provide Case Translation Utility
-  description: >
-    Add a script to translate case JSON files using an LLM and store localized
-    versions with language suffixes.
-  component: ingestion
-  area: localization
-  dependencies: []
-  priority: 3
-  status: done
-  actionable_steps:
-    - Create `sdb.ingest.translate` with helper functions.
-    - Write translated files alongside originals like `case_001_es.json`.
-    - Allow `CaseDatabase.load_from_directory` to select files by locale.
-  acceptance_criteria:
-    - "Translations can be generated and loaded by specifying a locale."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 76
-  title: Support Persona-Specific Models
-  description: >
-    Allow each persona in the virtual panel to run with a different LLM model
-    specified via the CLI or settings file.
-  component: panel
-  area: configuration
-  priority: 2
-  status: done
-
-- id: 97
-  title: Extract Budget Management Service
-  description: >
-    Move budgeting logic out of the Orchestrator into a dedicated service
-    responsible for tracking spend and applying limits.
-  component: orchestrator
-  area: refactor
-  dependencies: [19]
-  priority: 3
-  status: done
-  actionable_steps:
-    - Create a `BudgetManager` class with methods for tracking cost and enforcing limits.
-    - Inject `BudgetManager` into `Orchestrator` and remove inline budgeting logic.
-    - Update unit tests to cover the new service.
-  acceptance_criteria:
-    - "Budget enforcement works consistently across all modes."
-    - "Orchestrator tests do not reference budgeting internals."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 65
-  title: Parallel Persona Execution in LLM Engine
-  description: >
-    Allow the LLMEngine to query all persona prompts concurrently when using an
-    AsyncLLMClient.
-  component: panel
-  area: performance
-  dependencies: [47]
-  priority: 3
-  status: done
-  actionable_steps:
-    - Add configuration flag `parallel_personas`.
-    - Dispatch persona prompts concurrently when enabled.
-    - Ensure responses are ordered deterministically.
-    - Write unit tests covering the parallel path.
-  acceptance_criteria:
-    - "adecide executes persona prompts concurrently with AsyncLLMClient."
-    - "Tests validate concurrency and correct action parsing."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 99
-  title: Use SQLite for Lazy Case Loading
-  description: >
-    Implement a SQLite-backed case database and migration script so large
-    datasets don't need to be loaded fully into memory.
-  component: backend
-  area: data
-  dependencies: []
-  priority: 2
-  status: done
-  actionable_steps:
-    - Add SQLiteCaseDatabase class for on-demand fetching
-    - Provide a migration utility to build the SQLite file
-    - Expose config options for selecting the database type
-  acceptance_criteria:
-    - "Cases load lazily from SQLite without excess memory use."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 55
-  title: Add Async LLM Client Support
-  description: >
-    Implement asynchronous LLM client and concurrency utilities for batch
-    evaluation.
-  component: backend
-  area: async
-  dependencies: []
-  priority: 4
-  status: done
-  actionable_steps:
-    - Provide `AsyncLLMClient` with async chat method.
-    - Allow `LLMEngine` and helpers to use async clients.
-    - Run LLM calls concurrently during batch evaluation.
-  acceptance_criteria:
-    - "Async batch evaluation functions handle coroutine case runners."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 46
-  title: Centralize Application Configuration
-  description: >
-    Introduce a Pydantic-based configuration schema loaded from a YAML file.
-    The CLI should accept a `--config` flag to specify the config path, and all
-    modules should access settings via this centralized object.
-  component: cli
-  area: configuration
-  dependencies: []
-  priority: 3
-  status: done
-  actionable_steps:
-    - Define `Settings` dataclass or Pydantic model.
-    - Load settings from YAML at startup.
-    - Refactor modules to read values from the settings object.
-    - Document the configuration options.
-  acceptance_criteria:
-    - "CLI runs with --config and values propagate to orchestrator."
-    - "Default configuration file documented in README."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 47
-  title: Add Async LLMClient for Concurrent Calls
-  description: >
-    Implement an asynchronous variant of `LLMClient` so batch evaluations can
-    perform concurrent LLM requests without blocking the event loop. Update the
-    orchestrator and evaluator as needed to support async operation.
-  component: backend
-  area: performance
-  dependencies: []
-  priority: 2
-  status: done
-  actionable_steps:
-    - Create `AsyncLLMClient` with async `chat` method.
-    - Update `LLMEngine` and evaluation helpers to use async when provided.
-    - Add tests for concurrent execution path.
-  acceptance_criteria:
-    - "Batch evaluations run asynchronously without errors."
-    - "Performance improves when using async client."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 48
-  title: Harden Gatekeeper Query Parsing
-  description: >
-    Improve XML parsing in `Gatekeeper.answer_question` by validating against a
-    strict schema and sanitizing inputs to prevent malformed or malicious
-    queries. Return clear error messages on validation failures.
-  component: gatekeeper
-  area: security
-  dependencies: []
-  priority: 2
-  status: done
-  actionable_steps:
-    - Define an XML schema for allowed queries.
-    - Validate incoming XML against the schema.
-    - Add tests for malformed and malicious inputs.
-  acceptance_criteria:
-    - "Gatekeeper rejects invalid XML with informative errors."
-    - "All new tests pass."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 49
-  title: Standardize Structured Logging
-  description: >
-    Replace ad-hoc logging calls with a unified structured logging framework
-    (e.g., `structlog`). Ensure all modules log consistent fields and severity
-    levels for easier monitoring.
-  component: backend
-  area: observability
-  dependencies: []
-  priority: 4
-  status: done
-  actionable_steps:
-    - Integrate `structlog` and configure JSON output.
-    - Refactor existing `logger` calls across modules.
-    - Update documentation on log consumption.
-  acceptance_criteria:
-    - "Logs are JSON-formatted and include module, level, and message." 
-    - "No remaining plain `print` or inconsistent logger usage." 
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 50
-  title: Plugin System for Panel Personas
-  description: >
-    Allow custom persona chains to be loaded as plugins so researchers can
-    experiment with alternative agent roles without modifying core code.
-  component: panel
-  area: architecture
-  dependencies: []
-  priority: 5
-  status: done
-  actionable_steps:
-    - Define entry point mechanism for persona plugins.
-    - Load persona definitions dynamically at runtime.
-    - Provide example plugin and documentation.
-  acceptance_criteria:
-    - "New personas can be added via plugin without touching core modules."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 51
-  title: Expand Test Coverage for Web UI and Async Evaluation
-  description: >
-    Add integration tests exercising the FastAPI WebSocket endpoints and the
-    asynchronous batch evaluation helpers to prevent regressions.
-  component: tests
-  area: testing
-  dependencies: [47]
-  priority: 3
-  status: done
-  actionable_steps:
-    - Use `httpx.AsyncClient` to test WebSocket flows.
-    - Add tests validating concurrency limits in `async_batch_evaluate`.
-  acceptance_criteria:
-    - "CI runs new tests successfully."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 52
-  title: Switch Embedding Index to FAISS
-  description: >
-    Replace the custom `SentenceTransformerIndex` backend with FAISS for faster
-    and more memory-efficient retrieval when indexing the full CPC dataset.
-  component: retrieval
-  area: performance
-  dependencies: []
-  priority: 4
-  status: done
-  actionable_steps:
-    - Add FAISS as an optional dependency.
-    - Implement FAISS-backed index class.
-    - Provide migration guide for existing embeddings.
-  acceptance_criteria:
-    - "Retrieval latency decreases on large datasets." 
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 53
-  title: Pin Dependency Versions and Document Updates
-  description: >
-    Pin exact dependency versions in `requirements-dev.txt` and document a
-    process for regular security updates using tools like `pip-audit`.
-  component: build
-  area: dependencies
-  dependencies: []
-  priority: 4
-  status: done
-  actionable_steps:
-    - Update requirements files with version pins.
-    - Add a docs section on updating and auditing dependencies.
-  acceptance_criteria:
-    - "`pip install -r requirements-dev.txt` yields deterministic versions."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 54
-  title: Make LLM FileCache Thread-Safe
-  description: >
-    Protect the JSONL cache used by `LLMClient` with file locks to avoid
-    corruption when multiple threads or processes access it concurrently.
-  component: backend
-  area: robustness
-  dependencies: []
-  priority: 3
-  status: done
-  actionable_steps:
-    - Add a cross-platform file lock around cache read/write.
-    - Write tests simulating concurrent access.
-  acceptance_criteria:
-    - "Concurrent LLM calls do not corrupt the cache file."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-- id: 56
-  title: Holistic User Experience Enhancement
-  description: >
-    A comprehensive initiative to improve the SDBench UI's usability, clarity,
-    and accessibility. This epic covers workflow simplification, consistent
-    feedback, and modern visual design.
-  component: ui
-  area: design
-  dependencies: []
-  priority: 2
-  status: done
-  actionable_steps:
-    - Document current UX pain points and desired outcomes.
-  acceptance_criteria:
-    - "UX improvement plan is approved by project stakeholders."
-  command: null
-  epic: User Experience (UX) & Accessibility
-  assigned_to: null
-
-
-- id: 57
-  title: Introduce Guided Actions for Questions and Tests
-  description: >
-    Replace the `test:` text prefix with explicit controls so users can ask
-    questions or order tests without remembering special syntax.
-  component: ui
-  area: frontend
-  dependencies: [56]
-  priority: 3
-  status: done
-  actionable_steps:
-    - Add buttons or a dropdown to select Ask Question, Order Test, or Provide Diagnosis.
-    - Update WebSocket payloads based on the selected control.
-    - Display available tests in a searchable list.
-  acceptance_criteria:
-    - "Users can order a test without typing a prefix."
-    - "Common test names are selectable via UI controls."
-  command: null
-  epic: User Experience (UX) & Accessibility
-  assigned_to: null
-
-- id: 58
-  title: Provide Clear Loading and Error Feedback
-  description: >
-    Ensure the UI always communicates system state during data fetches and
-    WebSocket interactions.
-  component: ui
-  area: frontend
-  dependencies: [56]
-  priority: 3
-  status: done
-  actionable_steps:
-    - Add spinners or skeleton components during case loading and Gatekeeper responses.
-    - Show descriptive error messages when login fails or the WebSocket disconnects.
-    - Display cumulative cost and per-step cost separately.
-  acceptance_criteria:
-    - "Users see a loading indicator whenever data is being fetched."
-    - "Error messages specify the cause of failures."
-    - "Cost updates distinguish between individual and total spending."
-  command: null
-  epic: User Experience (UX) & Accessibility
-  assigned_to: null
-
-- id: 59
-  title: Apply Accessible and Consistent Visual Styling
-  description: >
-    Modernize the interface with a consistent component library and ensure
-    compliance with WCAG 2.1 AA.
-  component: ui
-  area: design
-  dependencies: [56]
-  priority: 3
-  status: done
-  actionable_steps:
-    - Adopt a design system for inputs, buttons, and layout.
-    - Ensure color contrast ratios meet WCAG AA standards.
-    - Add ARIA roles and focus styles for keyboard navigation.
-    - Test keyboard-only navigation across workflows.
-  acceptance_criteria:
-    - "Visual elements follow a consistent style guide."
-    - "Accessibility audit reports no critical WCAG 2.1 violations."
-    - "All interactive elements are keyboard accessible."
-  command: null
-  epic: User Experience (UX) & Accessibility
-  assigned_to: null
-- id: 60
-  title: Add Help Panel and Session Status
-  description: >
-    Display inline usage hints and show the logged-in user with a logout
-    button so clinicians understand available commands and their session
-    state.
-  component: ui
-  area: usability
-  dependencies: [56]
-  priority: 2
-  status: done
-  actionable_steps:
-    - Add a collapsible help panel listing supported chat commands.
-    - Show the current username in the header.
-    - Provide a logout button that ends the session cleanly.
-  acceptance_criteria:
-    - "Users can view command hints without leaving the chat UI."
-    - "Session status displays the active account and allows logout."
-  command: null
-  epic: User Experience (UX) & Accessibility
-  assigned_to: null
-
-- id: 61
-  title: Ensure Responsive and Accessible Layout
-  description: >
-    Improve styling for tablets and add screen reader labels to meet WCAG
-    AA color contrast and accessibility guidelines.
-  component: ui
-  area: accessibility
-  dependencies: [59]
-  priority: 3
-  status: done
-  actionable_steps:
-    - Refactor the grid layout to adapt to tablet viewports.
-    - Adjust the color palette to satisfy contrast ratios.
-    - Label form controls with appropriate ARIA attributes.
-  acceptance_criteria:
-    - "The UI passes WCAG AA contrast checks on tablet screens."
-    - "Screen readers announce labels for all form fields."
-  command: null
-  epic: User Experience (UX) & Accessibility
-  assigned_to: null
-
-- id: 62
-  title: Migrate UI to React with Collapsible Panels
-  description: >
-    Replace the minimal HTML interface with a React front end using a
-    component library and collapsible sections for the case summary and
-    results panels.
-  component: ui
-  area: design
-  dependencies: [56, 59]
-  priority: 3
-  status: done
-  actionable_steps:
-    - Scaffold a React application (e.g., with Vite).
-    - Implement chat, summary, and results panels as collapsible components.
-    - Connect WebSocket communication to the FastAPI backend.
-  acceptance_criteria:
-    - "Clinicians can toggle panels while chatting with the Gatekeeper."
-    - "Build passes lint and unit tests for React components."
-  command: null
-  epic: User Experience (UX) & Accessibility
-  assigned_to: null
-
-- id: 63
-  title: Expire and Revoke Web UI Session Tokens
-  description: >
-    Add expiration timestamps and logout support for tokens issued by the FastAPI UI. Expired tokens should be purged periodically to prevent unlimited access.
-  component: ui
-  area: security
-  dependencies: [45]
-  priority: 3
-  status: done
-  actionable_steps:
-    - Store issue time for each token in a persistent SQLite DB.
-    - Reject tokens older than a configurable TTL.
-    - Provide a `/logout` endpoint to invalidate a token.
-    - Add unit tests covering expiration and logout.
-  acceptance_criteria:
-    - "Tokens expire after the configured TTL."
-    - "Logout removes the token and prevents further WebSocket access."
-  command: null
-  epic: User Experience (UX) & Accessibility
-  assigned_to: null
-
-- id: 64
-  title: Test CI on Multiple Python Versions
-  description: >
-    Update GitHub Actions to run the test suite on Python 3.11 and 3.12 to ensure compatibility across supported interpreters.
-  component: ci
-  area: testing
-  dependencies: [53]
-  priority: 2
-  status: done
-
-  actionable_steps:
-    - Modify `.github/workflows/ci.yml` to include a matrix of Python versions.
-    - Ensure dependency installation succeeds on each version.
-    - Update documentation to list supported Python versions.
-  acceptance_criteria:
-    - "CI passes on both Python 3.11 and 3.12."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-- id: 100
-  title: Persist UI Sessions in SQLite
-  description: >
-    Store session tokens in a SQLite database so that authentication persists
-    across server restarts and can be shared when scaling the UI horizontally.
-  component: ui
-  area: persistence
-  dependencies: [45, 63]
-  priority: 3
-  status: done
-  actionable_steps:
-    - Create a `SessionStore` class backed by SQLite.
-    - Replace the in-memory `SESSIONS` dict with `SessionStore` operations.
-    - Add migration logic to initialize the table on startup.
-    - Update tests for token login and expiration using the new store.
-  acceptance_criteria:
-    - "Sessions remain valid after a server restart."
-    - "Concurrent UI instances share the same token store."
-  command: null
-  epic: User Experience (UX) & Accessibility
-  assigned_to: null
-
-- id: 66
-  title: Validate WebSocket Payloads with Pydantic
-  description: >
-    Define Pydantic models for incoming and outgoing WebSocket messages to
-    ensure fields are present and correctly typed before processing.
-  component: backend
-  area: validation
-  dependencies: [56]
-  priority: 3
-  status: done
-  actionable_steps:
-    - Create `MessageIn` and `MessageOut` models describing the schema.
-    - Parse incoming JSON payloads using `MessageIn.parse_obj`.
-    - Return validation errors to the client when fields are missing.
-    - Update UI code to follow the new schema.
-  acceptance_criteria:
-    - "Invalid messages result in a 400 error with details."
-    - "All WebSocket interactions use typed models."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 67
-  title: Rate Limit Logins and Chat Messages
-  description: >
-    Prevent abuse by limiting failed login attempts and throttling the number
-    of messages each client can send per minute.
-  component: security
-  area: protection
-  dependencies: [63]
-  priority: 2
-  status: done
-  actionable_steps:
-    - Track login failures per IP and temporarily block after 5 attempts.
-    - Enforce a per-session message rate using a sliding window counter.
-    - Expose configuration options for limits in `settings`.
-    - Add tests verifying rate limits trigger correctly.
-  acceptance_criteria:
-    - "Excessive login attempts are rejected with HTTP 429."
-    - "Chat clients cannot flood the server with messages."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 68
-  title: CLI Tool for Managing UI Users
-  description: >
-    Provide a command-line utility to add, delete, and list user accounts used
-    by the Web UI authentication system.
-  component: cli
-  area: tooling
-  dependencies: [45]
-  priority: 3
-  status: done
-  actionable_steps:
-    - Implement a `manage-users` command under `cli.py`.
-    - Support subcommands `add`, `remove`, and `list` with appropriate args.
-    - Store password hashes in the existing credentials file.
-    - Document usage in `docs/installation.md`.
-  acceptance_criteria:
-    - "Administrators can manage accounts without editing YAML manually."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 69
-  title: Optimize Docker Image Size
-  description: >
-    Refactor the Dockerfile to use multi-stage builds and slimmer base images
-    to reduce container size and deployment time.
-  component: docker
-  area: build
-  dependencies: []
-  priority: 2
-  status: done
-  actionable_steps:
-    - Split dependency installation and runtime layers into separate stages.
-    - Remove development tools from the final image.
-    - Document the resulting image size reduction in `docs/installation.md`.
-  acceptance_criteria:
-    - "Final Docker image is under 1 GB."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 70
-  title: Asynchronous Case Ingestion Pipeline
-  description: >
-    Speed up NEJM case collection by downloading articles concurrently and
-    reporting progress with structured logs.
-  component: data
-  area: performance
-  dependencies: []
-  priority: 3
-  status: done
-  actionable_steps:
-    - Use `asyncio` and `aiohttp` to fetch PubMed abstracts in parallel.
-    - Limit concurrency to avoid API rate limits.
-    - Update `collect_cases` and `collect_new_cases` accordingly.
-    - Add a progress indicator during pipeline runs.
-  acceptance_criteria:
-    - "Full dataset download completes significantly faster."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 71
-  title: Retrieval Accuracy Evaluation Script
-  description: >
-    Provide a utility that measures recall and ranking metrics for the
-    retrieval subsystem using the existing case database.
-  component: retrieval
-  area: evaluation
-  dependencies: []
-  priority: 3
-  status: done
-  actionable_steps:
-    - Generate queries from case summaries or questions.
-    - Compare returned passages against ground truth excerpts.
-    - Output recall@k and mean reciprocal rank statistics.
-    - Integrate the script into CI for regression tracking.
-  acceptance_criteria:
-    - "Retrieval evaluation produces metrics for each index type."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 72
-  title: License Compliance Check in CI
-  description: >
-    Add a step to the GitHub Actions workflow that scans project dependencies
-    for incompatible licenses and fails the build when violations are found.
-  component: ci
-  area: compliance
-  dependencies: [53]
-  priority: 2
-  status: done
-  actionable_steps:
-    - Install a tool like `licensecheck` or `pip-licenses` during CI.
-    - Generate a license report for all packages in `requirements.lock`.
-    - Fail the job if any package has a prohibited license type.
-  acceptance_criteria:
-    - "CI blocks merges when disallowed licenses are introduced."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 73
-  title: Add Dark Mode Theme to UI
-  description: >
-    Offer an optional dark color scheme for the React-based interface while
-    preserving WCAG AA contrast requirements.
-  component: ui
-  area: design
-  dependencies: [62]
-  priority: 2
-  status: done
-  actionable_steps:
-    - Define a dark palette in the chosen component library.
-    - Provide a toggle or automatic detection of system theme.
-    - Verify color contrast using accessibility tools.
-  acceptance_criteria:
-    - "Users can switch between light and dark themes."
-    - "All colors pass WCAG AA in both modes."
-  command: null
-  epic: User Experience (UX) & Accessibility
-  assigned_to: null
-
-- id: 74
-  title: Adopt JWT-Based Authentication
-  description: >
-    Replace simple token strings with signed JSON Web Tokens to allow stateless
-    validation and optional refresh tokens for long-lived sessions.
-  component: security
-  area: authentication
-  dependencies: [63]
-  priority: 3
-  status: done
-  actionable_steps:
-    - Issue JWTs with expiration and user claims on login.
-    - Verify token signatures on each request.
-    - Implement refresh token rotation and revocation.
-    - Update tests and docs to reflect the new scheme.
-  acceptance_criteria:
-    - "Web UI authenticates using signed JWTs."
-    - "Refresh tokens can be revoked independently of access tokens."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-
-- id: 98
-  title: Slurm Batch Evaluation Helper
-  description: |
-    Provide a script for submitting `batch_evaluate` jobs as a Slurm array to ease large scale experiments.
-  component: scripts
-  area: performance
-  dependencies: []
-  priority: 3
-  status: done
-  actionable_steps:
-    - Implement `scripts/slurm_batch_eval.py`.
-    - Document usage with an example submission file.
-  acceptance_criteria:
-    - "Users can launch evaluations on HPC clusters using Slurm arrays."
-  command: null
-  epic: Phase 5
-  assigned_to: null
-
-- id: 102
-  title: Enable Retrieval Result Caching
-  description: >
-    Introduce a simple caching layer for retrieval responses to
-    accelerate repeated queries during evaluation.
-  component: retrieval
-  area: performance
-  dependencies: []
-  priority: 3
-  status: done
-  actionable_steps:
-    - Add an in-memory cache keyed by query hash.
-    - Expire cached items after a configurable TTL.
-    - Provide unit tests covering cache hits and misses.
-  acceptance_criteria:
-    - "Retrieval benchmarks show improved throughput with caching enabled."
-  command: null
-  epic: Phase 6
-  assigned_to: null
-
-- id: 77
-  title: Persist Evaluation Results to SQLite
-  description: >
-    Store orchestrator evaluation metrics in a SQLite database so results
-    can be compared across runs.
-  component: evaluation
-  area: data
-  dependencies: []
-  priority: 2
-  status: done
-  actionable_steps:
-    - Define a results schema and migration script.
-    - Update evaluator to write metrics after each run.
-    - Document how to query the database for summaries.
-  acceptance_criteria:
-    - "Historical evaluation data persists between sessions."
-  command: null
-  epic: Phase 6
-  assigned_to: null
-
-- id: 78
-  title: Build Prometheus Metrics Dashboard
-  description: >
-    Create example Grafana dashboards that visualize orchestrator latency
-    and retrieval accuracy using Prometheus metrics.
-  component: observability
-  area: monitoring
-  dependencies: [49]
-  priority: 3
-  status: done
-  actionable_steps:
-    - Provide dashboard JSON files under docs/.
-    - Include setup instructions for Prometheus and Grafana.
-    - Add screenshots to the documentation.
-  acceptance_criteria:
-    - "Dashboards display latency histograms and accuracy trends."
-  command: null
-  epic: Phase 6
-  assigned_to: null
-
-- id: 79
-  title: CLI Command to Export FHIR JSON
-  description: >
-    Add a subcommand that converts saved transcripts into FHIR
-    JSON bundles for interoperability with other tools.
-  component: cli
-  area: tooling
-  dependencies: []
-  priority: 4
-  status: done
-  actionable_steps:
-    - Implement `cli.py export-fhir` with input/output options.
-    - Reuse existing FHIR export functions.
-    - Write unit tests covering the command.
-  acceptance_criteria:
-    - "Users can generate FHIR bundles from transcripts on disk."
-  command: null
-  epic: Phase 6
-  assigned_to: null
-
-- id: 80
-  title: HTTP Connection Pooling
-  description: >
-    Use persistent HTTP sessions for external API calls to reduce
-    latency and system load.
-  component: backend
-  area: performance
-  dependencies: []
-  priority: 3
-  status: done
-  actionable_steps:
-    - Refactor network utilities to reuse an `httpx.Client` instance.
-    - Measure request latency before and after the change.
-  acceptance_criteria:
-    - "Average response time decreases in load tests."
-  command: null
-  epic: Phase 6
-  assigned_to: null
-
-- id: 81
-  title: Cost Estimator Plugin Interface
-  description: >
-    Allow third parties to provide custom cost estimation logic via
-    a plugin entry point.
-  component: cost-estimation
-  area: extensibility
-  dependencies: []
-  priority: 4
-  status: done
-  actionable_steps:
-    - Define an entry point group `dx0.cost_estimators`.
-    - Load the selected estimator from plugins at runtime.
-    - Document how to implement a custom estimator.
-  acceptance_criteria:
-    - "Custom estimator plugins can override default pricing logic."
-  command: null
-  epic: Phase 6
-  assigned_to: null
-
-- id: 82
-  title: Group-Based User Roles
-  description: >
-    Add support for assigning users to groups with specific permissions
-    in the web UI.
-  component: ui
-  area: authentication
-  dependencies: [68]
-  priority: 3
-  status: done
-  actionable_steps:
-    - Extend the credentials model with a group field.
-    - Enforce permissions when accessing protected endpoints.
-    - Provide an admin interface to manage groups.
-  acceptance_criteria:
-    - "API endpoints reject users lacking required roles."
-  command: null
-  epic: Phase 6
-  assigned_to: null
-
-- id: 83
-  title: Ephemeral CLI Session Tokens
-  description: >
-    Issue short-lived tokens for command-line sessions to improve
-    security when running batch evaluations.
-  component: cli
-  area: security
-  dependencies: [74]
-  priority: 2
-  status: done
-  actionable_steps:
-    - Add `dx0 login` command that obtains a token via the API.
-    - Automatically refresh the token when expired.
-    - Document best practices for token storage.
-  acceptance_criteria:
-    - "CLI commands fail gracefully when the token expires."
-  command: null
-  epic: Phase 6
-  assigned_to: null
-
-- id: 84
-  title: Document Advanced Orchestrator Settings
-  description: >
-    Expand the README with guidance on tuning orchestrator parameters
-    and integrating custom panels.
-  component: docs
-  area: documentation
-  dependencies: []
-  priority: 3
-  status: done
-  actionable_steps:
-    - Describe configuration options for budgets and personas.
-    - Provide examples for plugin-based panels.
-  acceptance_criteria:
-    - "Users can customize orchestrator behavior following the docs."
-  command: null
-  epic: Phase 6
-  assigned_to: null
-
-- id: 85
-  title: Pydantic Schema for Plugin Metadata
-  description: >
-    Define a typed model describing plugin metadata to validate
-    loaded entry points at startup.
-  component: plugins
-  area: validation
-  dependencies: []
-  priority: 2
-  status: done
-  actionable_steps:
-    - Create `PluginInfo` model with name, version, and entry point.
-    - Validate registered plugins before use.
-    - Fail startup if required fields are missing.
-  acceptance_criteria:
-    - "Invalid plugins are rejected with a clear error message."
-  command: null
-  epic: Phase 6
-  assigned_to: null
-
-- id: 86
-  title: Deployment Automation
-  description: >
-    Create container orchestration scripts and CI pipelines for publishing release images.
-  component: devops
-  area: deployment
-  dependencies: []
-  priority: 3
-  status: done
-  actionable_steps:
-    - Create Docker Compose or Kubernetes scripts.
-    - Add a CI workflow that builds and publishes Docker images.
-  acceptance_criteria:
-    - "Services deploy via orchestration scripts."
-    - "CI publishes release images automatically."
-  command: null
-  epic: Phase 6
-  assigned_to: null
-
-- id: 87
-  title: UI Test Coverage
-  description: >
-    Add end-to-end tests for accessibility and dark-mode styling.
-  component: testing
-  area: frontend
-  dependencies: []
-  priority: 3
-  status: done
-  actionable_steps:
-    - Implement Playwright or Cypress tests covering keyboard navigation and ARIA labels.
-    - Verify dark mode styles in automated tests.
-  acceptance_criteria:
-    - "UI tests pass validating accessibility and themes."
-  command: null
-  epic: Phase 6
-  assigned_to: null
-
-- id: 88
-  title: Security Review
-  description: >
-    Perform a dependency audit and document threat mitigations.
-  component: security
-  area: audit
-  dependencies: []
-  priority: 2
-  status: done
-  actionable_steps:
-    - Run a tool like `safety` or `pip-audit` on dependencies.
-    - Document mitigations for any flagged issues.
-    - Add threat-model documentation for authentication, data storage, and logging.
-  acceptance_criteria:
-    - "Dependency audit reports are stored with documented mitigations."
-    - "Threat model documentation covers key security aspects."
-  command: null
-  epic: Phase 6
-  assigned_to: null
-
-- id: 89
-  title: Plugin Ecosystem Guide
-  description: >
-    Document best practices for developing and packaging plugins.
-  component: docs
-  area: plugins
-  dependencies: []
-  priority: 3
-  status: done
-  actionable_steps:
-    - Expand plugin documentation with packaging and versioning advice.
-    - Provide example repositories for retrieval, persona, and cost estimator plugins.
-  acceptance_criteria:
-    - "Developers can follow the guide to build compatible plugins."
-  command: null
-  epic: Phase 6
-  assigned_to: null
-
-- id: 90
-  title: Performance Benchmarks
-  description: >
-    Measure latency of services under load and supply dashboard templates.
-  component: performance
-  area: monitoring
-  dependencies: []
-  priority: 3
-  status: done
-  actionable_steps:
-    - Benchmark retrieval, LLM calls, and caching latency.
-    - Provide scripts and Grafana dashboards for monitoring.
-    - Store baseline results so regressions can be detected.
-  acceptance_criteria:
-    - "Benchmark results identify performance bottlenecks."
-    - "Grafana dashboards visualize service latency."
-    - "Baseline metrics persist for comparison across releases."
-  command: null
-  epic: Phase 6
-  assigned_to: null
-
-- id: 101
-  title: UI Validation and Quality Assurance
-  description: >
-    Perform a comprehensive quality assurance pass on the user interface. This
-    involves structured testing to ensure visual consistency, functional
-    correctness, and adherence to accessibility standards across all supported
-    platforms.
-  component: UI/UX
-  area: Quality Assurance
-  dependencies: []
-  priority: 2
-  status: pending
-  command: null
-  task_id: QA-UI-VALIDATION-1
-  actionable_steps:
-    - "**1. Define Testing Scope:**"
-    - "  - Document the official list of supported environments (e.g., browsers, operating systems, device types)."
-    - "  - Compile a checklist of all user-facing views, components, and critical user flows to be tested."
-    - "**2. Execute Functional & Visual Testing:**"
-    - "  - For each supported environment, methodically execute the testing checklist."
-    - "  - **Visual Integrity:** Confirm that layouts, styles, and all visual elements render correctly and without defects."
-    - "  - **Functional Correctness:** Verify that all interactive elements (buttons, forms, controls) are fully functional and produce the expected outcomes."
-    - "  - Document all defects with clear, reproducible steps, noting the environment where the issue was observed."
-    - "  - Install Playwright browsers with `playwright install` before executing automated UI tests."
-    - "**3. Verify Responsive Design:**"
-    - "  - Using appropriate tools, simulate a wide range of viewport sizes (from small mobile to large desktop)."
-    - "  - Ensure the UI layout adapts gracefully to all supported screen sizes without data loss, unreadability, or broken functionality."
-    - "**4. Conduct Accessibility Audit:**"
-    - "  - Using an industry-standard automated tool, run a full accessibility scan on all primary UI templates."
-    - "  - Manually review key user flows for keyboard-only navigation and screen reader compatibility."
-    - "  - Catalog all identified accessibility violations, from critical errors to minor warnings."
-    - "**5. Remediate and Re-validate:**"
-    - "  - Prioritize and resolve all identified defects and accessibility violations."
-    - "  - Re-run the relevant tests after fixes are applied to confirm that the issues are resolved and no new regressions were introduced."
-  acceptance_criteria:
-    - "- **Platform Consistency:** The user interface must be functionally and visually consistent across all officially supported platforms."
-    - "- **Responsive Integrity:** All UI elements must be usable and readable across the full range of specified viewport sizes."
-    - "- **Accessibility Compliance:** The system must meet a pre-defined accessibility standard (e.g., WCAG 2.1 AA) with no critical violations."
-    - "- **Functional Correctness:** All user flows can be completed successfully without encountering errors."
-    - "- **Defect Resolution:** All critical or high-priority defects discovered during the QA process have been resolved and verified."
-  epic: System Validation
-  assigned_to: null
-- id: 201
-  title: "Pin and Audit All Project Dependencies"
-  description: >
-      The project's dependencies in `requirements.txt` and `pyproject.toml` are not pinned to specific versions. This creates a risk of breaking changes from upstream libraries and makes the project difficult to reproduce reliably. All dependencies should be pinned to their latest stable versions, and `pip-audit` should be integrated into the CI/CD pipeline to continuously scan for vulnerabilities.
-  component: build
-  area: dependencies
-  priority: 1
-  status: pending
-  epic: Phase 1
-  assigned_to: null
-- id: 202
-  title: "Establish a Comprehensive Test Suite"
-  description: >
-      The project currently lacks any form of automated testing. A comprehensive test suite should be established using a framework like `pytest`. This should include unit tests for business logic, integration tests for API endpoints, and end-to-end tests for user flows. A good starting point would be to add tests for the CPT code lookup and cost estimation logic.
-  component: testing
-  area: enhancement
-  priority: 1
-  status: pending
-  epic: Phase 1
-  assigned_to: null
-- id: 203
-  title: "Implement Centralized Configuration Management"
-  description: >
-      The project has hardcoded configuration values scattered throughout the codebase. This makes it difficult to manage different environments (development, staging, production). A centralized configuration management system should be implemented. A good choice would be to use a library like `python-dotenv` to load configuration from environment variables and `.env` files.
-  component: backend
-  area: refactor
-  priority: 2
-  status: pending
-  epic: Phase 1
-  assigned_to: null
-- id: 204
-  title: "Harden XML Parsing in Gatekeeper with defusedxml"
-  description: >
-      The `sdb/gatekeeper.py` file uses the standard `xml.etree.ElementTree` library for parsing, which is vulnerable to XML External Entity (XXE) attacks and other XML-based threats. This should be replaced with the `defusedxml` library, which is a drop-in replacement that provides hardened XML parsing.
-  component: backend
-  area: security
-  priority: 1
-  status: pending
-  epic: Phase 2
-  assigned_to: null
-- id: 205
-  title: "Refactor Session Management to Use a Scalable Solution"
-  description: >
-      The UI backend in `sdb/ui/app.py` uses global variables for session management, which is not thread-safe and will not scale to multiple users. This should be refactored to use a more robust session management solution, such as `Flask-Session`, which can be configured to use a variety of backends like Redis or a database.
-  component: backend
-  area: refactor
-  priority: 1
-  status: pending
-  epic: Phase 2
-  assigned_to: null
-- id: 206
-  title: "Implement Structured and Consistent Logging"
-  description: >
-      The project's logging is ad-hoc and inconsistent. A structured logging library, such as `structlog`, should be implemented to provide consistent, machine-readable logs. This will make it easier to debug issues and monitor the application's health.
-  component: backend
-  area: enhancement
-  priority: 2
-  status: pending
-  epic: Phase 2
-  assigned_to: null
-- id: 207
-  title: "Update OpenAI API Usage to the Latest Version"
-  description: >
-      The `sdb/cpt_lookup.py` file uses the deprecated `openai.ChatCompletion.create` method. This should be updated to use the new `client.chat.completions.create` method from the latest version of the `openai` library. All API calls should be updated to match the new syntax and data structures.
-  component: backend
-  area: refactor
-  priority: 1
-  status: pending
-  epic: Phase 3
-  assigned_to: null
-- id: 208
-  title: "Consolidate Frontend into a Single, Modern UI"
-  description: >
-      The project has two separate frontend directories, `frontend/` and `webui/`. This is confusing and increases the maintenance overhead. The two frontends should be merged into a single, modern UI. The `webui/` directory appears to be the more modern of the two, so it should be used as the base, and any necessary features from `frontend/` should be ported over.
-  component: frontend
-  area: refactor
-  priority: 1
-  status: pending
-  epic: Phase 3
-  assigned_to: null
-- id: 209
-  title: "Improve Cost Estimation with a Predictive Model"
-  description: >
-      When a CPT code is not found, the cost estimator falls back to a simple average of known prices, which can be inaccurate. A more sophisticated model should be implemented to provide a more accurate estimate. A good first step would be to train a simple linear regression model on the existing CPT codes and their prices. In the long term, a more advanced machine learning model could be developed.
-  component: backend
-  area: enhancement
-  priority: 2
-  status: pending
-  epic: Phase 3
-  assigned_to: null
-- id: 210
-  title: "Create Comprehensive API and User Documentation"
-  description: >
-      The project's documentation is incomplete and outdated. It should be updated to reflect the current state of the code and expanded to cover all of the project's features in detail. This should include both user-facing documentation for the frontend and technical documentation for the API endpoints.
-  component: documentation
-  area: enhancement
-  priority: 2
-  status: pending
-  epic: Phase 4
-  assigned_to: null
-- id: 211
-  title: "Improve Error Handling and User Feedback"
-  description: >
-      The error handling in the application is basic. More specific exception handling should be implemented throughout the backend, and the frontend should be updated to display user-friendly error messages. This will improve the user experience and make it easier to diagnose problems.
-  component: frontend
-  area: enhancement
-  priority: 3
-  status: pending
-  epic: Phase 4
-  assigned_to: null
+backlog:
+  - id: 45
+    title: Secure Web UI Authentication
+    description: >
+      Replace the hardcoded credential store in `sdb/ui/app.py` with a
+      configuration-based approach using hashed passwords. Credentials should be
+      loaded from environment variables or an external file and verified using a
+      secure hashing algorithm. Add tests covering authentication success and
+      failure cases.
+    component: ui
+    area: security
+    dependencies: []
+    priority: 1
+    status: done
+    actionable_steps:
+      - Remove the `USERS` dict from the codebase.
+      - Load user credentials from a config file or environment variable.
+      - Store and verify passwords using a strong hash (e.g., bcrypt).
+      - Update login logic and add unit tests.
+    acceptance_criteria:
+      - "No plaintext passwords remain in the repository."
+      - "Login succeeds with valid credentials and fails otherwise."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 75
+    title: Enable Pluggable Retrieval Indexes
+    description: >
+      Allow third-party retrieval backends to register via entry points so
+      alternative index implementations can be swapped in without modifying
+      the core code base.
+    component: retrieval
+    area: extensibility
+    dependencies: []
+    priority: 3
+    status: done
+    actionable_steps:
+      - Define `sdb.retrieval_plugins` entry point group.
+      - Refactor built-in indexes as plugins and update documentation.
+    acceptance_criteria:
+      - "Custom retrieval index packages can be discovered and used by Gatekeeper."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 96
+    title: Provide Case Translation Utility
+    description: >
+      Add a script to translate case JSON files using an LLM and store localized
+      versions with language suffixes.
+    component: ingestion
+    area: localization
+    dependencies: []
+    priority: 3
+    status: done
+    actionable_steps:
+      - Create `sdb.ingest.translate` with helper functions.
+      - Write translated files alongside originals like `case_001_es.json`.
+      - Allow `CaseDatabase.load_from_directory` to select files by locale.
+    acceptance_criteria:
+      - "Translations can be generated and loaded by specifying a locale."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 76
+    title: Support Persona-Specific Models
+    description: >
+      Allow each persona in the virtual panel to run with a different LLM model
+      specified via the CLI or settings file.
+    component: panel
+    area: configuration
+    priority: 2
+    status: done
+  
+  - id: 97
+    title: Extract Budget Management Service
+    description: >
+      Move budgeting logic out of the Orchestrator into a dedicated service
+      responsible for tracking spend and applying limits.
+    component: orchestrator
+    area: refactor
+    dependencies: [19]
+    priority: 3
+    status: done
+    actionable_steps:
+      - Create a `BudgetManager` class with methods for tracking cost and enforcing limits.
+      - Inject `BudgetManager` into `Orchestrator` and remove inline budgeting logic.
+      - Update unit tests to cover the new service.
+    acceptance_criteria:
+      - "Budget enforcement works consistently across all modes."
+      - "Orchestrator tests do not reference budgeting internals."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 65
+    title: Parallel Persona Execution in LLM Engine
+    description: >
+      Allow the LLMEngine to query all persona prompts concurrently when using an
+      AsyncLLMClient.
+    component: panel
+    area: performance
+    dependencies: [47]
+    priority: 3
+    status: done
+    actionable_steps:
+      - Add configuration flag `parallel_personas`.
+      - Dispatch persona prompts concurrently when enabled.
+      - Ensure responses are ordered deterministically.
+      - Write unit tests covering the parallel path.
+    acceptance_criteria:
+      - "adecide executes persona prompts concurrently with AsyncLLMClient."
+      - "Tests validate concurrency and correct action parsing."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 99
+    title: Use SQLite for Lazy Case Loading
+    description: >
+      Implement a SQLite-backed case database and migration script so large
+      datasets don't need to be loaded fully into memory.
+    component: backend
+    area: data
+    dependencies: []
+    priority: 2
+    status: done
+    actionable_steps:
+      - Add SQLiteCaseDatabase class for on-demand fetching
+      - Provide a migration utility to build the SQLite file
+      - Expose config options for selecting the database type
+    acceptance_criteria:
+      - "Cases load lazily from SQLite without excess memory use."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 55
+    title: Add Async LLM Client Support
+    description: >
+      Implement asynchronous LLM client and concurrency utilities for batch
+      evaluation.
+    component: backend
+    area: async
+    dependencies: []
+    priority: 4
+    status: done
+    actionable_steps:
+      - Provide `AsyncLLMClient` with async chat method.
+      - Allow `LLMEngine` and helpers to use async clients.
+      - Run LLM calls concurrently during batch evaluation.
+    acceptance_criteria:
+      - "Async batch evaluation functions handle coroutine case runners."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 46
+    title: Centralize Application Configuration
+    description: >
+      Introduce a Pydantic-based configuration schema loaded from a YAML file.
+      The CLI should accept a `--config` flag to specify the config path, and all
+      modules should access settings via this centralized object.
+    component: cli
+    area: configuration
+    dependencies: []
+    priority: 3
+    status: done
+    actionable_steps:
+      - Define `Settings` dataclass or Pydantic model.
+      - Load settings from YAML at startup.
+      - Refactor modules to read values from the settings object.
+      - Document the configuration options.
+    acceptance_criteria:
+      - "CLI runs with --config and values propagate to orchestrator."
+      - "Default configuration file documented in README."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 47
+    title: Add Async LLMClient for Concurrent Calls
+    description: >
+      Implement an asynchronous variant of `LLMClient` so batch evaluations can
+      perform concurrent LLM requests without blocking the event loop. Update the
+      orchestrator and evaluator as needed to support async operation.
+    component: backend
+    area: performance
+    dependencies: []
+    priority: 2
+    status: done
+    actionable_steps:
+      - Create `AsyncLLMClient` with async `chat` method.
+      - Update `LLMEngine` and evaluation helpers to use async when provided.
+      - Add tests for concurrent execution path.
+    acceptance_criteria:
+      - "Batch evaluations run asynchronously without errors."
+      - "Performance improves when using async client."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 48
+    title: Harden Gatekeeper Query Parsing
+    description: >
+      Improve XML parsing in `Gatekeeper.answer_question` by validating against a
+      strict schema and sanitizing inputs to prevent malformed or malicious
+      queries. Return clear error messages on validation failures.
+    component: gatekeeper
+    area: security
+    dependencies: []
+    priority: 2
+    status: done
+    actionable_steps:
+      - Define an XML schema for allowed queries.
+      - Validate incoming XML against the schema.
+      - Add tests for malformed and malicious inputs.
+    acceptance_criteria:
+      - "Gatekeeper rejects invalid XML with informative errors."
+      - "All new tests pass."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 49
+    title: Standardize Structured Logging
+    description: >
+      Replace ad-hoc logging calls with a unified structured logging framework
+      (e.g., `structlog`). Ensure all modules log consistent fields and severity
+      levels for easier monitoring.
+    component: backend
+    area: observability
+    dependencies: []
+    priority: 4
+    status: done
+    actionable_steps:
+      - Integrate `structlog` and configure JSON output.
+      - Refactor existing `logger` calls across modules.
+      - Update documentation on log consumption.
+    acceptance_criteria:
+      - "Logs are JSON-formatted and include module, level, and message." 
+      - "No remaining plain `print` or inconsistent logger usage." 
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 50
+    title: Plugin System for Panel Personas
+    description: >
+      Allow custom persona chains to be loaded as plugins so researchers can
+      experiment with alternative agent roles without modifying core code.
+    component: panel
+    area: architecture
+    dependencies: []
+    priority: 5
+    status: done
+    actionable_steps:
+      - Define entry point mechanism for persona plugins.
+      - Load persona definitions dynamically at runtime.
+      - Provide example plugin and documentation.
+    acceptance_criteria:
+      - "New personas can be added via plugin without touching core modules."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 51
+    title: Expand Test Coverage for Web UI and Async Evaluation
+    description: >
+      Add integration tests exercising the FastAPI WebSocket endpoints and the
+      asynchronous batch evaluation helpers to prevent regressions.
+    component: tests
+    area: testing
+    dependencies: [47]
+    priority: 3
+    status: done
+    actionable_steps:
+      - Use `httpx.AsyncClient` to test WebSocket flows.
+      - Add tests validating concurrency limits in `async_batch_evaluate`.
+    acceptance_criteria:
+      - "CI runs new tests successfully."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 52
+    title: Switch Embedding Index to FAISS
+    description: >
+      Replace the custom `SentenceTransformerIndex` backend with FAISS for faster
+      and more memory-efficient retrieval when indexing the full CPC dataset.
+    component: retrieval
+    area: performance
+    dependencies: []
+    priority: 4
+    status: done
+    actionable_steps:
+      - Add FAISS as an optional dependency.
+      - Implement FAISS-backed index class.
+      - Provide migration guide for existing embeddings.
+    acceptance_criteria:
+      - "Retrieval latency decreases on large datasets." 
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 53
+    title: Pin Dependency Versions and Document Updates
+    description: >
+      Pin exact dependency versions in `requirements-dev.txt` and document a
+      process for regular security updates using tools like `pip-audit`.
+    component: build
+    area: dependencies
+    dependencies: []
+    priority: 4
+    status: done
+    actionable_steps:
+      - Update requirements files with version pins.
+      - Add a docs section on updating and auditing dependencies.
+    acceptance_criteria:
+      - "`pip install -r requirements-dev.txt` yields deterministic versions."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 54
+    title: Make LLM FileCache Thread-Safe
+    description: >
+      Protect the JSONL cache used by `LLMClient` with file locks to avoid
+      corruption when multiple threads or processes access it concurrently.
+    component: backend
+    area: robustness
+    dependencies: []
+    priority: 3
+    status: done
+    actionable_steps:
+      - Add a cross-platform file lock around cache read/write.
+      - Write tests simulating concurrent access.
+    acceptance_criteria:
+      - "Concurrent LLM calls do not corrupt the cache file."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  - id: 56
+    title: Holistic User Experience Enhancement
+    description: >
+      A comprehensive initiative to improve the SDBench UI's usability, clarity,
+      and accessibility. This epic covers workflow simplification, consistent
+      feedback, and modern visual design.
+    component: ui
+    area: design
+    dependencies: []
+    priority: 2
+    status: done
+    actionable_steps:
+      - Document current UX pain points and desired outcomes.
+    acceptance_criteria:
+      - "UX improvement plan is approved by project stakeholders."
+    command: null
+    epic: User Experience (UX) & Accessibility
+    assigned_to: null
+  
+  
+  - id: 57
+    title: Introduce Guided Actions for Questions and Tests
+    description: >
+      Replace the `test:` text prefix with explicit controls so users can ask
+      questions or order tests without remembering special syntax.
+    component: ui
+    area: frontend
+    dependencies: [56]
+    priority: 3
+    status: done
+    actionable_steps:
+      - Add buttons or a dropdown to select Ask Question, Order Test, or Provide Diagnosis.
+      - Update WebSocket payloads based on the selected control.
+      - Display available tests in a searchable list.
+    acceptance_criteria:
+      - "Users can order a test without typing a prefix."
+      - "Common test names are selectable via UI controls."
+    command: null
+    epic: User Experience (UX) & Accessibility
+    assigned_to: null
+  
+  - id: 58
+    title: Provide Clear Loading and Error Feedback
+    description: >
+      Ensure the UI always communicates system state during data fetches and
+      WebSocket interactions.
+    component: ui
+    area: frontend
+    dependencies: [56]
+    priority: 3
+    status: done
+    actionable_steps:
+      - Add spinners or skeleton components during case loading and Gatekeeper responses.
+      - Show descriptive error messages when login fails or the WebSocket disconnects.
+      - Display cumulative cost and per-step cost separately.
+    acceptance_criteria:
+      - "Users see a loading indicator whenever data is being fetched."
+      - "Error messages specify the cause of failures."
+      - "Cost updates distinguish between individual and total spending."
+    command: null
+    epic: User Experience (UX) & Accessibility
+    assigned_to: null
+  
+  - id: 59
+    title: Apply Accessible and Consistent Visual Styling
+    description: >
+      Modernize the interface with a consistent component library and ensure
+      compliance with WCAG 2.1 AA.
+    component: ui
+    area: design
+    dependencies: [56]
+    priority: 3
+    status: done
+    actionable_steps:
+      - Adopt a design system for inputs, buttons, and layout.
+      - Ensure color contrast ratios meet WCAG AA standards.
+      - Add ARIA roles and focus styles for keyboard navigation.
+      - Test keyboard-only navigation across workflows.
+    acceptance_criteria:
+      - "Visual elements follow a consistent style guide."
+      - "Accessibility audit reports no critical WCAG 2.1 violations."
+      - "All interactive elements are keyboard accessible."
+    command: null
+    epic: User Experience (UX) & Accessibility
+    assigned_to: null
+  - id: 60
+    title: Add Help Panel and Session Status
+    description: >
+      Display inline usage hints and show the logged-in user with a logout
+      button so clinicians understand available commands and their session
+      state.
+    component: ui
+    area: usability
+    dependencies: [56]
+    priority: 2
+    status: done
+    actionable_steps:
+      - Add a collapsible help panel listing supported chat commands.
+      - Show the current username in the header.
+      - Provide a logout button that ends the session cleanly.
+    acceptance_criteria:
+      - "Users can view command hints without leaving the chat UI."
+      - "Session status displays the active account and allows logout."
+    command: null
+    epic: User Experience (UX) & Accessibility
+    assigned_to: null
+  
+  - id: 61
+    title: Ensure Responsive and Accessible Layout
+    description: >
+      Improve styling for tablets and add screen reader labels to meet WCAG
+      AA color contrast and accessibility guidelines.
+    component: ui
+    area: accessibility
+    dependencies: [59]
+    priority: 3
+    status: done
+    actionable_steps:
+      - Refactor the grid layout to adapt to tablet viewports.
+      - Adjust the color palette to satisfy contrast ratios.
+      - Label form controls with appropriate ARIA attributes.
+    acceptance_criteria:
+      - "The UI passes WCAG AA contrast checks on tablet screens."
+      - "Screen readers announce labels for all form fields."
+    command: null
+    epic: User Experience (UX) & Accessibility
+    assigned_to: null
+  
+  - id: 62
+    title: Migrate UI to React with Collapsible Panels
+    description: >
+      Replace the minimal HTML interface with a React front end using a
+      component library and collapsible sections for the case summary and
+      results panels.
+    component: ui
+    area: design
+    dependencies: [56, 59]
+    priority: 3
+    status: done
+    actionable_steps:
+      - Scaffold a React application (e.g., with Vite).
+      - Implement chat, summary, and results panels as collapsible components.
+      - Connect WebSocket communication to the FastAPI backend.
+    acceptance_criteria:
+      - "Clinicians can toggle panels while chatting with the Gatekeeper."
+      - "Build passes lint and unit tests for React components."
+    command: null
+    epic: User Experience (UX) & Accessibility
+    assigned_to: null
+  
+  - id: 63
+    title: Expire and Revoke Web UI Session Tokens
+    description: >
+      Add expiration timestamps and logout support for tokens issued by the FastAPI UI. Expired tokens should be purged periodically to prevent unlimited access.
+    component: ui
+    area: security
+    dependencies: [45]
+    priority: 3
+    status: done
+    actionable_steps:
+      - Store issue time for each token in a persistent SQLite DB.
+      - Reject tokens older than a configurable TTL.
+      - Provide a `/logout` endpoint to invalidate a token.
+      - Add unit tests covering expiration and logout.
+    acceptance_criteria:
+      - "Tokens expire after the configured TTL."
+      - "Logout removes the token and prevents further WebSocket access."
+    command: null
+    epic: User Experience (UX) & Accessibility
+    assigned_to: null
+  
+  - id: 64
+    title: Test CI on Multiple Python Versions
+    description: >
+      Update GitHub Actions to run the test suite on Python 3.11 and 3.12 to ensure compatibility across supported interpreters.
+    component: ci
+    area: testing
+    dependencies: [53]
+    priority: 2
+    status: done
+  
+    actionable_steps:
+      - Modify `.github/workflows/ci.yml` to include a matrix of Python versions.
+      - Ensure dependency installation succeeds on each version.
+      - Update documentation to list supported Python versions.
+    acceptance_criteria:
+      - "CI passes on both Python 3.11 and 3.12."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  - id: 100
+    title: Persist UI Sessions in SQLite
+    description: >
+      Store session tokens in a SQLite database so that authentication persists
+      across server restarts and can be shared when scaling the UI horizontally.
+    component: ui
+    area: persistence
+    dependencies: [45, 63]
+    priority: 3
+    status: done
+    actionable_steps:
+      - Create a `SessionStore` class backed by SQLite.
+      - Replace the in-memory `SESSIONS` dict with `SessionStore` operations.
+      - Add migration logic to initialize the table on startup.
+      - Update tests for token login and expiration using the new store.
+    acceptance_criteria:
+      - "Sessions remain valid after a server restart."
+      - "Concurrent UI instances share the same token store."
+    command: null
+    epic: User Experience (UX) & Accessibility
+    assigned_to: null
+  
+  - id: 66
+    title: Validate WebSocket Payloads with Pydantic
+    description: >
+      Define Pydantic models for incoming and outgoing WebSocket messages to
+      ensure fields are present and correctly typed before processing.
+    component: backend
+    area: validation
+    dependencies: [56]
+    priority: 3
+    status: done
+    actionable_steps:
+      - Create `MessageIn` and `MessageOut` models describing the schema.
+      - Parse incoming JSON payloads using `MessageIn.parse_obj`.
+      - Return validation errors to the client when fields are missing.
+      - Update UI code to follow the new schema.
+    acceptance_criteria:
+      - "Invalid messages result in a 400 error with details."
+      - "All WebSocket interactions use typed models."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 67
+    title: Rate Limit Logins and Chat Messages
+    description: >
+      Prevent abuse by limiting failed login attempts and throttling the number
+      of messages each client can send per minute.
+    component: security
+    area: protection
+    dependencies: [63]
+    priority: 2
+    status: done
+    actionable_steps:
+      - Track login failures per IP and temporarily block after 5 attempts.
+      - Enforce a per-session message rate using a sliding window counter.
+      - Expose configuration options for limits in `settings`.
+      - Add tests verifying rate limits trigger correctly.
+    acceptance_criteria:
+      - "Excessive login attempts are rejected with HTTP 429."
+      - "Chat clients cannot flood the server with messages."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 68
+    title: CLI Tool for Managing UI Users
+    description: >
+      Provide a command-line utility to add, delete, and list user accounts used
+      by the Web UI authentication system.
+    component: cli
+    area: tooling
+    dependencies: [45]
+    priority: 3
+    status: done
+    actionable_steps:
+      - Implement a `manage-users` command under `cli.py`.
+      - Support subcommands `add`, `remove`, and `list` with appropriate args.
+      - Store password hashes in the existing credentials file.
+      - Document usage in `docs/installation.md`.
+    acceptance_criteria:
+      - "Administrators can manage accounts without editing YAML manually."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 69
+    title: Optimize Docker Image Size
+    description: >
+      Refactor the Dockerfile to use multi-stage builds and slimmer base images
+      to reduce container size and deployment time.
+    component: docker
+    area: build
+    dependencies: []
+    priority: 2
+    status: done
+    actionable_steps:
+      - Split dependency installation and runtime layers into separate stages.
+      - Remove development tools from the final image.
+      - Document the resulting image size reduction in `docs/installation.md`.
+    acceptance_criteria:
+      - "Final Docker image is under 1 GB."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 70
+    title: Asynchronous Case Ingestion Pipeline
+    description: >
+      Speed up NEJM case collection by downloading articles concurrently and
+      reporting progress with structured logs.
+    component: data
+    area: performance
+    dependencies: []
+    priority: 3
+    status: done
+    actionable_steps:
+      - Use `asyncio` and `aiohttp` to fetch PubMed abstracts in parallel.
+      - Limit concurrency to avoid API rate limits.
+      - Update `collect_cases` and `collect_new_cases` accordingly.
+      - Add a progress indicator during pipeline runs.
+    acceptance_criteria:
+      - "Full dataset download completes significantly faster."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 71
+    title: Retrieval Accuracy Evaluation Script
+    description: >
+      Provide a utility that measures recall and ranking metrics for the
+      retrieval subsystem using the existing case database.
+    component: retrieval
+    area: evaluation
+    dependencies: []
+    priority: 3
+    status: done
+    actionable_steps:
+      - Generate queries from case summaries or questions.
+      - Compare returned passages against ground truth excerpts.
+      - Output recall@k and mean reciprocal rank statistics.
+      - Integrate the script into CI for regression tracking.
+    acceptance_criteria:
+      - "Retrieval evaluation produces metrics for each index type."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 72
+    title: License Compliance Check in CI
+    description: >
+      Add a step to the GitHub Actions workflow that scans project dependencies
+      for incompatible licenses and fails the build when violations are found.
+    component: ci
+    area: compliance
+    dependencies: [53]
+    priority: 2
+    status: done
+    actionable_steps:
+      - Install a tool like `licensecheck` or `pip-licenses` during CI.
+      - Generate a license report for all packages in `requirements.lock`.
+      - Fail the job if any package has a prohibited license type.
+    acceptance_criteria:
+      - "CI blocks merges when disallowed licenses are introduced."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 73
+    title: Add Dark Mode Theme to UI
+    description: >
+      Offer an optional dark color scheme for the React-based interface while
+      preserving WCAG AA contrast requirements.
+    component: ui
+    area: design
+    dependencies: [62]
+    priority: 2
+    status: done
+    actionable_steps:
+      - Define a dark palette in the chosen component library.
+      - Provide a toggle or automatic detection of system theme.
+      - Verify color contrast using accessibility tools.
+    acceptance_criteria:
+      - "Users can switch between light and dark themes."
+      - "All colors pass WCAG AA in both modes."
+    command: null
+    epic: User Experience (UX) & Accessibility
+    assigned_to: null
+  
+  - id: 74
+    title: Adopt JWT-Based Authentication
+    description: >
+      Replace simple token strings with signed JSON Web Tokens to allow stateless
+      validation and optional refresh tokens for long-lived sessions.
+    component: security
+    area: authentication
+    dependencies: [63]
+    priority: 3
+    status: done
+    actionable_steps:
+      - Issue JWTs with expiration and user claims on login.
+      - Verify token signatures on each request.
+      - Implement refresh token rotation and revocation.
+      - Update tests and docs to reflect the new scheme.
+    acceptance_criteria:
+      - "Web UI authenticates using signed JWTs."
+      - "Refresh tokens can be revoked independently of access tokens."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  
+  - id: 98
+    title: Slurm Batch Evaluation Helper
+    description: |
+      Provide a script for submitting `batch_evaluate` jobs as a Slurm array to ease large scale experiments.
+    component: scripts
+    area: performance
+    dependencies: []
+    priority: 3
+    status: done
+    actionable_steps:
+      - Implement `scripts/slurm_batch_eval.py`.
+      - Document usage with an example submission file.
+    acceptance_criteria:
+      - "Users can launch evaluations on HPC clusters using Slurm arrays."
+    command: null
+    epic: Phase 5
+    assigned_to: null
+  
+  - id: 102
+    title: Enable Retrieval Result Caching
+    description: >
+      Introduce a simple caching layer for retrieval responses to
+      accelerate repeated queries during evaluation.
+    component: retrieval
+    area: performance
+    dependencies: []
+    priority: 3
+    status: done
+    actionable_steps:
+      - Add an in-memory cache keyed by query hash.
+      - Expire cached items after a configurable TTL.
+      - Provide unit tests covering cache hits and misses.
+    acceptance_criteria:
+      - "Retrieval benchmarks show improved throughput with caching enabled."
+    command: null
+    epic: Phase 6
+    assigned_to: null
+  
+  - id: 77
+    title: Persist Evaluation Results to SQLite
+    description: >
+      Store orchestrator evaluation metrics in a SQLite database so results
+      can be compared across runs.
+    component: evaluation
+    area: data
+    dependencies: []
+    priority: 2
+    status: done
+    actionable_steps:
+      - Define a results schema and migration script.
+      - Update evaluator to write metrics after each run.
+      - Document how to query the database for summaries.
+    acceptance_criteria:
+      - "Historical evaluation data persists between sessions."
+    command: null
+    epic: Phase 6
+    assigned_to: null
+  
+  - id: 78
+    title: Build Prometheus Metrics Dashboard
+    description: >
+      Create example Grafana dashboards that visualize orchestrator latency
+      and retrieval accuracy using Prometheus metrics.
+    component: observability
+    area: monitoring
+    dependencies: [49]
+    priority: 3
+    status: done
+    actionable_steps:
+      - Provide dashboard JSON files under docs/.
+      - Include setup instructions for Prometheus and Grafana.
+      - Add screenshots to the documentation.
+    acceptance_criteria:
+      - "Dashboards display latency histograms and accuracy trends."
+    command: null
+    epic: Phase 6
+    assigned_to: null
+  
+  - id: 79
+    title: CLI Command to Export FHIR JSON
+    description: >
+      Add a subcommand that converts saved transcripts into FHIR
+      JSON bundles for interoperability with other tools.
+    component: cli
+    area: tooling
+    dependencies: []
+    priority: 4
+    status: done
+    actionable_steps:
+      - Implement `cli.py export-fhir` with input/output options.
+      - Reuse existing FHIR export functions.
+      - Write unit tests covering the command.
+    acceptance_criteria:
+      - "Users can generate FHIR bundles from transcripts on disk."
+    command: null
+    epic: Phase 6
+    assigned_to: null
+  
+  - id: 80
+    title: HTTP Connection Pooling
+    description: >
+      Use persistent HTTP sessions for external API calls to reduce
+      latency and system load.
+    component: backend
+    area: performance
+    dependencies: []
+    priority: 3
+    status: done
+    actionable_steps:
+      - Refactor network utilities to reuse an `httpx.Client` instance.
+      - Measure request latency before and after the change.
+    acceptance_criteria:
+      - "Average response time decreases in load tests."
+    command: null
+    epic: Phase 6
+    assigned_to: null
+  
+  - id: 81
+    title: Cost Estimator Plugin Interface
+    description: >
+      Allow third parties to provide custom cost estimation logic via
+      a plugin entry point.
+    component: cost-estimation
+    area: extensibility
+    dependencies: []
+    priority: 4
+    status: done
+    actionable_steps:
+      - Define an entry point group `dx0.cost_estimators`.
+      - Load the selected estimator from plugins at runtime.
+      - Document how to implement a custom estimator.
+    acceptance_criteria:
+      - "Custom estimator plugins can override default pricing logic."
+    command: null
+    epic: Phase 6
+    assigned_to: null
+  
+  - id: 82
+    title: Group-Based User Roles
+    description: >
+      Add support for assigning users to groups with specific permissions
+      in the web UI.
+    component: ui
+    area: authentication
+    dependencies: [68]
+    priority: 3
+    status: done
+    actionable_steps:
+      - Extend the credentials model with a group field.
+      - Enforce permissions when accessing protected endpoints.
+      - Provide an admin interface to manage groups.
+    acceptance_criteria:
+      - "API endpoints reject users lacking required roles."
+    command: null
+    epic: Phase 6
+    assigned_to: null
+  
+  - id: 83
+    title: Ephemeral CLI Session Tokens
+    description: >
+      Issue short-lived tokens for command-line sessions to improve
+      security when running batch evaluations.
+    component: cli
+    area: security
+    dependencies: [74]
+    priority: 2
+    status: done
+    actionable_steps:
+      - Add `dx0 login` command that obtains a token via the API.
+      - Automatically refresh the token when expired.
+      - Document best practices for token storage.
+    acceptance_criteria:
+      - "CLI commands fail gracefully when the token expires."
+    command: null
+    epic: Phase 6
+    assigned_to: null
+  
+  - id: 84
+    title: Document Advanced Orchestrator Settings
+    description: >
+      Expand the README with guidance on tuning orchestrator parameters
+      and integrating custom panels.
+    component: docs
+    area: documentation
+    dependencies: []
+    priority: 3
+    status: done
+    actionable_steps:
+      - Describe configuration options for budgets and personas.
+      - Provide examples for plugin-based panels.
+    acceptance_criteria:
+      - "Users can customize orchestrator behavior following the docs."
+    command: null
+    epic: Phase 6
+    assigned_to: null
+  
+  - id: 85
+    title: Pydantic Schema for Plugin Metadata
+    description: >
+      Define a typed model describing plugin metadata to validate
+      loaded entry points at startup.
+    component: plugins
+    area: validation
+    dependencies: []
+    priority: 2
+    status: done
+    actionable_steps:
+      - Create `PluginInfo` model with name, version, and entry point.
+      - Validate registered plugins before use.
+      - Fail startup if required fields are missing.
+    acceptance_criteria:
+      - "Invalid plugins are rejected with a clear error message."
+    command: null
+    epic: Phase 6
+    assigned_to: null
+  
+  - id: 86
+    title: Deployment Automation
+    description: >
+      Create container orchestration scripts and CI pipelines for publishing release images.
+    component: devops
+    area: deployment
+    dependencies: []
+    priority: 3
+    status: done
+    actionable_steps:
+      - Create Docker Compose or Kubernetes scripts.
+      - Add a CI workflow that builds and publishes Docker images.
+    acceptance_criteria:
+      - "Services deploy via orchestration scripts."
+      - "CI publishes release images automatically."
+    command: null
+    epic: Phase 6
+    assigned_to: null
+  
+  - id: 87
+    title: UI Test Coverage
+    description: >
+      Add end-to-end tests for accessibility and dark-mode styling.
+    component: testing
+    area: frontend
+    dependencies: []
+    priority: 3
+    status: done
+    actionable_steps:
+      - Implement Playwright or Cypress tests covering keyboard navigation and ARIA labels.
+      - Verify dark mode styles in automated tests.
+    acceptance_criteria:
+      - "UI tests pass validating accessibility and themes."
+    command: null
+    epic: Phase 6
+    assigned_to: null
+  
+  - id: 88
+    title: Security Review
+    description: >
+      Perform a dependency audit and document threat mitigations.
+    component: security
+    area: audit
+    dependencies: []
+    priority: 2
+    status: done
+    actionable_steps:
+      - Run a tool like `safety` or `pip-audit` on dependencies.
+      - Document mitigations for any flagged issues.
+      - Add threat-model documentation for authentication, data storage, and logging.
+    acceptance_criteria:
+      - "Dependency audit reports are stored with documented mitigations."
+      - "Threat model documentation covers key security aspects."
+    command: null
+    epic: Phase 6
+    assigned_to: null
+  
+  - id: 89
+    title: Plugin Ecosystem Guide
+    description: >
+      Document best practices for developing and packaging plugins.
+    component: docs
+    area: plugins
+    dependencies: []
+    priority: 3
+    status: done
+    actionable_steps:
+      - Expand plugin documentation with packaging and versioning advice.
+      - Provide example repositories for retrieval, persona, and cost estimator plugins.
+    acceptance_criteria:
+      - "Developers can follow the guide to build compatible plugins."
+    command: null
+    epic: Phase 6
+    assigned_to: null
+  
+  - id: 90
+    title: Performance Benchmarks
+    description: >
+      Measure latency of services under load and supply dashboard templates.
+    component: performance
+    area: monitoring
+    dependencies: []
+    priority: 3
+    status: done
+    actionable_steps:
+      - Benchmark retrieval, LLM calls, and caching latency.
+      - Provide scripts and Grafana dashboards for monitoring.
+      - Store baseline results so regressions can be detected.
+    acceptance_criteria:
+      - "Benchmark results identify performance bottlenecks."
+      - "Grafana dashboards visualize service latency."
+      - "Baseline metrics persist for comparison across releases."
+    command: null
+    epic: Phase 6
+    assigned_to: null
+  
+  - id: 101
+    title: UI Validation and Quality Assurance
+    description: >
+      Perform a comprehensive quality assurance pass on the user interface. This
+      involves structured testing to ensure visual consistency, functional
+      correctness, and adherence to accessibility standards across all supported
+      platforms.
+    component: UI/UX
+    area: Quality Assurance
+    dependencies: []
+    priority: 2
+    status: pending
+    command: null
+    task_id: QA-UI-VALIDATION-1
+    actionable_steps:
+      - "**1. Define Testing Scope:**"
+      - "  - Document the official list of supported environments (e.g., browsers, operating systems, device types)."
+      - "  - Compile a checklist of all user-facing views, components, and critical user flows to be tested."
+      - "**2. Execute Functional & Visual Testing:**"
+      - "  - For each supported environment, methodically execute the testing checklist."
+      - "  - **Visual Integrity:** Confirm that layouts, styles, and all visual elements render correctly and without defects."
+      - "  - **Functional Correctness:** Verify that all interactive elements (buttons, forms, controls) are fully functional and produce the expected outcomes."
+      - "  - Document all defects with clear, reproducible steps, noting the environment where the issue was observed."
+      - "  - Install Playwright browsers with `playwright install` before executing automated UI tests."
+      - "**3. Verify Responsive Design:**"
+      - "  - Using appropriate tools, simulate a wide range of viewport sizes (from small mobile to large desktop)."
+      - "  - Ensure the UI layout adapts gracefully to all supported screen sizes without data loss, unreadability, or broken functionality."
+      - "**4. Conduct Accessibility Audit:**"
+      - "  - Using an industry-standard automated tool, run a full accessibility scan on all primary UI templates."
+      - "  - Manually review key user flows for keyboard-only navigation and screen reader compatibility."
+      - "  - Catalog all identified accessibility violations, from critical errors to minor warnings."
+      - "**5. Remediate and Re-validate:**"
+      - "  - Prioritize and resolve all identified defects and accessibility violations."
+      - "  - Re-run the relevant tests after fixes are applied to confirm that the issues are resolved and no new regressions were introduced."
+    acceptance_criteria:
+      - "- **Platform Consistency:** The user interface must be functionally and visually consistent across all officially supported platforms."
+      - "- **Responsive Integrity:** All UI elements must be usable and readable across the full range of specified viewport sizes."
+      - "- **Accessibility Compliance:** The system must meet a pre-defined accessibility standard (e.g., WCAG 2.1 AA) with no critical violations."
+      - "- **Functional Correctness:** All user flows can be completed successfully without encountering errors."
+      - "- **Defect Resolution:** All critical or high-priority defects discovered during the QA process have been resolved and verified."
+    epic: System Validation
+    assigned_to: null
+  - id: 201
+    title: "Pin and Audit All Project Dependencies"
+    description: >
+        The project's dependencies in `requirements.txt` and `pyproject.toml` are not pinned to specific versions. This creates a risk of breaking changes from upstream libraries and makes the project difficult to reproduce reliably. All dependencies should be pinned to their latest stable versions, and `pip-audit` should be integrated into the CI/CD pipeline to continuously scan for vulnerabilities.
+    component: build
+    area: dependencies
+    priority: 1
+    status: pending
+    epic: Phase 1
+    assigned_to: null
+  - id: 202
+    title: "Establish a Comprehensive Test Suite"
+    description: >
+        The project currently lacks any form of automated testing. A comprehensive test suite should be established using a framework like `pytest`. This should include unit tests for business logic, integration tests for API endpoints, and end-to-end tests for user flows. A good starting point would be to add tests for the CPT code lookup and cost estimation logic.
+    component: testing
+    area: enhancement
+    priority: 1
+    status: pending
+    epic: Phase 1
+    assigned_to: null
+  - id: 203
+    title: "Implement Centralized Configuration Management"
+    description: >
+        The project has hardcoded configuration values scattered throughout the codebase. This makes it difficult to manage different environments (development, staging, production). A centralized configuration management system should be implemented. A good choice would be to use a library like `python-dotenv` to load configuration from environment variables and `.env` files.
+    component: backend
+    area: refactor
+    priority: 2
+    status: pending
+    epic: Phase 1
+    assigned_to: null
+  - id: 204
+    title: "Harden XML Parsing in Gatekeeper with defusedxml"
+    description: >
+        The `sdb/gatekeeper.py` file uses the standard `xml.etree.ElementTree` library for parsing, which is vulnerable to XML External Entity (XXE) attacks and other XML-based threats. This should be replaced with the `defusedxml` library, which is a drop-in replacement that provides hardened XML parsing.
+    component: backend
+    area: security
+    priority: 1
+    status: pending
+    epic: Phase 2
+    assigned_to: null
+  - id: 205
+    title: "Refactor Session Management to Use a Scalable Solution"
+    description: >
+        The UI backend in `sdb/ui/app.py` uses global variables for session management, which is not thread-safe and will not scale to multiple users. This should be refactored to use a more robust session management solution, such as `Flask-Session`, which can be configured to use a variety of backends like Redis or a database.
+    component: backend
+    area: refactor
+    priority: 1
+    status: pending
+    epic: Phase 2
+    assigned_to: null
+  - id: 206
+    title: "Implement Structured and Consistent Logging"
+    description: >
+        The project's logging is ad-hoc and inconsistent. A structured logging library, such as `structlog`, should be implemented to provide consistent, machine-readable logs. This will make it easier to debug issues and monitor the application's health.
+    component: backend
+    area: enhancement
+    priority: 2
+    status: pending
+    epic: Phase 2
+    assigned_to: null
+  - id: 207
+    title: "Update OpenAI API Usage to the Latest Version"
+    description: >
+        The `sdb/cpt_lookup.py` file uses the deprecated `openai.ChatCompletion.create` method. This should be updated to use the new `client.chat.completions.create` method from the latest version of the `openai` library. All API calls should be updated to match the new syntax and data structures.
+    component: backend
+    area: refactor
+    priority: 1
+    status: pending
+    epic: Phase 3
+    assigned_to: null
+  - id: 208
+    title: "Consolidate Frontend into a Single, Modern UI"
+    description: >
+        The project has two separate frontend directories, `frontend/` and `webui/`. This is confusing and increases the maintenance overhead. The two frontends should be merged into a single, modern UI. The `webui/` directory appears to be the more modern of the two, so it should be used as the base, and any necessary features from `frontend/` should be ported over.
+    component: frontend
+    area: refactor
+    priority: 1
+    status: pending
+    epic: Phase 3
+    assigned_to: null
+  - id: 209
+    title: "Improve Cost Estimation with a Predictive Model"
+    description: >
+        When a CPT code is not found, the cost estimator falls back to a simple average of known prices, which can be inaccurate. A more sophisticated model should be implemented to provide a more accurate estimate. A good first step would be to train a simple linear regression model on the existing CPT codes and their prices. In the long term, a more advanced machine learning model could be developed.
+    component: backend
+    area: enhancement
+    priority: 2
+    status: pending
+    epic: Phase 3
+    assigned_to: null
+  - id: 210
+    title: "Create Comprehensive API and User Documentation"
+    description: >
+        The project's documentation is incomplete and outdated. It should be updated to reflect the current state of the code and expanded to cover all of the project's features in detail. This should include both user-facing documentation for the frontend and technical documentation for the API endpoints.
+    component: documentation
+    area: enhancement
+    priority: 2
+    status: pending
+    epic: Phase 4
+    assigned_to: null
+  - id: 211
+    title: "Improve Error Handling and User Feedback"
+    description: >
+        The error handling in the application is basic. More specific exception handling should be implemented throughout the backend, and the frontend should be updated to display user-friendly error messages. This will improve the user experience and make it easier to diagnose problems.
+    component: frontend
+    area: enhancement
+    priority: 3
+    status: pending
+    epic: Phase 4
+    assigned_to: null
