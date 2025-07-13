@@ -257,6 +257,15 @@ phases:
         description: "Visualize trade-offs by plotting the Pareto frontier."
         done: true
 
+      - id: 24
+        title: "Expand Evaluation Framework Tests"
+        description: >
+          Add unit tests for the Judge agent, CostEstimator, and evaluation metrics generation.
+        component: evaluation
+        area: testing
+        priority: 2
+        status: done
+
   - name: "Phase 3: Production Readiness & Advanced Features"
     tasks:
       - id: "T23"
@@ -309,6 +318,32 @@ phases:
           - "Develop a 'Meta-Panel' agent that reviews the diagnoses and reasoning chains from all parallel runs to produce a final, synthesized diagnosis."
           - "Explore cost-adjusted utility functions to select a final diagnosis that optimizes for both accuracy and cost-effectiveness."
         done: true
+
+      - id: 92
+        title: "Centralized Error Handling and Logging"
+        description: >
+          Introduce a unified error handling framework with custom exceptions and structured logging.
+        component: backend
+        area: robustness
+        priority: 2
+        status: done
+      - id: 93
+        title: "Refactor CLI with Typer"
+        description: >
+          Replace argparse with Typer to provide a modern CLI with type validation and rich help output.
+        component: cli
+        area: usability
+        priority: 2
+        status: done
+      - id: 94
+        title: "Developer Getting Started Guide"
+        description: >
+          Write a concise guide in `docs/getting_started.md` covering environment setup,
+          running tests, and basic commands for new contributors.
+        component: documentation
+        area: onboarding
+        priority: 3
+        status: done
 
   - name: "Phase 4: LLM Integration and Production Hardening"
     tasks:
@@ -498,6 +533,16 @@ phases:
           - "Improve layout styling for readability."
         acceptance_criteria:
           - "New features are functional and intuitive."
+
+      - id: 95
+        title: "Fine-Tune LLM for Diagnostic Reasoning"
+        description: >
+          Train a domain-specific language model using the NEJM case corpus to improve
+          reasoning accuracy and reduce hallucinations.
+        component: ai
+        area: modeling
+        priority: 2
+        status: done
 
 - id: 45
   title: Secure Web UI Authentication
@@ -1469,7 +1514,7 @@ phases:
   area: deployment
   dependencies: []
   priority: 3
-  status: todo
+  status: done
   actionable_steps:
     - Create Docker Compose or Kubernetes scripts.
     - Add a CI workflow that builds and publishes Docker images.
@@ -1488,7 +1533,7 @@ phases:
   area: frontend
   dependencies: []
   priority: 3
-  status: todo
+  status: done
   actionable_steps:
     - Implement Playwright or Cypress tests covering keyboard navigation and ARIA labels.
     - Verify dark mode styles in automated tests.
@@ -1506,7 +1551,7 @@ phases:
   area: audit
   dependencies: []
   priority: 2
-  status: todo
+  status: done
   actionable_steps:
     - Run a tool like `safety` or `pip-audit` on dependencies.
     - Document mitigations for any flagged issues.
@@ -1526,7 +1571,7 @@ phases:
   area: plugins
   dependencies: []
   priority: 3
-  status: todo
+  status: done
   actionable_steps:
     - Expand plugin documentation with packaging and versioning advice.
     - Provide example repositories for retrieval, persona, and cost estimator plugins.
@@ -1544,7 +1589,7 @@ phases:
   area: monitoring
   dependencies: []
   priority: 3
-  status: todo
+  status: done
   actionable_steps:
     - Benchmark retrieval, LLM calls, and caching latency.
     - Provide scripts and Grafana dashboards for monitoring.
