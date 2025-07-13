@@ -7,3 +7,6 @@ repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$repo_root"
 
 pip install -r requirements.lock
+
+# Install browsers for the Playwright test suite
+playwright install chromium

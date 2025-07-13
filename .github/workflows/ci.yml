@@ -17,8 +17,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           ./scripts/install_dev_deps.sh
-      - name: Install Playwright browsers
-        run: playwright install --with-deps chromium
       - name: Install license tools
         run: pip install pip-licenses
       - name: Check licenses
