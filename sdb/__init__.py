@@ -28,7 +28,7 @@ from .ingest.pipeline import run_pipeline, update_dataset
 from .ingest.translate import translate_directory
 from .cpt_lookup import lookup_cpt
 from .metrics import start_metrics_server
-from . import metrics  # noqa: F401
+from . import metrics
 from .retrieval import (
     SimpleEmbeddingIndex,
     FaissIndex,
@@ -84,6 +84,7 @@ __all__ = [
     "load_from_sqlite",
     "save_to_sqlite",
     "start_metrics_server",
+    "metrics",
     "SimpleEmbeddingIndex",
     "FaissIndex",
     "SentenceTransformerIndex",
