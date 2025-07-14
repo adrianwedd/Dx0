@@ -75,6 +75,8 @@ cd clinical-ai-suite
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.lock
+# install extra tools for testing
+pip install -r requirements-dev.txt
 ```
 
 For details on creating a development environment and running the test suite,
