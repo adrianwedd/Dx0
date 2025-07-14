@@ -58,9 +58,9 @@ class CachedRetrievalIndex:
         if hit and now - hit[0] < self.ttl:
             RETRIEVAL_CACHE_HITS.inc()
             return hit[1]
-        start = time.time()
+        start = time.perf_counter()
         results = self.backend.query(text, top_k=top_k)
-        duration = time.time() - start
+        duration = time.perf_counter() - start
         RETRIEVAL_LATENCY.observe(duration)
         self.cache[key] = (now, results)
         return results

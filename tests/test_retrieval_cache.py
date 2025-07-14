@@ -15,7 +15,8 @@ class DummyIndex:
 def test_cache_hit(monkeypatch):
     base = DummyIndex()
     cache = retrieval.CachedRetrievalIndex(base, ttl=10)
-    monkeypatch.setattr(retrieval, "time", types.SimpleNamespace(time=lambda: 0))
+    monkeypatch.setattr(retrieval.time, "time", lambda: 0)
+    monkeypatch.setattr(retrieval.time, "perf_counter", lambda: 0)
     first = cache.query("q")
     second = cache.query("q")
     assert first == second
@@ -25,7 +26,8 @@ def test_cache_hit(monkeypatch):
 def test_cache_expiry(monkeypatch):
     base = DummyIndex()
     now = [0]
-    monkeypatch.setattr(retrieval, "time", types.SimpleNamespace(time=lambda: now[0]))
+    monkeypatch.setattr(retrieval.time, "time", lambda: now[0])
+    monkeypatch.setattr(retrieval.time, "perf_counter", lambda: now[0])
     cache = retrieval.CachedRetrievalIndex(base, ttl=5)
     cache.query("q")
     now[0] = 6
