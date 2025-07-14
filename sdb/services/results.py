@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 class ResultAggregator:
     """Collect ordered tests and final diagnosis."""
 
