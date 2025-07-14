@@ -21,10 +21,10 @@ If you prefer to run models locally, start an [Ollama](https://github.com/jmorga
 
 ## Installing Dependencies
 
-All packages are pinned in `requirements.lock`. Install them with:
+Install the development requirements to get `pytest` and other tools:
 
 ```bash
-pip install -r requirements.lock
+pip install -r requirements-dev.txt
 ```
 
 For an editable installation of the library itself run:
