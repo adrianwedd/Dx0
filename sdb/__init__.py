@@ -28,6 +28,7 @@ from .ingest.pipeline import run_pipeline, update_dataset
 from .ingest.translate import translate_directory
 from .cpt_lookup import lookup_cpt
 from .metrics import start_metrics_server
+from . import metrics  # noqa: F401
 from .retrieval import (
     SimpleEmbeddingIndex,
     FaissIndex,

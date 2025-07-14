@@ -28,6 +28,7 @@ from sdb import (
     MetaPanel,
     MetricsDB,
     OllamaClient,
+    HFLocalClient,
     OpenAIClient,
     Orchestrator,
     RuleEngine,
