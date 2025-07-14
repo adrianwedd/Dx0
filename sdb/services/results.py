@@ -1,10 +1,12 @@
-from __future__ import annotations
+"""Helpers for tracking ordered tests and final diagnoses."""
 
+from __future__ import annotations
 
 class ResultAggregator:
     """Collect ordered tests and final diagnosis."""
 
     def __init__(self) -> None:
+        """Initialize empty result tracking structures."""
         self.ordered_tests: list[str] = []
         self.final_diagnosis: str | None = None
         self.finished: bool = False
