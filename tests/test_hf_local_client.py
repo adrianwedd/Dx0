@@ -1,5 +1,4 @@
 import json
-import types
 from sdb.llm_client import HFLocalClient
 
 
@@ -20,4 +19,3 @@ def test_hf_local_client(monkeypatch, tmp_path):
     assert len(lines) == 1
     record = json.loads(lines[0])
     assert record["value"] == "reply"
-
