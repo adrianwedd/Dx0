@@ -236,4 +236,3 @@ class HFLocalClient(LLMClient):
             return None
         text = out[0].get("generated_text", "")
         return text[len(prompt) :].strip()
-

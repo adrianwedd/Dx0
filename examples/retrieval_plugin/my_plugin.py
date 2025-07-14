@@ -1,6 +1,7 @@
 from typing import List, Tuple
 from sdb.retrieval import BaseRetrievalIndex
 
+
 class ExampleIndex(BaseRetrievalIndex):
     """Minimal retrieval backend returning a fixed ranking."""
 

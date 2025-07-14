@@ -103,4 +103,3 @@ def measure_cache_latency(
     warm_duration = time.perf_counter() - start
 
     return cold_duration / len(queries_list), warm_duration / len(queries_list)
-
