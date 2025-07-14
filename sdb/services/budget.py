@@ -1,3 +1,5 @@
+"""Budget tracking utilities for enforcing spending limits."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -25,6 +27,7 @@ class BudgetManager:
     test_categories: Dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        """Load existing budget state from storage, if configured."""
         if self.store is not None:
             self.spent = self.store.total()
         if self.session_db is not None and self.session_token is not None:

@@ -1,3 +1,5 @@
+"""SQLite-backed storage for test spending information."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -7,6 +9,7 @@ class BudgetStore:
     """Persist test spending amounts using SQLite."""
 
     def __init__(self, path: str) -> None:
+        """Create a new store backed by ``path``."""
         self.path = path
         self._init_db()
 
