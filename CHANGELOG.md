@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 ### Added
 - `BudgetManager` service to track session spending and enforce limits.
 - `--budget-limit` CLI flag and `UI_BUDGET_LIMIT` environment variable.
+### Fixed
+- Exposed `HFLocalClient` at the package root.
+- Added side-effect import for the `metrics` module.
+- Adjusted retrieval latency measurement timing.
 
 ## [0.3.0] - 2024-??-??
 ### Added

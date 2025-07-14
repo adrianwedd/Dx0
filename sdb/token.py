@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Utility functions for CLI session tokens."""
+
+from __future__ import annotations
 
 import json
 import os

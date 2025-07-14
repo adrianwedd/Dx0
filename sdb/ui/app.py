@@ -278,6 +278,7 @@ class UserPanel:
     """Panel that feeds user actions into the orchestrator."""
 
     def __init__(self) -> None:
+        """Initialize the empty action queue."""
         self.actions: asyncio.Queue[PanelAction] = asyncio.Queue()
         self.turn = 0
 
@@ -305,6 +306,7 @@ async def migrate_store() -> None:
 
 @app.on_event("startup")
 async def start_cleanup() -> None:
+    """Spawn a background task to purge expired sessions."""
     async def _loop() -> None:
         while True:
             SESSION_STORE.cleanup()

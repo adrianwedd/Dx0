@@ -11,6 +11,7 @@ import os
 import sys
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Optional, Dict, List
 
 import bcrypt
 import yaml
@@ -78,7 +79,7 @@ class LLMProvider(str, Enum):
 app = typer.Typer(help="Dx0 command line interface")
 
 
-def _load_weights(arg: str | None) -> dict[str, float] | None:
+def _load_weights(arg: Optional[str]) -> Optional[Dict[str, float]]:
     """Return a mapping from run ID to vote weight."""
 
     if arg is None:
@@ -92,7 +93,7 @@ def _load_weights(arg: str | None) -> dict[str, float] | None:
         raise SystemExit(f"Invalid vote weights: {exc}") from exc
 
 
-def _load_weights_file(path: str | None) -> dict[str, float] | None:
+def _load_weights_file(path: Optional[str]) -> Optional[Dict[str, float]]:
     """Return a mapping from run ID to weight loaded from ``path``."""
 
     if path is None:
@@ -106,7 +107,7 @@ def _load_weights_file(path: str | None) -> dict[str, float] | None:
         raise SystemExit(f"Invalid weights file: {exc}") from exc
 
 
-def _load_persona_models(arg: str | None) -> dict[str, str] | None:
+def _load_persona_models(arg: Optional[str]) -> Optional[Dict[str, str]]:
     """Return a mapping from persona name to model."""
 
     if arg is None:
@@ -120,7 +121,7 @@ def _load_persona_models(arg: str | None) -> dict[str, str] | None:
         raise SystemExit(f"Invalid persona models: {exc}") from exc
 
 
-def _load_json_or_path(arg: str | None) -> dict[str, object] | None:
+def _load_json_or_path(arg: Optional[str]) -> Optional[Dict[str, object]]:
     """Return a dictionary loaded from ``arg`` if provided."""
 
     if arg is None:
@@ -164,7 +165,7 @@ def _load_case_dicts(path: str) -> list[dict[str, object]]:
 def stats(
     baseline: str,
     variant: str,
-    config: str | None = typer.Option(None, help="YAML settings file"),
+    config: Optional[str] = typer.Option(None, help="YAML settings file"),
     column: str = typer.Option("score", help="CSV column containing numeric scores"),
     rounds: int = typer.Option(1000, help="Number of permutations"),
 ) -> None:
@@ -180,39 +181,39 @@ def stats(
 
 @app.command("batch-eval")
 def batch_eval(
-    config: str | None = typer.Option(None, help="YAML settings file"),
-    db: str | None = typer.Option(None, help="Path to case JSON, CSV or directory"),
-    db_sqlite: str | None = typer.Option(None, help="Path to case SQLite database"),
+    config: Optional[str] = typer.Option(None, help="YAML settings file"),
+    db: Optional[str] = typer.Option(None, help="Path to case JSON, CSV or directory"),
+    db_sqlite: Optional[str] = typer.Option(None, help="Path to case SQLite database"),
     rubric: str = typer.Option(..., help="Scoring rubric JSON"),
-    costs: str | None = typer.Option(None, help="Test cost table CSV"),
-    cost_table: str | None = typer.Option(None, help="CSV file mapping test names to costs"),
-    cost_estimator: str | None = typer.Option(None, help="Cost estimator plugin name"),
+    costs: Optional[str] = typer.Option(None, help="Test cost table CSV"),
+    cost_table: Optional[str] = typer.Option(None, help="CSV file mapping test names to costs"),
+    cost_estimator: Optional[str] = typer.Option(None, help="Cost estimator plugin name"),
     output: str = typer.Option(..., help="CSV file for results"),
-    results_db: str | None = typer.Option(None, help="SQLite database file to store metrics"),
+    results_db: Optional[str] = typer.Option(None, help="SQLite database file to store metrics"),
     concurrency: int = typer.Option(2, help="Number of concurrent sessions"),
     correct_threshold: int = typer.Option(4, help="Judge score required for a correct diagnosis"),
-    panel_engine: PanelEngine = typer.Option(PanelEngine.RULE, help="Decision engine"),
-    llm_provider: LLMProvider = typer.Option(LLMProvider.OPENAI, help="LLM provider"),
+    panel_engine: str = typer.Option("rule", help="Decision engine"),
+    llm_provider: str = typer.Option("openai", help="LLM provider"),
     llm_model: str = typer.Option("gpt-4", help="Model name"),
-    hf_model: str | None = typer.Option(None, help="Local HF model path"),
-    persona_models: str | None = typer.Option(None, help="JSON string or file with persona to model mapping"),
+    hf_model: Optional[str] = typer.Option(None, help="Local HF model path"),
+    persona_models: Optional[str] = typer.Option(None, help="JSON string or file with persona to model mapping"),
     ollama_base_url: str = typer.Option("http://localhost:11434", help="Base URL for the Ollama server"),
     cache: bool = typer.Option(False, help="Cache LLM responses"),
     cache_size: int = typer.Option(128, help="Maximum number of responses to keep in the cache"),
-    budget_limit: float | None = typer.Option(None, help="Maximum total spend allowed during the session"),
-    budget: float | None = typer.Option(None, help="Budget limit for budgeted mode"),
+    budget_limit: Optional[float] = typer.Option(None, help="Maximum total spend allowed during the session"),
+    budget: Optional[float] = typer.Option(None, help="Budget limit for budgeted mode"),
     mode: str = typer.Option("unconstrained", help="Run mode"),
-    vote_weights: str | None = typer.Option(None, help="JSON string or path with run ID weights for ensemble voting"),
-    weights_file: str | None = typer.Option(None, help="JSON or YAML file mapping run IDs to vote weights"),
+    vote_weights: Optional[str] = typer.Option(None, help="JSON string or path with run ID weights for ensemble voting"),
+    weights_file: Optional[str] = typer.Option(None, help="JSON or YAML file mapping run IDs to vote weights"),
     semantic: bool = typer.Option(
         False,
         "--semantic",
         "--semantic-retrieval",
         help="Enable semantic retrieval",
     ),
-    cross_encoder_model: str | None = typer.Option(None, help="Cross-encoder model name for semantic retrieval"),
-    retrieval_backend: str | None = typer.Option(None, help="Retrieval plugin name"),
-    verbosity: Verbosity = typer.Option(Verbosity.INFO, help="Logging verbosity"),
+    cross_encoder_model: Optional[str] = typer.Option(None, help="Cross-encoder model name for semantic retrieval"),
+    retrieval_backend: Optional[str] = typer.Option(None, help="Retrieval plugin name"),
+    verbosity: str = typer.Option("info", help="Logging verbosity", case_sensitive=False),
 ) -> None:
     """Run evaluations for multiple cases concurrently."""
 
@@ -232,7 +233,7 @@ def batch_eval(
         results_db=results_db,
         concurrency=concurrency,
         correct_threshold=correct_threshold,
-        panel_engine=panel_engine.value,
+        panel_engine=panel_engine,
         llm_provider=llm_provider,
         llm_model=llm_model,
         hf_model=hf_model,
@@ -248,8 +249,8 @@ def batch_eval(
         semantic=semantic,
         cross_encoder_model=cross_encoder_model,
         retrieval_backend=retrieval_backend,
-        verbose=verbosity == Verbosity.DEBUG,
-        quiet=verbosity == Verbosity.QUIET,
+        verbose=verbosity.lower() == "debug",
+        quiet=verbosity.lower() == "quiet",
     )
     cfg = load_settings(args.config)
     if args.db is None and args.db_sqlite is None:
@@ -316,13 +317,13 @@ def batch_eval(
             engine = RuleEngine()
         else:
             cache_path = "llm_cache.jsonl" if args.cache else None
-            if args.llm_provider == LLMProvider.OLLAMA:
+            if args.llm_provider == "ollama":
                 client = OllamaClient(
                     base_url=args.ollama_base_url or settings.ollama_base_url,
                     cache_path=cache_path,
                     cache_size=args.cache_size,
                 )
-            elif args.llm_provider == LLMProvider.HF_LOCAL:
+            elif args.llm_provider == "hf-local":
                 client = HFLocalClient(
                     model_path=args.hf_model or settings.hf_model,
                     cache_path=cache_path,
@@ -405,7 +406,7 @@ def fhir_export(
     transcript: str,
     tests: str,
     patient_id: str = typer.Option("example", help="Patient identifier used in references"),
-    output: str | None = typer.Option(None, help="File path for the output bundle (defaults to stdout)"),
+    output: Optional[str] = typer.Option(None, help="File path for the output bundle (defaults to stdout)"),
 ) -> None:
     """Serialize a transcript and ordered tests as a FHIR bundle."""
 
@@ -454,7 +455,7 @@ def export_fhir(
 def fhir_import(
     input: str,
     case_id: str = typer.Option("case_001", help="Identifier for the generated case"),
-    output: str | None = typer.Option(None, "-o", help="File path for the output case (defaults to stdout)"),
+    output: Optional[str] = typer.Option(None, "-o", help="File path for the output case (defaults to stdout)"),
 ) -> None:
     """Convert a FHIR bundle or DiagnosticReport to case JSON."""
 
@@ -477,12 +478,12 @@ def fhir_import(
 @app.command("annotate-case")
 def annotate_case(
     case: str = typer.Option(..., help="Case identifier"),
-    config: str | None = typer.Option(None, help="YAML settings file"),
-    db: str | None = typer.Option(None, help="Path to case JSON, CSV or directory"),
-    db_sqlite: str | None = typer.Option(None, help="Path to case SQLite database"),
-    notes: str | None = typer.Option(None, help="Free text notes or path to a text file"),
-    test_mapping: str | None = typer.Option(None, help="JSON file mapping aliases to canonical test names"),
-    output: str | None = typer.Option(
+    config: Optional[str] = typer.Option(None, help="YAML settings file"),
+    db: Optional[str] = typer.Option(None, help="Path to case JSON, CSV or directory"),
+    db_sqlite: Optional[str] = typer.Option(None, help="Path to case SQLite database"),
+    notes: Optional[str] = typer.Option(None, help="Free text notes or path to a text file"),
+    test_mapping: Optional[str] = typer.Option(None, help="JSON file mapping aliases to canonical test names"),
+    output: Optional[str] = typer.Option(
         None,
         "-o",
         "--output",
@@ -543,11 +544,11 @@ def filter_cases(
     output: str = typer.Option(
         ..., "-o", "--output", help="Destination JSON or CSV file for the filtered cases"
     ),
-    config: str | None = typer.Option(None, help="YAML settings file"),
-    db: str | None = typer.Option(None, help="Path to case JSON or CSV file"),
-    db_sqlite: str | None = typer.Option(None, help="Path to case SQLite database"),
-    keywords: str | None = typer.Option(None, help="Comma separated keywords to match"),
-    metadata: str | None = typer.Option(None, help="JSON string or file with key/value filters"),
+    config: Optional[str] = typer.Option(None, help="YAML settings file"),
+    db: Optional[str] = typer.Option(None, help="Path to case JSON or CSV file"),
+    db_sqlite: Optional[str] = typer.Option(None, help="Path to case SQLite database"),
+    keywords: Optional[str] = typer.Option(None, help="Comma separated keywords to match"),
+    metadata: Optional[str] = typer.Option(None, help="JSON string or file with key/value filters"),
 ) -> None:
     """Select cases by keywords or metadata."""
 
@@ -609,7 +610,7 @@ def filter_cases(
 def login(
     username: str,
     api_url: str = typer.Option("http://localhost:8000/api/v1"),
-    password: str | None = typer.Option(None),
+    password: Optional[str] = typer.Option(None),
     token_file: str = typer.Option(str(TOKEN_PATH), help="Path to store the session token"),
 ) -> None:
     """Authenticate with the API and store a session token."""
@@ -627,8 +628,8 @@ def login(
 @app.command("manage-users")
 def manage_users(
     cmd: str = typer.Argument(..., help="add, remove or list"),
-    username: str | None = typer.Argument(None),
-    password: str | None = typer.Option(None),
+    username: Optional[str] = typer.Argument(None),
+    password: Optional[str] = typer.Option(None),
     group: str = typer.Option("default", help="User group"),
     file: str = typer.Option(
         os.environ.get(
@@ -673,44 +674,44 @@ def manage_users(
 @app.callback(invoke_without_command=True)
 def _main(
     ctx: typer.Context,
-    config: str | None = typer.Option(None, help="YAML settings file"),
-    db: str | None = typer.Option(None, help="Path to case JSON, CSV or directory"),
-    db_sqlite: str | None = typer.Option(None, help="Path to case SQLite database"),
-    case: str | None = typer.Option(None, help="Case identifier"),
-    rubric: str | None = typer.Option(None, help="Path to scoring rubric JSON"),
-    costs: str | None = typer.Option(None, help="Path to test cost table CSV"),
-    cost_table: str | None = typer.Option(None, help="CSV file mapping test names to costs"),
-    cost_estimator: str | None = typer.Option(None, help="Cost estimator plugin name"),
+    config: Optional[str] = typer.Option(None, help="YAML settings file"),
+    db: Optional[str] = typer.Option(None, help="Path to case JSON, CSV or directory"),
+    db_sqlite: Optional[str] = typer.Option(None, help="Path to case SQLite database"),
+    case: Optional[str] = typer.Option(None, help="Case identifier"),
+    rubric: Optional[str] = typer.Option(None, help="Path to scoring rubric JSON"),
+    costs: Optional[str] = typer.Option(None, help="Path to test cost table CSV"),
+    cost_table: Optional[str] = typer.Option(None, help="CSV file mapping test names to costs"),
+    cost_estimator: Optional[str] = typer.Option(None, help="Cost estimator plugin name"),
     correct_threshold: int = typer.Option(4, help="Judge score required for a correct diagnosis"),
-    panel_engine: PanelEngine = typer.Option(PanelEngine.RULE, help="Decision engine to use for the panel"),
-    llm_provider: LLMProvider = typer.Option(LLMProvider.OPENAI, help="LLM provider for LLM engine"),
+    panel_engine: str = typer.Option("rule", help="Decision engine to use for the panel"),
+    llm_provider: str = typer.Option("openai", help="LLM provider for LLM engine"),
     llm_model: str = typer.Option("gpt-4", help="Model name for LLM engine"),
-    hf_model: str | None = typer.Option(None, help="Local HF model path"),
-    persona_models: str | None = typer.Option(None, help="JSON string or file with persona to model mapping"),
+    hf_model: Optional[str] = typer.Option(None, help="Local HF model path"),
+    persona_models: Optional[str] = typer.Option(None, help="JSON string or file with persona to model mapping"),
     ollama_base_url: str = typer.Option("http://localhost:11434", help="Base URL for the Ollama server"),
     cache: bool = typer.Option(False, help="Cache LLM responses"),
     cache_size: int = typer.Option(128, help="Maximum number of responses to keep in the cache"),
-    budget_limit: float | None = typer.Option(None, help="Maximum total spend allowed during the session"),
+    budget_limit: Optional[float] = typer.Option(None, help="Maximum total spend allowed during the session"),
     semantic: bool = typer.Option(
         False,
         "--semantic",
         "--semantic-retrieval",
         help="Enable semantic retrieval for Gatekeeper",
     ),
-    cross_encoder_model: str | None = typer.Option(None, help="Cross-encoder model name for semantic retrieval"),
-    retrieval_backend: str | None = typer.Option(None, help="Retrieval plugin name"),
+    cross_encoder_model: Optional[str] = typer.Option(None, help="Cross-encoder model name for semantic retrieval"),
+    retrieval_backend: Optional[str] = typer.Option(None, help="Retrieval plugin name"),
     convert: bool = typer.Option(False, help="Convert raw cases to JSON"),
     raw_dir: str = typer.Option("data/raw_cases", help="Directory with raw text cases for conversion"),
     output_dir: str = typer.Option("data/sdbench/cases", help="Destination for converted JSON cases"),
     hidden_dir: str = typer.Option("data/sdbench/hidden_cases", help="Directory for held-out cases from 2024-2025"),
-    export_sqlite: str | None = typer.Option(None, help="Path to SQLite file when using --convert"),
-    results_db: str | None = typer.Option(None, help="SQLite database to store evaluation metrics"),
-    budget: float | None = typer.Option(None, help="Budget limit for Budgeted mode"),
+    export_sqlite: Optional[str] = typer.Option(None, help="Path to SQLite file when using --convert"),
+    results_db: Optional[str] = typer.Option(None, help="SQLite database to store evaluation metrics"),
+    budget: Optional[float] = typer.Option(None, help="Budget limit for Budgeted mode"),
     mode: str = typer.Option("unconstrained", help="Run mode"),
-    vote_weights: str | None = typer.Option(None, help="JSON string or path with run ID weights for ensemble voting"),
-    weights_file: str | None = typer.Option(None, help="JSON or YAML file mapping run IDs to vote weights"),
-    metrics_port: int | None = typer.Option(None, help="Port for Prometheus metrics server (default 8000)"),
-    verbosity: Verbosity = typer.Option(Verbosity.INFO, help="Logging verbosity"),
+    vote_weights: Optional[str] = typer.Option(None, help="JSON string or path with run ID weights for ensemble voting"),
+    weights_file: Optional[str] = typer.Option(None, help="JSON or YAML file mapping run IDs to vote weights"),
+    metrics_port: Optional[int] = typer.Option(None, help="Port for Prometheus metrics server (default 8000)"),
+    verbosity: str = typer.Option("info", help="Logging verbosity", case_sensitive=False),
 ) -> None:
     """Run a demo diagnostic session using the virtual panel."""
 
@@ -727,7 +728,7 @@ def _main(
         cost_table=cost_table,
         cost_estimator=cost_estimator,
         correct_threshold=correct_threshold,
-        panel_engine=panel_engine.value,
+        panel_engine=panel_engine,
         llm_provider=llm_provider,
         llm_model=llm_model,
         hf_model=hf_model,
@@ -750,8 +751,8 @@ def _main(
         vote_weights=vote_weights,
         weights_file=weights_file,
         metrics_port=metrics_port,
-        verbose=verbosity == Verbosity.DEBUG,
-        quiet=verbosity == Verbosity.QUIET,
+        verbose=verbosity.lower() == "debug",
+        quiet=verbosity.lower() == "quiet",
     )
     cfg = load_settings(args.config)
     if args.db is None and args.db_sqlite is None:
@@ -831,13 +832,13 @@ def _main(
         engine = RuleEngine()
     else:
         cache_path = "llm_cache.jsonl" if args.cache else None
-        if args.llm_provider == LLMProvider.OLLAMA:
+        if args.llm_provider == "ollama":
             client = OllamaClient(
                 base_url=args.ollama_base_url or settings.ollama_base_url,
                 cache_path=cache_path,
                 cache_size=args.cache_size,
             )
-        elif args.llm_provider == LLMProvider.HF_LOCAL:
+        elif args.llm_provider == "hf-local":
             client = HFLocalClient(
                 model_path=args.hf_model or settings.hf_model,
                 cache_path=cache_path,
@@ -901,7 +902,7 @@ def _main(
     print(f"Total time: {result.duration:.2f}s")
 
 
-def main(argv: list[str] | None = None) -> None:
+def main(argv: Optional[List[str]] = None) -> None:
     """Entry point for programmatic invocation."""
 
     from typer.main import get_command

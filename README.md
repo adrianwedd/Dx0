@@ -75,6 +75,8 @@ cd clinical-ai-suite
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.lock
+# install extra tools for testing
+pip install -r requirements-dev.txt
 ```
 
 For details on creating a development environment and running the test suite,
@@ -310,7 +312,7 @@ The test suite depends on additional packages such as `httpx`,
 `starlette`, and `pydantic`. Install the development requirements first:
 
 ```bash
-pip install -r requirements.lock
+pip install -r requirements-dev.txt
 pytest -q
 ```
 

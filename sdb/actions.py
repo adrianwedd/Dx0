@@ -1,3 +1,5 @@
+"""Utilities for parsing panel actions from XML or JSON text."""
+
 from dataclasses import dataclass
 import json
 import re
