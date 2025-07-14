@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """SQLite storage for session evaluation metrics."""
+
+from __future__ import annotations
 
 import sqlite3
 from typing import Iterable
@@ -12,6 +12,7 @@ class MetricsDB:
     """Persist :class:`SessionResult` records in SQLite."""
 
     def __init__(self, path: str) -> None:
+        """Initialize the database at ``path`` and create tables."""
         self.path = path
         self._init_db()
 
