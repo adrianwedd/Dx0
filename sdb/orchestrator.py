@@ -37,6 +37,7 @@ if os.getenv("SENTRY_DSN"):
 
 class Orchestrator:
     """Coordinate panel actions while enforcing test budgets."""
+
     def __init__(
         self,
         panel: VirtualPanel,
@@ -62,7 +63,6 @@ class Orchestrator:
         session_id:
             Identifier used for error reporting context.
         """
-
         self.panel = panel
         self.gatekeeper = gatekeeper
         self.question_only = question_only
@@ -74,25 +74,21 @@ class Orchestrator:
     @property
     def spent(self) -> float:
         """Total money spent on ordered tests."""
-
         return self.budget_manager.spent
 
     @property
     def ordered_tests(self) -> list[str]:
         """List of tests ordered so far."""
-
         return self.results.ordered_tests
 
     @property
     def final_diagnosis(self) -> str | None:
         """Diagnosis provided by the panel, if any."""
-
         return self.results.final_diagnosis
 
     @property
     def finished(self) -> bool:
         """Whether the session has concluded."""
-
         return self.results.finished or self.budget_manager.over_budget()
 
     def run_turn(self, case_info: str) -> str:
@@ -129,7 +125,6 @@ class Orchestrator:
 
     async def run_turn_async(self, case_info: str) -> str:
         """Asynchronous version of :meth:`run_turn`."""
-
         with tracer.start_as_current_span("orchestrator.run_turn_async"):
             start = time.perf_counter()
             prev_spent = self.budget_manager.spent
@@ -174,7 +169,6 @@ class Orchestrator:
         prev_spent: float,
     ) -> str:
         """Finalize bookkeeping after obtaining an action result."""
-
         logger.info(
             "gatekeeper_response",
             synthetic=getattr(result, "synthetic", False),
