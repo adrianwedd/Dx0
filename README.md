@@ -310,7 +310,7 @@ The test suite depends on additional packages such as `httpx`,
 `starlette`, and `pydantic`. Install the development requirements first:
 
 ```bash
-pip install -r requirements.lock
+pip install -r requirements-dev.txt
 pytest -q
 ```
 
