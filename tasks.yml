@@ -1757,3 +1757,14 @@ backlog:
     status: pending
     epic: Phase 4
     assigned_to: null
+  - id: 212
+    title: "Generate Sphinx CLI Documentation"
+    description: >
+        Add a Sphinx configuration using the sphinx-typer extension to
+        document the dx0 command line interface and produce HTML docs.
+    component: documentation
+    area: enhancement
+    priority: 2
+    status: done
+    epic: Phase 4
+    assigned_to: null

@@ -38,3 +38,6 @@ bcrypt==4.3.0
 dvc[s3]==3.61.0  # Dataset versioning tool with S3 remote
 playwright==1.43.0  # UI end-to-end testing
 typer==0.16.0
+sphinx==7.2.6
+sphinx-typer==0.0.4
+myst-parser==2.0.0
