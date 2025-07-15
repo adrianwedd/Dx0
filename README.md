@@ -434,3 +434,14 @@ For a list of changes in each version, see
 
 * Nori *et al.* (2025). "Sequential Diagnosis with Language Models." *arXiv preprint* arXiv:2506.22405v2. Available at [https://arxiv.org/abs/2506.22405](https://arxiv.org/abs/2506.22405)
 * Microsoft AI Blog (2024). "The Path to Medical Superintelligence." Retrieved from [https://microsoft.ai/new/the-path-to-medical-superintelligence/](https://microsoft.ai/new/the-path-to-medical-superintelligence/)
+
+## CLI Documentation
+
+To build HTML documentation for the `dx0` command, run:
+
+```bash
+pip install -r requirements-dev.txt
+sphinx-build docs/sphinx docs/_build
+```
+
+The output in `docs/_build` can be hosted with the rest of the project docs.

@@ -75,3 +75,9 @@ The system prompt in `prompts/judge_system.txt` explains the scale from 1
 (completely incorrect) to 5 (clinically equivalent). During evaluation the
 model's numeric score is used directly. If no score can be parsed, a default
 rating of 1 is assigned.
+
+## Building CLI Documentation
+
+A Sphinx configuration lives in `docs/sphinx`. Install the development
+requirements and run `sphinx-build docs/sphinx docs/_build` to generate
+HTML docs for the `dx0` command line interface.
