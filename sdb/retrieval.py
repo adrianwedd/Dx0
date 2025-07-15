@@ -2,6 +2,7 @@ import re
 import time
 import hashlib
 from typing import Dict, List, Tuple, Optional, Type, Protocol
+import asyncio
 from importlib import metadata
 
 from .config import settings
@@ -40,6 +41,13 @@ class BaseRetrievalIndex(Protocol):
         ...
 
 
+class AsyncRetrievalIndex(BaseRetrievalIndex, Protocol):
+    """Protocol for retrieval indexes supporting asynchronous queries."""
+
+    async def aquery(self, text: str, top_k: int = 1) -> List[Tuple[str, float]]:
+        ...
+
+
 _BUILTIN_PLUGINS: Dict[str, Type[BaseRetrievalIndex]] = {}
 
 
@@ -60,6 +68,24 @@ class CachedRetrievalIndex:
             return hit[1]
         start = time.perf_counter()
         results = self.backend.query(text, top_k=top_k)
+        duration = time.perf_counter() - start
+        RETRIEVAL_LATENCY.observe(duration)
+        self.cache[key] = (now, results)
+        return results
+
+    async def aquery(self, text: str, top_k: int = 1) -> List[Tuple[str, float]]:
+        """Asynchronous version of :meth:`query`."""
+        key = hashlib.sha1(f"{text}|{top_k}".encode("utf-8")).hexdigest()
+        now = time.time()
+        hit = self.cache.get(key)
+        if hit and now - hit[0] < self.ttl:
+            RETRIEVAL_CACHE_HITS.inc()
+            return hit[1]
+        start = time.perf_counter()
+        if hasattr(self.backend, "aquery"):
+            results = await self.backend.aquery(text, top_k=top_k)  # type: ignore[attr-defined]
+        else:
+            results = await asyncio.to_thread(self.backend.query, text, top_k=top_k)
         duration = time.perf_counter() - start
         RETRIEVAL_LATENCY.observe(duration)
         self.cache[key] = (now, results)
@@ -143,6 +169,10 @@ class SimpleEmbeddingIndex:
                 if scores[i] > 0:
                     results.append((self.documents[i], float(scores[i])))
             return results
+
+    async def aquery(self, text: str, top_k: int = 1) -> List[Tuple[str, float]]:
+        """Asynchronous version of :meth:`query`."""
+        return await asyncio.to_thread(self.query, text, top_k=top_k)
 
 
 class CrossEncoderReranker:
@@ -241,6 +271,10 @@ class FaissIndex:
 
         return results
 
+    async def aquery(self, text: str, top_k: int = 1) -> List[Tuple[str, float]]:
+        """Asynchronous version of :meth:`query`."""
+        return await asyncio.to_thread(self.query, text, top_k=top_k)
+
 
 class SentenceTransformerIndex:
     """Embedding index backed by a sentence-transformer model."""
@@ -302,6 +336,10 @@ class SentenceTransformerIndex:
             if scores[i] > 0:
                 results.append((self.documents[i], float(scores[i])))
         return results
+
+    async def aquery(self, text: str, top_k: int = 1) -> List[Tuple[str, float]]:
+        """Asynchronous version of :meth:`query`."""
+        return await asyncio.to_thread(self.query, text, top_k=top_k)
 
 
 _BUILTIN_PLUGINS.update(

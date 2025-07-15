@@ -34,6 +34,7 @@ from .retrieval import (
     FaissIndex,
     SentenceTransformerIndex,
     CrossEncoderReranker,
+    AsyncRetrievalIndex,
     get_retrieval_plugin,
 )
 from .plugins import PluginInfo, validate_plugins
@@ -89,6 +90,7 @@ __all__ = [
     "FaissIndex",
     "SentenceTransformerIndex",
     "CrossEncoderReranker",
+    "AsyncRetrievalIndex",
     "get_retrieval_plugin",
     "load_scores",
     "permutation_test",

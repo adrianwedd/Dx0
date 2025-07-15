@@ -235,4 +235,91 @@ class Gatekeeper:
     async def aanswer_question(self, query: str) -> QueryResult:
         """Asynchronous version of :meth:`answer_question`."""
 
-        return await asyncio.to_thread(self.answer_question, query)
+        with tracer.start_as_current_span("gatekeeper.aanswer_question"):
+            logger.info("gatekeeper_query", query=query)
+
+            try:
+                QUERY_SCHEMA.validate(query)
+                root = ET.fromstring(query.strip())
+            except (xmlschema.XMLSchemaException, ET.ParseError) as exc:
+                result = QueryResult(f"Invalid query: {exc}", synthetic=True)
+                logger.info("gatekeeper_result", synthetic=True)
+                return result
+
+        tags = {el.tag for el in root.iter()}
+        if (
+            ActionType.QUESTION.value in tags
+            and ActionType.TEST.value in tags
+        ):
+            result = QueryResult(
+                "Cannot mix questions and tests in one request",
+                synthetic=True,
+            )
+            logger.info("gatekeeper_result", synthetic=True)
+            return result
+
+        tag = root.tag
+        text = (root.text or "").strip()
+
+        if tag == ActionType.DIAGNOSIS.value:
+            result = QueryResult(
+                "Diagnosis queries are not allowed",
+                synthetic=True,
+            )
+            logger.info("gatekeeper_result", synthetic=True)
+            return result
+
+        if tag == ActionType.QUESTION.value:
+            if any(
+                word in text.lower()
+                for word in ["diagnosis", "differential", "what is wrong"]
+            ):
+                result = QueryResult(
+                    "I can only answer explicit questions about findings.",
+                    synthetic=True,
+                )
+                logger.info("gatekeeper_result", synthetic=True)
+                return result
+
+            if self.use_semantic_retrieval and self.index is not None:
+                if hasattr(self.index, "aquery"):
+                    results = await self.index.aquery(text, top_k=2)  # type: ignore[attr-defined]
+                else:
+                    results = await asyncio.to_thread(self.index.query, text, top_k=2)
+                if results:
+                    context = " \n".join(r[0] for r in results)
+                    prompt = f"Context: {context}\n\nQuestion: {text}"
+                    result = QueryResult(content=prompt, synthetic=False)
+                    logger.info("gatekeeper_result", synthetic=False)
+                    return result
+
+            pattern = re.compile(re.escape(text), re.IGNORECASE | re.DOTALL)
+            for section in [self.case.summary, self.case.full_text]:
+                m = pattern.search(section)
+                if m:
+                    start = max(0, m.start() - 40)
+                    end = min(len(section), m.end() + 40)
+                    snippet = section[start:end]
+                    result = QueryResult(content=snippet, synthetic=False)
+                    logger.info("gatekeeper_result", synthetic=False)
+                    return result
+            result = QueryResult("No information available", synthetic=True)
+            logger.info("gatekeeper_result", synthetic=True)
+            return result
+
+        if tag == ActionType.TEST.value:
+            result = self.known_tests.get(text.lower())
+            if result:
+                result_obj = QueryResult(result, synthetic=False)
+                logger.info("gatekeeper_result", synthetic=False)
+                return result_obj
+            result_obj = QueryResult(
+                "Synthetic result: normal",
+                synthetic=True,
+            )
+            logger.info("gatekeeper_result", synthetic=True)
+            return result_obj
+
+        result = QueryResult("Unknown action", synthetic=True)
+        logger.info("gatekeeper_result", synthetic=True)
+        return result
