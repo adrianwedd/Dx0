@@ -1768,3 +1768,23 @@ backlog:
     status: done
     epic: Phase 4
     assigned_to: null
+  - id: 213
+    title: "Publish Drift Analysis Report"
+    description: >
+        Document the drift analysis and decision audit in `docs/drift_analysis_report.md` to track project alignment over time.
+    component: documentation
+    area: project-management
+    priority: 2
+    status: done
+    epic: Phase 4
+    assigned_to: null
+  - id: 214
+    title: "Automate Sphinx Doc Generation"
+    description: >
+        Add a CI step to run `sphinx-build` so CLI documentation stays current with every release.
+    component: devops
+    area: enhancement
+    priority: 3
+    status: pending
+    epic: Phase 4
+    assigned_to: null
