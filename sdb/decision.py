@@ -130,7 +130,7 @@ class LLMEngine(DecisionEngine):
 
     def __init__(
         self,
-        model: str = "gpt-4",
+        model: str | None = None,
         client: LLMClient | AsyncLLMClient | None = None,
         personas: list[str] | None = None,
         *,
@@ -155,7 +155,7 @@ class LLMEngine(DecisionEngine):
             provided.
         """
 
-        self.model = model
+        self.model = model or settings.openai_model
         self.client = client or OpenAIClient()
         self.fallback = RuleEngine()
         self.personas = personas or self.DEFAULT_PERSONAS

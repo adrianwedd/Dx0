@@ -4,6 +4,7 @@ from typing import Any, Dict
 
 from .prompt_loader import load_prompt
 from .llm_client import LLMClient, OpenAIClient
+from .config import settings
 
 
 @dataclass
@@ -18,13 +19,13 @@ class Judge:
     def __init__(
         self,
         rubric: Dict[str, Any],
-        model: str = "gpt-4",
+        model: str | None = None,
         client: LLMClient | None = None,
     ) -> None:
         """Create a judge with a scoring rubric and LLM configuration."""
 
         self.rubric = rubric
-        self.model = model
+        self.model = model or settings.openai_model
         self.client = client or OpenAIClient()
         self.prompt = load_prompt("judge_system")
 
