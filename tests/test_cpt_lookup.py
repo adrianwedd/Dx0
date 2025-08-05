@@ -17,11 +17,18 @@ def test_llm_lookup_and_cache(tmp_path, monkeypatch):
     cache = tmp_path / "cache.csv"
 
     def fake_create(model, messages, max_tokens):
-        choice = SimpleNamespace(message={"content": "12345"})
+        choice = SimpleNamespace(message=SimpleNamespace(content="12345"))
         return SimpleNamespace(choices=[choice])
 
+    # Mock the new OpenAI v1+ client API
+    fake_client = SimpleNamespace(
+        chat=SimpleNamespace(
+            completions=SimpleNamespace(create=fake_create)
+        )
+    )
+    
     dummy_openai = SimpleNamespace(
-        ChatCompletion=SimpleNamespace(create=fake_create),
+        OpenAI=lambda api_key: fake_client,
         api_key=None,
     )
     import sdb.cpt_lookup as cl

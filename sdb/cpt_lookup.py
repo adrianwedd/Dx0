@@ -64,16 +64,18 @@ def _query_llm(test_name: str) -> Optional[str]:
         api_key = settings.openai_api_key or os.getenv("OPENAI_API_KEY")
         if not api_key:
             return None
-        openai.api_key = api_key
+        
+        # Use new OpenAI v1+ client-based API
+        client = openai.OpenAI(api_key=api_key)
         model = os.getenv("OPENAI_MODEL", settings.openai_model)
         for _ in range(3):
             try:
-                resp = openai.ChatCompletion.create(
+                resp = client.chat.completions.create(
                     model=model,
                     messages=messages,
                     max_tokens=10,
                 )
-                return resp.choices[0].message["content"].strip().split()[0]
+                return resp.choices[0].message.content.strip().split()[0]
             except Exception:  # pragma: no cover - network issues
                 time.sleep(1)
     else:

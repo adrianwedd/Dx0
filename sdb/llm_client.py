@@ -177,15 +177,16 @@ class OpenAIClient(LLMClient):
         if openai is None or not self.api_key:
             return None
 
-        openai.api_key = self.api_key
+        # Use new OpenAI v1+ client-based API
+        client = openai.OpenAI(api_key=self.api_key)
         for _ in range(3):
             try:
-                resp = openai.ChatCompletion.create(
+                resp = client.chat.completions.create(
                     model=model,
                     messages=messages,
                     max_tokens=64,
                 )
-                return resp.choices[0].message["content"]
+                return resp.choices[0].message.content
             except Exception:  # pragma: no cover - network issues
                 time.sleep(1)
         return None
