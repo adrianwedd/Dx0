@@ -1,0 +1,38 @@
+# Production Environment Configuration
+# This file contains production-specific settings for the SDBench application.
+# CRITICAL: All sensitive values must be set via environment variables.
+
+# LLM Configuration
+openai_model: "gpt-4"
+# openai_api_key: MUST be set via OPENAI_API_KEY environment variable
+
+# Core Application Settings
+metrics_port: 8080
+semantic_retrieval: true
+
+# Database Settings
+# case_db_sqlite: set via SDB_CASE_DB_SQLITE environment variable
+
+# UI and Session Configuration - SECURITY CRITICAL
+# ui_secret_key: MUST be set via UI_SECRET_KEY environment variable (strong random key)
+ui_token_ttl: 14400  # 4 hours
+# sessions_db: set via SESSIONS_DB environment variable
+failed_login_limit: 3
+failed_login_cooldown: 1800  # 30 minutes
+message_rate_limit: 10
+message_rate_window: 60
+
+# External Services
+# sentry_dsn: set via SENTRY_DSN environment variable for error reporting
+
+# Tracing Configuration (production-ready)
+tracing: true
+# tracing_host: set via SDB_TRACING_HOST environment variable
+tracing_port: 6831
+
+# Performance Settings
+parallel_personas: true
+retrieval_cache_ttl: 1800  # 30 minutes
+
+# Security Settings (production hardening)
+ui_budget_limit: 1000.0  # Default budget limit

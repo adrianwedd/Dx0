@@ -113,12 +113,35 @@ class Settings(BaseModel):
 
 
 def load_settings(path: str | None = None) -> Settings:
-    """Return :class:`Settings` from ``path`` and environment variables."""
+    """Return :class:`Settings` from ``path`` and environment variables.
+    
+    If no path is provided, attempts to load environment-specific config
+    based on SDBENCH_ENV environment variable. Also loads local.yml if present.
+    """
 
     data: dict[str, object] = {}
-    if path:
+    
+    # Load environment-specific config if SDBENCH_ENV is set
+    if path is None:
+        env_name = os.getenv("SDBENCH_ENV")
+        if env_name:
+            env_config_path = f"config/{env_name}.yml"
+            if os.path.exists(env_config_path):
+                with open(env_config_path, "r", encoding="utf-8") as fh:
+                    data = yaml.safe_load(fh) or {}
+    
+    # Load specific config file if provided
+    if path and os.path.exists(path):
         with open(path, "r", encoding="utf-8") as fh:
-            data = yaml.safe_load(fh) or {}
+            config_data = yaml.safe_load(fh) or {}
+            data.update(config_data)
+    
+    # Load local overrides if they exist
+    local_config_path = "config/local.yml"
+    if os.path.exists(local_config_path):
+        with open(local_config_path, "r", encoding="utf-8") as fh:
+            local_data = yaml.safe_load(fh) or {}
+            data.update(local_data)
     env = os.getenv
     if "openai_api_key" not in data and env("OPENAI_API_KEY"):
         data["openai_api_key"] = env("OPENAI_API_KEY")

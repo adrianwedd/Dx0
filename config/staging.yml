@@ -1,0 +1,35 @@
+# Staging Environment Configuration
+# This file contains staging-specific settings for the SDBench application.
+# Environment variables take precedence over these settings.
+
+# LLM Configuration
+openai_model: "gpt-4"
+# openai_api_key: set via OPENAI_API_KEY environment variable
+
+# Core Application Settings
+metrics_port: 8001
+semantic_retrieval: true
+
+# Database Settings
+case_db_sqlite: "/data/cases_staging.db"
+
+# UI and Session Configuration  
+# ui_secret_key: set via UI_SECRET_KEY environment variable (REQUIRED)
+ui_token_ttl: 7200  # 2 hours
+sessions_db: "/data/sessions_staging.db"
+failed_login_limit: 3
+failed_login_cooldown: 600  # 10 minutes
+message_rate_limit: 20
+message_rate_window: 60
+
+# External Services
+# sentry_dsn: set via SENTRY_DSN environment variable for error reporting
+
+# Tracing Configuration
+tracing: true
+tracing_host: "jaeger-staging"
+tracing_port: 6831
+
+# Performance Settings
+parallel_personas: true
+retrieval_cache_ttl: 600  # 10 minutes

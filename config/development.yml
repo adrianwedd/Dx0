@@ -1,0 +1,31 @@
+# Development Environment Configuration
+# This file contains development-specific settings for the SDBench application.
+# Override any settings by setting environment variables or creating config/local.yml
+
+# LLM Configuration
+openai_model: "gpt-4"
+ollama_base_url: "http://localhost:11434"
+
+# Core Application Settings  
+metrics_port: 8000
+semantic_retrieval: false
+
+# Database Settings
+case_db_sqlite: "data/cases.db"
+
+# UI and Session Configuration
+ui_secret_key: "dev-secret-key-change-in-production"
+ui_token_ttl: 3600  # 1 hour
+sessions_db: "sessions.db"
+failed_login_limit: 5
+failed_login_cooldown: 300  # 5 minutes
+message_rate_limit: 30
+message_rate_window: 60
+
+# Development-specific features
+tracing: true
+tracing_host: "localhost" 
+tracing_port: 6831
+
+# Optional Features (disabled by default in dev)
+parallel_personas: false
