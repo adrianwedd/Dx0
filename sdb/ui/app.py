@@ -24,6 +24,7 @@ from pydantic import BaseModel, ValidationError
 from starlette.websockets import WebSocketDisconnect
 
 from sdb.case_database import Case, CaseDatabase
+from sdb.config import settings
 from sdb.cost_estimator import CostEstimator, CptCost
 from sdb.fhir_export import ordered_tests_to_fhir, transcript_to_fhir
 from sdb.gatekeeper import Gatekeeper
@@ -69,19 +70,15 @@ cost_table = {
 cost_estimator = CostEstimator(cost_table)
 
 # default budget limit for new sessions
-DEFAULT_BUDGET_LIMIT = (
-    float(os.environ.get("UI_BUDGET_LIMIT"))
-    if os.environ.get("UI_BUDGET_LIMIT")
-    else None
-)
+DEFAULT_BUDGET_LIMIT = settings.ui_budget_limit
 
 # optional error reporting
 SENTRY_ENABLED = False
-if os.getenv("SENTRY_DSN"):
+if settings.sentry_dsn:
     try:
         import sentry_sdk
 
-        sentry_sdk.init(os.environ["SENTRY_DSN"])
+        sentry_sdk.init(settings.sentry_dsn)
         SENTRY_ENABLED = True
     except Exception:
         pass
@@ -90,10 +87,7 @@ if os.getenv("SENTRY_DSN"):
 def load_user_credentials() -> dict[str, Credential]:
     """Load credential hashes and groups from YAML configuration."""
 
-    path = os.environ.get(
-        "UI_USERS_FILE",
-        str(Path(__file__).with_name("users.yml")),
-    )
+    path = settings.ui_users_file or str(Path(__file__).with_name("users.yml"))
     if not Path(path).exists():
         return {}
     with open(path, "r", encoding="utf-8") as fh:
@@ -112,21 +106,21 @@ def load_user_credentials() -> dict[str, Credential]:
 
 CREDENTIALS = load_user_credentials()
 
-SECRET_KEY = os.environ.get("UI_SECRET_KEY", "change-me")
+SECRET_KEY = settings.ui_secret_key
 ALGORITHM = "HS256"
 
-SESSION_TTL = int(os.environ.get("UI_TOKEN_TTL", "3600"))
-SESSION_DB_PATH = os.environ.get("SESSIONS_DB", "sessions.db")
+SESSION_TTL = settings.ui_token_ttl
+SESSION_DB_PATH = settings.sessions_db
 SESSION_STORE = SessionStore(SESSION_DB_PATH, ttl=SESSION_TTL)
 
 # Failed login tracking configuration
-FAILED_LOGIN_LIMIT = int(os.environ.get("FAILED_LOGIN_LIMIT", "5"))
-FAILED_LOGIN_COOLDOWN = int(os.environ.get("FAILED_LOGIN_COOLDOWN", "300"))
+FAILED_LOGIN_LIMIT = settings.failed_login_limit
+FAILED_LOGIN_COOLDOWN = settings.failed_login_cooldown
 FAILED_LOGINS: dict[str, list[float]] = defaultdict(list)
 
 # Per-session message rate limits
-MESSAGE_RATE_LIMIT = int(os.environ.get("MESSAGE_RATE_LIMIT", "30"))
-MESSAGE_RATE_WINDOW = int(os.environ.get("MESSAGE_RATE_WINDOW", "60"))
+MESSAGE_RATE_LIMIT = settings.message_rate_limit
+MESSAGE_RATE_WINDOW = settings.message_rate_window
 MESSAGE_HISTORY: dict[str, list[float]] = defaultdict(list)
 
 security = HTTPBearer()
@@ -434,7 +428,7 @@ async def websocket_endpoint(ws: WebSocket) -> None:
             return
         _, group_name = sess
 
-        limit_str = ws.query_params.get("budget") or os.environ.get("UI_BUDGET_LIMIT")
+        limit_str = ws.query_params.get("budget") or (str(settings.ui_budget_limit) if settings.ui_budget_limit else None)
         limit = None
         if limit_str is not None:
             try:
