@@ -36,6 +36,7 @@ opentelemetry-exporter-jaeger==1.21.0
 
 # password hashing
 bcrypt==4.3.0
+aioredis==2.0.1  # Redis async client for session management
 
 dvc[s3]==3.61.0  # Dataset versioning tool with S3 remote
 playwright==1.43.0  # UI end-to-end testing

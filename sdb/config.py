@@ -38,6 +38,12 @@ class Settings(BaseModel):
     message_rate_limit: int = 30
     message_rate_window: int = 60
     
+    # Session Backend Configuration
+    session_backend: str = "memory"  # memory, redis, sqlite
+    redis_url: str = "redis://localhost:6379"
+    redis_password: Optional[str] = None
+    session_cleanup_interval: int = 300  # seconds
+    
     # External Services
     sentry_dsn: Optional[str] = None
     cms_pricing_url: Optional[str] = None
@@ -217,6 +223,19 @@ def load_settings(path: str | None = None) -> Settings:
     if env("MESSAGE_RATE_WINDOW"):
         try:
             data["message_rate_window"] = int(env("MESSAGE_RATE_WINDOW"))
+        except ValueError:
+            pass
+    
+    # Session Backend Environment Variables (highest priority)
+    if env("SESSION_BACKEND"):
+        data["session_backend"] = env("SESSION_BACKEND")
+    if env("REDIS_URL"):
+        data["redis_url"] = env("REDIS_URL")
+    if env("REDIS_PASSWORD"):
+        data["redis_password"] = env("REDIS_PASSWORD")
+    if env("SESSION_CLEANUP_INTERVAL"):
+        try:
+            data["session_cleanup_interval"] = int(env("SESSION_CLEANUP_INTERVAL"))
         except ValueError:
             pass
     
