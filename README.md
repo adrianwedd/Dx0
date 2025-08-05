@@ -152,16 +152,51 @@ python -m dx0.cli \
 
 ### Configuration
 
-You can load common settings from a YAML file using `--config`:
+#### Environment-Specific Configuration
+
+The application supports environment-specific configuration profiles via the `SDBENCH_ENV` environment variable:
+
+```bash
+export SDBENCH_ENV=development  # loads config/development.yml
+export SDBENCH_ENV=staging      # loads config/staging.yml  
+export SDBENCH_ENV=production   # loads config/production.yml
+```
+
+Configuration is loaded in priority order:
+1. Default values from `sdb/config.py`
+2. Environment-specific YAML file (if `SDBENCH_ENV` is set)
+3. `config/local.yml` (if it exists, gitignored)
+4. Environment variables (highest priority)
+
+#### Manual Configuration Files
+
+You can also load settings from a specific YAML file using `--config`:
 
 ```yaml
+# LLM Configuration
 openai_api_key: sk-your-key
 openai_model: gpt-4
 hf_model: /models/nejm-lora
 ollama_base_url: http://localhost:11434
+
+# Core Application Settings
 metrics_port: 8000
 case_db: data/sdbench/cases
 case_db_sqlite: cases.db
+
+# UI and Session Configuration
+ui_secret_key: your-secret-key
+ui_token_ttl: 3600
+sessions_db: sessions.db
+message_rate_limit: 30
+
+# External Services
+sentry_dsn: https://...@sentry.io/...
+
+# Tracing Configuration
+tracing: true
+tracing_host: localhost
+tracing_port: 6831
 ```
 
 If ``case_db_sqlite`` is provided, cases are loaded lazily from the SQLite file.

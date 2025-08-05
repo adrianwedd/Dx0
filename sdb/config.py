@@ -142,87 +142,88 @@ def load_settings(path: str | None = None) -> Settings:
         with open(local_config_path, "r", encoding="utf-8") as fh:
             local_data = yaml.safe_load(fh) or {}
             data.update(local_data)
+    # Environment variables always take precedence
     env = os.getenv
-    if "openai_api_key" not in data and env("OPENAI_API_KEY"):
+    if env("OPENAI_API_KEY"):
         data["openai_api_key"] = env("OPENAI_API_KEY")
-    if "openai_model" not in data and env("OPENAI_MODEL"):
+    if env("OPENAI_MODEL"):
         data["openai_model"] = env("OPENAI_MODEL")
-    if "hf_model" not in data and env("HF_MODEL"):
+    if env("HF_MODEL"):
         data["hf_model"] = env("HF_MODEL")
-    if "ollama_base_url" not in data and env("OLLAMA_BASE_URL"):
+    if env("OLLAMA_BASE_URL"):
         data["ollama_base_url"] = env("OLLAMA_BASE_URL")
-    if "metrics_port" not in data and env("SDB_METRICS_PORT"):
+    if env("SDB_METRICS_PORT"):
         try:
             data["metrics_port"] = int(env("SDB_METRICS_PORT"))
         except ValueError:
             pass
-    if "case_db" not in data and env("SDB_CASE_DB"):
+    if env("SDB_CASE_DB"):
         data["case_db"] = env("SDB_CASE_DB")
-    if "case_db_sqlite" not in data and env("SDB_CASE_DB_SQLITE"):
+    if env("SDB_CASE_DB_SQLITE"):
         data["case_db_sqlite"] = env("SDB_CASE_DB_SQLITE")
-    if "parallel_personas" not in data and env("SDB_PARALLEL_PERSONAS"):
+    if env("SDB_PARALLEL_PERSONAS"):
         data["parallel_personas"] = env("SDB_PARALLEL_PERSONAS").lower() == "true"
-    if "retrieval_backend" not in data and env("SDB_RETRIEVAL_BACKEND"):
+    if env("SDB_RETRIEVAL_BACKEND"):
         data["retrieval_backend"] = env("SDB_RETRIEVAL_BACKEND")
-    if "cost_estimator_plugin" not in data and env("SDB_COST_ESTIMATOR"):
+    if env("SDB_COST_ESTIMATOR"):
         data["cost_estimator_plugin"] = env("SDB_COST_ESTIMATOR")
-    if "retrieval_cache_ttl" not in data and env("SDB_RETRIEVAL_CACHE_TTL"):
+    if env("SDB_RETRIEVAL_CACHE_TTL"):
         try:
             data["retrieval_cache_ttl"] = int(env("SDB_RETRIEVAL_CACHE_TTL"))
         except ValueError:
             pass
-    if "tracing" not in data and env("SDB_TRACING_ENABLED"):
+    if env("SDB_TRACING_ENABLED"):
         data["tracing"] = env("SDB_TRACING_ENABLED").lower() == "true"
-    if "tracing_host" not in data and env("SDB_TRACING_HOST"):
+    if env("SDB_TRACING_HOST"):
         data["tracing_host"] = env("SDB_TRACING_HOST")
-    if "tracing_port" not in data and env("SDB_TRACING_PORT"):
+    if env("SDB_TRACING_PORT"):
         try:
             data["tracing_port"] = int(env("SDB_TRACING_PORT"))
         except ValueError:
             pass
     
-    # UI and Session Configuration Environment Variables
-    if "ui_budget_limit" not in data and env("UI_BUDGET_LIMIT"):
+    # UI and Session Configuration Environment Variables (highest priority)
+    if env("UI_BUDGET_LIMIT"):
         try:
             data["ui_budget_limit"] = float(env("UI_BUDGET_LIMIT"))
         except ValueError:
             pass
-    if "ui_secret_key" not in data and env("UI_SECRET_KEY"):
+    if env("UI_SECRET_KEY"):
         data["ui_secret_key"] = env("UI_SECRET_KEY")
-    if "ui_token_ttl" not in data and env("UI_TOKEN_TTL"):
+    if env("UI_TOKEN_TTL"):
         try:
             data["ui_token_ttl"] = int(env("UI_TOKEN_TTL"))
         except ValueError:
             pass
-    if "sessions_db" not in data and env("SESSIONS_DB"):
+    if env("SESSIONS_DB"):
         data["sessions_db"] = env("SESSIONS_DB")
-    if "ui_users_file" not in data and env("UI_USERS_FILE"):
+    if env("UI_USERS_FILE"):
         data["ui_users_file"] = env("UI_USERS_FILE")
-    if "failed_login_limit" not in data and env("FAILED_LOGIN_LIMIT"):
+    if env("FAILED_LOGIN_LIMIT"):
         try:
             data["failed_login_limit"] = int(env("FAILED_LOGIN_LIMIT"))
         except ValueError:
             pass
-    if "failed_login_cooldown" not in data and env("FAILED_LOGIN_COOLDOWN"):
+    if env("FAILED_LOGIN_COOLDOWN"):
         try:
             data["failed_login_cooldown"] = int(env("FAILED_LOGIN_COOLDOWN"))
         except ValueError:
             pass
-    if "message_rate_limit" not in data and env("MESSAGE_RATE_LIMIT"):
+    if env("MESSAGE_RATE_LIMIT"):
         try:
             data["message_rate_limit"] = int(env("MESSAGE_RATE_LIMIT"))
         except ValueError:
             pass
-    if "message_rate_window" not in data and env("MESSAGE_RATE_WINDOW"):
+    if env("MESSAGE_RATE_WINDOW"):
         try:
             data["message_rate_window"] = int(env("MESSAGE_RATE_WINDOW"))
         except ValueError:
             pass
     
-    # External Services Environment Variables
-    if "sentry_dsn" not in data and env("SENTRY_DSN"):
+    # External Services Environment Variables (highest priority)
+    if env("SENTRY_DSN"):
         data["sentry_dsn"] = env("SENTRY_DSN")
-    if "cms_pricing_url" not in data and env("CMS_PRICING_URL"):
+    if env("CMS_PRICING_URL"):
         data["cms_pricing_url"] = env("CMS_PRICING_URL")
     
     try:
