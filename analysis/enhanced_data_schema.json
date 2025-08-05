@@ -1,0 +1,503 @@
+{
+  "schema_version": "2.0",
+  "description": "Enhanced CPT pricing data schema for ML-based cost estimation",
+  "last_updated": "2025-08-05",
+  
+  "record_structure": {
+    "identifier": {
+      "cpt_code": {
+        "type": "string",
+        "pattern": "^\\d{5}(-\\d{2})?$|^[A-Z]\\d{4}$|^\\d{4}T$",
+        "description": "CPT or HCPCS code with optional modifier",
+        "required": true
+      },
+      "test_id": {
+        "type": "string",
+        "format": "uuid",
+        "description": "Unique identifier for the test",
+        "required": true
+      }
+    },
+    
+    "basic_info": {
+      "test_name": {
+        "type": "string",
+        "description": "Human-readable test name",
+        "required": true
+      },
+      "canonical_name": {
+        "type": "string",
+        "description": "Standardized test name for consistency",
+        "required": true
+      },
+      "alternative_names": {
+        "type": "array",
+        "items": "string",
+        "description": "Common alternative names or abbreviations"
+      },
+      "description": {
+        "type": "string",
+        "description": "Detailed description of the test or procedure"
+      }
+    },
+    
+    "categorization": {
+      "primary_category": {
+        "type": "string",
+        "enum": ["laboratory", "radiology", "medicine", "surgery", "evaluation_management"],
+        "required": true
+      },
+      "subcategory": {
+        "type": "string",
+        "description": "Detailed subcategory within primary category"
+      },
+      "specialty": {
+        "type": "string",
+        "description": "Medical specialty typically ordering this test"
+      },
+      "body_system": {
+        "type": "string",
+        "enum": ["cardiovascular", "respiratory", "neurological", "gastrointestinal", 
+                 "musculoskeletal", "endocrine", "renal", "hematologic", "immunologic", 
+                 "general"],
+        "description": "Primary body system involved"
+      },
+      "test_type": {
+        "type": "string",
+        "enum": ["diagnostic", "screening", "monitoring", "therapeutic", "preventive"],
+        "description": "Clinical purpose of the test"
+      }
+    },
+    
+    "pricing": {
+      "base_price": {
+        "type": "number",
+        "minimum": 0,
+        "description": "Current standard price",
+        "required": true
+      },
+      "price_history": {
+        "type": "array",
+        "items": {
+          "date": "string",
+          "price": "number",
+          "source": "string"
+        },
+        "description": "Historical pricing data"
+      },
+      "cms_pricing": {
+        "national_payment": {
+          "type": "number",
+          "description": "CMS national average payment"
+        },
+        "facility_payment": {
+          "type": "number",
+          "description": "Facility-based payment rate"
+        },
+        "non_facility_payment": {
+          "type": "number",
+          "description": "Non-facility payment rate"
+        },
+        "last_updated": {
+          "type": "string",
+          "format": "date",
+          "description": "Date of last CMS update"
+        }
+      },
+      "commercial_pricing": {
+        "average": {
+          "type": "number",
+          "description": "Average commercial payer rate"
+        },
+        "percentile_25": {
+          "type": "number",
+          "description": "25th percentile of commercial prices"
+        },
+        "percentile_75": {
+          "type": "number",
+          "description": "75th percentile of commercial prices"
+        },
+        "data_points": {
+          "type": "integer",
+          "description": "Number of data points in calculation"
+        }
+      },
+      "price_variance": {
+        "coefficient_of_variation": {
+          "type": "number",
+          "description": "Price variance measure"
+        },
+        "geographic_variance": {
+          "type": "number",
+          "description": "Variance due to geographic factors"
+        }
+      }
+    },
+    
+    "complexity_indicators": {
+      "rvu_values": {
+        "work_rvu": {
+          "type": "number",
+          "description": "Physician work RVUs"
+        },
+        "practice_expense_rvu": {
+          "type": "number",
+          "description": "Practice expense RVUs"
+        },
+        "malpractice_rvu": {
+          "type": "number",
+          "description": "Malpractice RVUs"
+        },
+        "total_rvu": {
+          "type": "number",
+          "description": "Total RVU value"
+        }
+      },
+      "global_period": {
+        "type": "integer",
+        "description": "Global surgery days (0, 10, or 90)"
+      },
+      "typical_time_minutes": {
+        "type": "integer",
+        "description": "Typical procedure time in minutes"
+      },
+      "complexity_score": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "description": "Calculated complexity score"
+      },
+      "requires_prior_auth": {
+        "type": "boolean",
+        "description": "Typically requires prior authorization"
+      },
+      "supervision_required": {
+        "type": "boolean",
+        "description": "Requires physician supervision"
+      }
+    },
+    
+    "clinical_attributes": {
+      "requires_fasting": {
+        "type": "boolean",
+        "description": "Patient must fast before test"
+      },
+      "requires_contrast": {
+        "type": "boolean",
+        "description": "Requires contrast medium"
+      },
+      "turnaround_time_hours": {
+        "type": "number",
+        "description": "Typical turnaround time in hours"
+      },
+      "stat_available": {
+        "type": "boolean",
+        "description": "Available as STAT/urgent"
+      },
+      "sample_type": {
+        "type": "string",
+        "description": "Type of sample required (blood, urine, tissue, etc.)"
+      },
+      "clinical_utility_score": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "description": "Clinical usefulness rating"
+      }
+    },
+    
+    "utilization_patterns": {
+      "annual_volume": {
+        "type": "integer",
+        "description": "Estimated annual test volume nationally"
+      },
+      "ordering_frequency_rank": {
+        "type": "integer",
+        "description": "Rank by ordering frequency (1 = most common)"
+      },
+      "seasonal_pattern": {
+        "type": "object",
+        "properties": {
+          "q1_index": "number",
+          "q2_index": "number",
+          "q3_index": "number",
+          "q4_index": "number"
+        },
+        "description": "Seasonal utilization indices"
+      },
+      "common_diagnoses": {
+        "type": "array",
+        "items": {
+          "icd10_code": "string",
+          "description": "string",
+          "frequency": "number"
+        },
+        "description": "Common associated diagnoses"
+      }
+    },
+    
+    "bundling_information": {
+      "commonly_bundled_with": {
+        "type": "array",
+        "items": {
+          "cpt_code": "string",
+          "frequency": "number",
+          "typical_discount": "number"
+        },
+        "description": "Tests commonly ordered together"
+      },
+      "is_component_of_panel": {
+        "type": "boolean",
+        "description": "Part of a larger panel"
+      },
+      "panel_codes": {
+        "type": "array",
+        "items": "string",
+        "description": "Panel CPT codes containing this test"
+      }
+    },
+    
+    "geographic_variations": {
+      "gpci_applicable": {
+        "type": "boolean",
+        "description": "Subject to geographic adjustment"
+      },
+      "regional_variations": {
+        "type": "object",
+        "properties": {
+          "northeast": "number",
+          "southeast": "number",
+          "midwest": "number",
+          "southwest": "number",
+          "west": "number"
+        },
+        "description": "Regional price indices"
+      },
+      "urban_rural_differential": {
+        "type": "number",
+        "description": "Price ratio urban/rural"
+      }
+    },
+    
+    "quality_metrics": {
+      "data_completeness_score": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "description": "Completeness of data fields"
+      },
+      "data_confidence_score": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "description": "Confidence in data accuracy"
+      },
+      "last_validated": {
+        "type": "string",
+        "format": "date-time",
+        "description": "Last validation timestamp"
+      },
+      "validation_sources": {
+        "type": "array",
+        "items": "string",
+        "description": "Sources used for validation"
+      }
+    },
+    
+    "ml_features": {
+      "engineered_features": {
+        "price_tier": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Price tier classification"
+        },
+        "complexity_tier": {
+          "type": "string",
+          "enum": ["simple", "moderate", "complex", "highly_complex"],
+          "description": "Complexity classification"
+        },
+        "utilization_tier": {
+          "type": "string",
+          "enum": ["rare", "uncommon", "common", "very_common"],
+          "description": "Utilization frequency tier"
+        },
+        "price_per_rvu": {
+          "type": "number",
+          "description": "Price divided by total RVU"
+        },
+        "price_variance_ratio": {
+          "type": "number",
+          "description": "Price variance relative to category average"
+        }
+      },
+      "embedding_vector": {
+        "type": "array",
+        "items": "number",
+        "description": "Dense embedding of test characteristics"
+      },
+      "cluster_assignment": {
+        "type": "integer",
+        "description": "Assigned cluster from unsupervised learning"
+      }
+    },
+    
+    "metadata": {
+      "created_date": {
+        "type": "string",
+        "format": "date-time",
+        "required": true
+      },
+      "last_modified": {
+        "type": "string",
+        "format": "date-time",
+        "required": true
+      },
+      "version": {
+        "type": "integer",
+        "description": "Record version number"
+      },
+      "change_log": {
+        "type": "array",
+        "items": {
+          "date": "string",
+          "field": "string",
+          "old_value": "any",
+          "new_value": "any",
+          "reason": "string"
+        }
+      },
+      "data_sources": {
+        "type": "array",
+        "items": {
+          "source": "string",
+          "date_collected": "string",
+          "confidence": "number"
+        }
+      }
+    }
+  },
+  
+  "sample_record": {
+    "identifier": {
+      "cpt_code": "80053",
+      "test_id": "550e8400-e29b-41d4-a716-446655440000"
+    },
+    "basic_info": {
+      "test_name": "comprehensive metabolic panel",
+      "canonical_name": "COMPREHENSIVE_METABOLIC_PANEL",
+      "alternative_names": ["CMP", "Chem 14", "Chemistry Panel"],
+      "description": "Blood test measuring glucose, calcium, electrolytes, kidney and liver function markers"
+    },
+    "categorization": {
+      "primary_category": "laboratory",
+      "subcategory": "clinical_chemistry",
+      "specialty": "internal_medicine",
+      "body_system": "general",
+      "test_type": "diagnostic"
+    },
+    "pricing": {
+      "base_price": 45.50,
+      "price_history": [
+        {"date": "2024-01-01", "price": 42.00, "source": "cms"},
+        {"date": "2024-07-01", "price": 45.50, "source": "cms"}
+      ],
+      "cms_pricing": {
+        "national_payment": 14.49,
+        "facility_payment": 14.49,
+        "non_facility_payment": 14.49,
+        "last_updated": "2024-01-01"
+      },
+      "commercial_pricing": {
+        "average": 65.25,
+        "percentile_25": 45.00,
+        "percentile_75": 85.00,
+        "data_points": 1250
+      },
+      "price_variance": {
+        "coefficient_of_variation": 0.35,
+        "geographic_variance": 0.15
+      }
+    },
+    "complexity_indicators": {
+      "rvu_values": {
+        "work_rvu": 0.00,
+        "practice_expense_rvu": 0.79,
+        "malpractice_rvu": 0.01,
+        "total_rvu": 0.80
+      },
+      "global_period": 0,
+      "typical_time_minutes": 5,
+      "complexity_score": 0.25,
+      "requires_prior_auth": false,
+      "supervision_required": false
+    },
+    "clinical_attributes": {
+      "requires_fasting": true,
+      "requires_contrast": false,
+      "turnaround_time_hours": 4,
+      "stat_available": true,
+      "sample_type": "blood",
+      "clinical_utility_score": 0.95
+    },
+    "utilization_patterns": {
+      "annual_volume": 50000000,
+      "ordering_frequency_rank": 3,
+      "seasonal_pattern": {
+        "q1_index": 1.05,
+        "q2_index": 0.98,
+        "q3_index": 0.97,
+        "q4_index": 1.00
+      },
+      "common_diagnoses": [
+        {"icd10_code": "Z00.00", "description": "Annual physical exam", "frequency": 0.35},
+        {"icd10_code": "E11.9", "description": "Type 2 diabetes", "frequency": 0.25}
+      ]
+    },
+    "bundling_information": {
+      "commonly_bundled_with": [
+        {"cpt_code": "85027", "frequency": 0.75, "typical_discount": 0.10},
+        {"cpt_code": "80061", "frequency": 0.60, "typical_discount": 0.08}
+      ],
+      "is_component_of_panel": false,
+      "panel_codes": []
+    },
+    "geographic_variations": {
+      "gpci_applicable": true,
+      "regional_variations": {
+        "northeast": 1.15,
+        "southeast": 0.95,
+        "midwest": 1.00,
+        "southwest": 0.98,
+        "west": 1.12
+      },
+      "urban_rural_differential": 1.08
+    },
+    "quality_metrics": {
+      "data_completeness_score": 0.98,
+      "data_confidence_score": 0.95,
+      "last_validated": "2024-12-01T10:30:00Z",
+      "validation_sources": ["cms", "fair_health", "internal_audit"]
+    },
+    "ml_features": {
+      "engineered_features": {
+        "price_tier": 3,
+        "complexity_tier": "simple",
+        "utilization_tier": "very_common",
+        "price_per_rvu": 56.88,
+        "price_variance_ratio": 0.85
+      },
+      "embedding_vector": [0.234, -0.156, 0.789, 0.432, -0.091],
+      "cluster_assignment": 2
+    },
+    "metadata": {
+      "created_date": "2024-01-15T08:00:00Z",
+      "last_modified": "2024-12-01T10:30:00Z",
+      "version": 3,
+      "data_sources": [
+        {"source": "cms_pfs_2024", "date_collected": "2024-01-15", "confidence": 1.0},
+        {"source": "fair_health", "date_collected": "2024-11-15", "confidence": 0.85}
+      ]
+    }
+  }
+}

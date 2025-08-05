@@ -1,0 +1,244 @@
+{
+  "metadata": {
+    "data_file": "data/cpt_lookup.csv",
+    "validation_date": "2025-08-05T18:51:11.957271",
+    "validator_version": "1.0.0"
+  },
+  "summary": {
+    "total_records": 209,
+    "valid_records": 209,
+    "validation_rate": 100.0,
+    "total_issues": 12,
+    "ml_readiness_score": 62.539349282296655
+  },
+  "issues": {
+    "price_outliers": [
+      {
+        "row": 189,
+        "test_name": "pet scan whole body",
+        "price": 1500.0,
+        "z_score": 3.4731887875085605
+      },
+      {
+        "row": 195,
+        "test_name": "loop recorder implantation",
+        "price": 3000.0,
+        "z_score": 7.285803672077116
+      },
+      {
+        "row": 197,
+        "test_name": "coronary angioplasty",
+        "price": 2000.0,
+        "z_score": 4.744060415698079
+      },
+      {
+        "row": 198,
+        "test_name": "pacemaker insertion",
+        "price": 2500.0,
+        "z_score": 6.0149320438875975
+      },
+      {
+        "row": 199,
+        "test_name": "defibrillator implantation",
+        "price": 3000.0,
+        "z_score": 7.285803672077116
+      }
+    ],
+    "inconsistent_pricing": [
+      {
+        "cpt_code": "85730",
+        "price_range": "$7.00 - $9.00",
+        "entries": [
+          {
+            "row": 14,
+            "test_name": "partial thromboplastin time",
+            "price": 7.0
+          },
+          {
+            "row": 104,
+            "test_name": "platelet count",
+            "price": 9.0
+          }
+        ]
+      },
+      {
+        "cpt_code": "87635",
+        "price_range": "$50.00 - $100.00",
+        "entries": [
+          {
+            "row": 23,
+            "test_name": "covid-19 pcr",
+            "price": 50.0
+          },
+          {
+            "row": 179,
+            "test_name": "sars-cov-2 pcr",
+            "price": 100.0
+          }
+        ]
+      },
+      {
+        "cpt_code": "84703",
+        "price_range": "$10.00 - $25.00",
+        "entries": [
+          {
+            "row": 26,
+            "test_name": "pregnancy test serum qualitative",
+            "price": 10.0
+          },
+          {
+            "row": 131,
+            "test_name": "beta hcg quantitative",
+            "price": 25.0
+          }
+        ]
+      },
+      {
+        "cpt_code": "84484",
+        "price_range": "$20.00 - $25.00",
+        "entries": [
+          {
+            "row": 38,
+            "test_name": "troponin i",
+            "price": 20.0
+          },
+          {
+            "row": 117,
+            "test_name": "troponin t",
+            "price": 25.0
+          }
+        ]
+      },
+      {
+        "cpt_code": "82803",
+        "price_range": "$20.00 - $30.00",
+        "entries": [
+          {
+            "row": 42,
+            "test_name": "arterial blood gas",
+            "price": 20.0
+          },
+          {
+            "row": 121,
+            "test_name": "blood gas arterial",
+            "price": 30.0
+          }
+        ]
+      },
+      {
+        "cpt_code": "83013",
+        "price_range": "$40.00 - $50.00",
+        "entries": [
+          {
+            "row": 49,
+            "test_name": "h. pylori breath test",
+            "price": 40.0
+          },
+          {
+            "row": 176,
+            "test_name": "h pylori breath test",
+            "price": 50.0
+          }
+        ]
+      },
+      {
+        "cpt_code": "83655",
+        "price_range": "$20.00 - $25.00",
+        "entries": [
+          {
+            "row": 68,
+            "test_name": "lead blood",
+            "price": 20.0
+          },
+          {
+            "row": 128,
+            "test_name": "lead level blood",
+            "price": 20.0
+          },
+          {
+            "row": 182,
+            "test_name": "blood lead level",
+            "price": 25.0
+          }
+        ]
+      }
+    ],
+    "missing_test_name": [],
+    "missing_cpt": [],
+    "invalid_price_format": [],
+    "price_too_low": [],
+    "exact_duplicates": []
+  },
+  "statistics": {
+    "price": {
+      "count": 209,
+      "min": 5.0,
+      "max": 3000.0,
+      "mean": 133.54066985645932,
+      "median": 20.0,
+      "stdev": 393.43076744289203,
+      "percentiles": {
+        "25": 15.0,
+        "75": 65.0,
+        "90": 350.0,
+        "95": 500.0
+      }
+    },
+    "cpt_coverage": {
+      "total_unique_codes": 193,
+      "categories": {
+        "Laboratory": 160,
+        "Radiology": 19,
+        "Medicine/E&M": 18,
+        "Surgery": 12
+      },
+      "category_percentages": {
+        "Laboratory": 82.90155440414507,
+        "Radiology": 9.844559585492227,
+        "Medicine/E&M": 9.32642487046632,
+        "Surgery": 6.217616580310881
+      }
+    }
+  },
+  "ml_readiness": {
+    "overall_score": 62.539349282296655,
+    "component_scores": {
+      "data_volume": 4.18,
+      "data_completeness": 100.0,
+      "data_consistency": 94.25837320574163,
+      "feature_richness": 20,
+      "price_quality": 94.25837320574163
+    },
+    "rating": "Good"
+  },
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "category": "Data Volume",
+      "issue": "Only 209 records available",
+      "recommendation": "Expand dataset to at least 5,000 CPT codes for viable ML training",
+      "impact": "Current volume insufficient for robust ML models"
+    },
+    {
+      "priority": "MEDIUM",
+      "category": "Price Quality",
+      "issue": "5 price outliers detected",
+      "recommendation": "Review and validate outlier prices against CMS or commercial rates",
+      "impact": "Outliers can skew ML model predictions"
+    },
+    {
+      "priority": "HIGH",
+      "category": "Feature Engineering",
+      "issue": "Only 3 features available (test_name, cpt_code, price)",
+      "recommendation": "Add metadata: category, complexity, RVU values, geographic data",
+      "impact": "Limited features restrict model sophistication"
+    },
+    {
+      "priority": "MEDIUM",
+      "category": "CPT Balance",
+      "issue": "Laboratory codes represent 82.9% of dataset",
+      "recommendation": "Balance dataset with more radiology, procedure, and E&M codes",
+      "impact": "Imbalanced data may bias predictions toward laboratory pricing"
+    }
+  ]
+}

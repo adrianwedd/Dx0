@@ -5,9 +5,9 @@ __pycache__/
 dvc_storage/
 *.egg-info/
 sessions.db
-frontend/node_modules/
-frontend/package-lock.json
-frontend/dist/
+webui/node_modules/
+webui/package-lock.json
+webui/dist/
 .env
 
 # Local configuration overrides

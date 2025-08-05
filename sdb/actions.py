@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 import json
 import re
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 
 from .protocol import ActionType
 

@@ -173,6 +173,14 @@ class SessionBackend(ABC):
     async def health_check(self) -> bool:
         """Check if backend is healthy and responsive."""
         raise NotImplementedError
+    
+    async def clear_failed_logins(self) -> None:
+        """Clear all failed login attempts (for testing). Optional method."""
+        pass
+    
+    async def clear_all_session_data(self) -> None:
+        """Clear all session data including message history (for testing). Optional method."""
+        pass
 
 
 class InMemorySessionBackend(SessionBackend):
@@ -296,6 +304,16 @@ class InMemorySessionBackend(SessionBackend):
     async def health_check(self) -> bool:
         """Check if backend is healthy and responsive."""
         return True
+    
+    async def clear_failed_logins(self) -> None:
+        """Clear all failed login attempts (for testing)."""
+        self._failed_logins.clear()
+    
+    async def clear_all_session_data(self) -> None:
+        """Clear all session data including message history (for testing)."""
+        self._sessions.clear()
+        self._refresh_tokens.clear()
+        self._failed_logins.clear()
 
 
 class SessionBackendFactory:

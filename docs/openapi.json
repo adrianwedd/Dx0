@@ -1,0 +1,628 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Dx0 Physician API",
+    "description": "API for interacting with the Dx0 diagnostic orchestrator system.\n    \n    This API provides endpoints for:\n    - User authentication and session management\n    - Interactive diagnostic conversations via WebSocket\n    - Case and test management\n    - FHIR data export functionality\n    - Budget tracking and cost estimation\n    ",
+    "contact": {
+      "name": "Dx0 Development Team",
+      "url": "https://github.com/adrianwedd/Dx0"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1": {
+      "get": {
+        "tags": [
+          "interface"
+        ],
+        "summary": "Get web interface",
+        "description": "Returns the main React-based web interface for the Dx0 diagnostic system.\n    \n    This endpoint serves the complete single-page application that provides:\n    - Interactive diagnostic conversations\n    - User authentication and session management\n    - Real-time chat interface with the diagnostic AI\n    - Budget tracking and cost visualization\n    \n    The interface connects to the WebSocket endpoint for real-time communication.",
+        "operationId": "index_api_v1_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/case": {
+      "get": {
+        "tags": [
+          "diagnostic"
+        ],
+        "summary": "Get current case summary",
+        "description": "Retrieve the summary of the current diagnostic case.\n    \n    This endpoint returns a brief description of the patient case that will be used\n    for the diagnostic conversation. The case summary provides initial context for\n    the AI diagnostic system.\n    \n    **Example Response:**\n    ```json\n    {\n        \"summary\": \"A 30 year old with cough\"\n    }\n    ```\n    \n    **Note:** Currently returns a demo case. In production, this would return\n    the active case for the authenticated user's session.",
+        "operationId": "get_case_api_v1_case_get",
+        "responses": {
+          "200": {
+            "description": "Case summary retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseSummary"
+                },
+                "example": {
+                  "summary": "A 30 year old with cough"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tests": {
+      "get": {
+        "tags": [
+          "diagnostic"
+        ],
+        "summary": "Get available diagnostic tests",
+        "description": "Retrieve the list of available diagnostic tests with cost information.\n    \n    This endpoint returns all diagnostic tests that can be ordered through the system,\n    along with their associated CPT codes and pricing. These tests can be referenced\n    during diagnostic conversations.\n    \n    **Example Response:**\n    ```json\n    {\n        \"tests\": [\n            \"basic metabolic panel\",\n            \"complete blood count\"\n        ]\n    }\n    ```\n    \n    **Usage in Diagnostic Flow:**\n    - Tests returned by this endpoint can be ordered via WebSocket messages\n    - Each test has associated costs tracked in the budget system\n    - Test results are simulated by the diagnostic AI system",
+        "operationId": "get_tests_api_v1_tests_get",
+        "responses": {
+          "200": {
+            "description": "Available tests retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestList"
+                },
+                "example": {
+                  "tests": [
+                    "basic metabolic panel",
+                    "complete blood count"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fhir/transcript": {
+      "post": {
+        "tags": [
+          "fhir"
+        ],
+        "summary": "Convert transcript to FHIR Bundle",
+        "description": "Convert a diagnostic conversation transcript to a FHIR Bundle.\n    \n    This endpoint transforms a diagnostic conversation into a structured FHIR Bundle\n    containing Communication resources that represent the interaction between\n    physician and patient or diagnostic AI.\n    \n    **Authorization Required:**\n    - Admin group membership required\n    - Valid JWT token with admin privileges\n    \n    **FHIR Compliance:**\n    - Generates FHIR R4 compliant Bundle resource\n    - Creates Communication resources for each transcript entry\n    - Includes proper resource references and metadata\n    \n    **Example Request:**\n    ```json\n    {\n        \"transcript\": [\n            [\"user\", \"Patient presents with chest pain\"],\n            [\"assistant\", \"Can you describe the nature of the pain?\"]\n        ],\n        \"patient_id\": \"patient-123\"\n    }\n    ```\n    \n    **Use Cases:**\n    - Export diagnostic conversations for EHR integration\n    - Comply with healthcare interoperability standards\n    - Archive conversation data in structured format\n    - Share diagnostic reasoning with other systems",
+        "operationId": "fhir_transcript_api_v1_fhir_transcript_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FhirTranscriptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "FHIR Bundle created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Fhir Transcript Api V1 Fhir Transcript Post"
+                },
+                "example": {
+                  "resourceType": "Bundle",
+                  "id": "transcript-bundle",
+                  "type": "collection",
+                  "entry": []
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/fhir/tests": {
+      "post": {
+        "tags": [
+          "fhir"
+        ],
+        "summary": "Convert ordered tests to FHIR Bundle",
+        "description": "Convert a list of ordered diagnostic tests to a FHIR Bundle.\n    \n    This endpoint transforms ordered diagnostic tests into a structured FHIR Bundle\n    containing ServiceRequest resources that represent the test orders in a\n    healthcare-standard format.\n    \n    **Authorization Required:**\n    - Admin group membership required\n    - Valid JWT token with admin privileges\n    \n    **FHIR Compliance:**\n    - Generates FHIR R4 compliant Bundle resource\n    - Creates ServiceRequest resources for each ordered test\n    - Includes proper coding and clinical context\n    \n    **Example Request:**\n    ```json\n    {\n        \"tests\": [\n            \"complete blood count\",\n            \"basic metabolic panel\"\n        ],\n        \"patient_id\": \"patient-123\"\n    }\n    ```\n    \n    **Use Cases:**\n    - Export test orders to laboratory information systems\n    - Integrate with hospital information systems\n    - Maintain structured records of diagnostic orders\n    - Support clinical decision support systems",
+        "operationId": "fhir_tests_api_v1_fhir_tests_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FhirTestsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "FHIR Bundle created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Fhir Tests Api V1 Fhir Tests Post"
+                },
+                "example": {
+                  "resourceType": "Bundle",
+                  "id": "tests-bundle",
+                  "type": "collection",
+                  "entry": []
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/login": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "User login",
+        "description": "Authenticate a user and return JWT access and refresh tokens.\n    \n    This endpoint validates user credentials and returns a pair of JWT tokens:\n    - **Access Token**: Short-lived token for API authentication (1 hour TTL)\n    - **Refresh Token**: Long-lived token for obtaining new access tokens\n    \n    **Authentication Flow:**\n    1. Submit username and password\n    2. Receive access and refresh tokens\n    3. Use access token in Authorization header: `Bearer <access_token>`\n    4. Refresh tokens before expiration using `/api/v1/refresh`\n    \n    **Rate Limiting:**\n    - Maximum 5 failed attempts per IP address\n    - 5-minute cooldown after exceeding limit\n    \n    **Example Request:**\n    ```json\n    {\n        \"username\": \"physician1\",\n        \"password\": \"secure_password\"\n    }\n    ```\n    \n    **Example Response:**\n    ```json\n    {\n        \"access_token\": \"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...\",\n        \"refresh_token\": \"a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6...\"\n    }\n    ```",
+        "operationId": "login_api_v1_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                },
+                "example": {
+                  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+                  "refresh_token": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6..."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid credentials"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many failed login attempts",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Too many failed login attempts"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/logout": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "User logout",
+        "description": "Invalidate a refresh token and terminate the user session.\n    \n    This endpoint invalidates the provided refresh token and removes the associated\n    session from the system. After logout, both the access and refresh tokens\n    become invalid and cannot be used for authentication.\n    \n    **Security Note:**\n    Always call this endpoint when a user logs out to ensure proper session cleanup\n    and prevent token reuse.\n    \n    **Example Request:**\n    ```json\n    {\n        \"refresh_token\": \"a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6...\"\n    }\n    ```",
+        "operationId": "logout_api_v1_logout_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogoutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Logout successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "null",
+                  "title": "Response Logout Api V1 Logout Post"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired refresh token",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid token"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/refresh": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Refresh authentication tokens",
+        "description": "Exchange a refresh token for a new access and refresh token pair.\n    \n    This endpoint allows clients to obtain fresh authentication tokens without\n    requiring the user to log in again. The old refresh token is invalidated\n    and a new pair is returned.\n    \n    **Token Rotation:**\n    - Old refresh token becomes invalid immediately\n    - New access token has a fresh 1-hour TTL\n    - New refresh token can be used for future refreshes\n    \n    **Usage Pattern:**\n    1. Monitor access token expiration (check `exp` claim)\n    2. Use refresh token to get new token pair before expiration\n    3. Update stored tokens with the new values\n    4. Continue using the new access token for API calls\n    \n    **Example Request:**\n    ```json\n    {\n        \"refresh_token\": \"a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6...\"\n    }\n    ```\n    \n    **Example Response:**\n    ```json\n    {\n        \"access_token\": \"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...\",\n        \"refresh_token\": \"b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7...\"\n    }\n    ```",
+        "operationId": "refresh_api_v1_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Tokens refreshed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                },
+                "example": {
+                  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+                  "refresh_token": "b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7..."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired refresh token",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid token"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CaseSummary": {
+        "properties": {
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "summary"
+        ],
+        "title": "CaseSummary",
+        "description": "Response model for case summary."
+      },
+      "FhirTestsRequest": {
+        "properties": {
+          "tests": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tests"
+          },
+          "patient_id": {
+            "type": "string",
+            "title": "Patient Id",
+            "default": "example"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tests"
+        ],
+        "title": "FhirTestsRequest",
+        "description": "Request body for ordered tests FHIR export."
+      },
+      "FhirTranscriptRequest": {
+        "properties": {
+          "transcript": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "title": "Transcript"
+          },
+          "patient_id": {
+            "type": "string",
+            "title": "Patient Id",
+            "default": "example"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transcript"
+        ],
+        "title": "FhirTranscriptRequest",
+        "description": "Request body for transcript FHIR export."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LoginRequest": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Username",
+            "description": "Username for authentication",
+            "example": "physician1"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Password",
+            "description": "User password for authentication",
+            "example": "secure_password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "description": "Request model for user authentication.\n\nThis model represents the credentials required for user login.\nBoth username and password are required fields."
+      },
+      "LogoutRequest": {
+        "properties": {
+          "refresh_token": {
+            "type": "string",
+            "title": "Refresh Token",
+            "description": "Refresh token to invalidate during logout",
+            "example": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6..."
+          }
+        },
+        "type": "object",
+        "required": [
+          "refresh_token"
+        ],
+        "title": "LogoutRequest",
+        "description": "Request model for user logout.\n\nThis model contains the refresh token that should be invalidated\nduring the logout process."
+      },
+      "RefreshRequest": {
+        "properties": {
+          "refresh_token": {
+            "type": "string",
+            "title": "Refresh Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "refresh_token"
+        ],
+        "title": "RefreshRequest",
+        "description": "Request body for refresh."
+      },
+      "TestList": {
+        "properties": {
+          "tests": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tests"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tests"
+        ],
+        "title": "TestList",
+        "description": "Response model for available tests."
+      },
+      "TokenResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token",
+            "description": "JWT access token for API authentication (1 hour TTL)",
+            "example": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+          },
+          "refresh_token": {
+            "type": "string",
+            "title": "Refresh Token",
+            "description": "Refresh token for obtaining new access tokens",
+            "example": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6..."
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "refresh_token"
+        ],
+        "title": "TokenResponse",
+        "description": "Authentication token response model.\n\nThis model represents the JWT token pair returned after successful\nlogin or token refresh operations."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "authentication",
+      "description": "User authentication and session management endpoints"
+    },
+    {
+      "name": "diagnostic",
+      "description": "Core diagnostic functionality and case management"
+    },
+    {
+      "name": "fhir",
+      "description": "FHIR export functionality for interoperability"
+    },
+    {
+      "name": "interface",
+      "description": "User interface and static content endpoints"
+    }
+  ]
+}

@@ -20,7 +20,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from opentelemetry import trace
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, Field
 from starlette.websockets import WebSocketDisconnect
 
 from sdb.case_database import Case, CaseDatabase
@@ -33,6 +33,7 @@ from sdb.panel import PanelAction
 from sdb.protocol import ActionType
 from sdb.services import BudgetManager
 from sdb.ui.session_store import SessionStore
+from sdb.ui.session_backend import SessionBackendFactory, SessionData
 
 
 class Credential(BaseModel):
@@ -42,7 +43,45 @@ class Credential(BaseModel):
     group: str = "default"
 
 
-app = FastAPI(title="SDBench Physician UI")
+app = FastAPI(
+    title="Dx0 Physician API",
+    description="""API for interacting with the Dx0 diagnostic orchestrator system.
+    
+    This API provides endpoints for:
+    - User authentication and session management
+    - Interactive diagnostic conversations via WebSocket
+    - Case and test management
+    - FHIR data export functionality
+    - Budget tracking and cost estimation
+    """,
+    version="1.0.0",
+    contact={
+        "name": "Dx0 Development Team",
+        "url": "https://github.com/adrianwedd/Dx0",
+    },
+    license_info={
+        "name": "MIT",
+        "url": "https://opensource.org/licenses/MIT",
+    },
+    openapi_tags=[
+        {
+            "name": "authentication",
+            "description": "User authentication and session management endpoints",
+        },
+        {
+            "name": "diagnostic",
+            "description": "Core diagnostic functionality and case management",
+        },
+        {
+            "name": "fhir",
+            "description": "FHIR export functionality for interoperability",
+        },
+        {
+            "name": "interface",
+            "description": "User interface and static content endpoints",
+        },
+    ],
+)
 tracer = trace.get_tracer(__name__)
 static_dir = Path(__file__).with_name("static")
 if static_dir.exists():
@@ -113,15 +152,22 @@ SESSION_TTL = settings.ui_token_ttl
 SESSION_DB_PATH = settings.sessions_db
 SESSION_STORE = SessionStore(SESSION_DB_PATH, ttl=SESSION_TTL)
 
-# Failed login tracking configuration
+# New session backend configuration
+SESSION_BACKEND = SessionBackendFactory.create_backend(
+    settings.session_backend,
+    redis_url=settings.redis_url,
+    redis_password=settings.redis_password,
+    db_path=SESSION_DB_PATH,
+)
+
+# Configuration constants
 FAILED_LOGIN_LIMIT = settings.failed_login_limit
 FAILED_LOGIN_COOLDOWN = settings.failed_login_cooldown
-FAILED_LOGINS: dict[str, list[float]] = defaultdict(list)
-
-# Per-session message rate limits
 MESSAGE_RATE_LIMIT = settings.message_rate_limit
 MESSAGE_RATE_WINDOW = settings.message_rate_window
-MESSAGE_HISTORY: dict[str, list[float]] = defaultdict(list)
+
+# Global thread-unsafe dictionaries have been replaced with session backend
+# FAILED_LOGINS and MESSAGE_HISTORY are now handled by SESSION_BACKEND
 
 security = HTTPBearer()
 
@@ -140,7 +186,14 @@ def require_group(group: str):
         user_group = payload.get("grp")
         if not session_id or not user_group:
             raise HTTPException(status_code=401, detail="Invalid token")
-        if SESSION_STORE.get(session_id) is None:
+        
+        # Check session exists in both old and new backends for compatibility
+        session_exists = SESSION_STORE.get(session_id) is not None
+        if not session_exists:
+            session_data = await SESSION_BACKEND.get_session(session_id)
+            session_exists = session_data is not None
+        
+        if not session_exists:
             raise HTTPException(status_code=401, detail="Invalid token")
         if user_group != group:
             raise HTTPException(status_code=403, detail="Forbidden")
@@ -193,17 +246,46 @@ async def stream_reply(
 
 
 class LoginRequest(BaseModel):
-    """Request body for user login."""
+    """Request model for user authentication.
+    
+    This model represents the credentials required for user login.
+    Both username and password are required fields.
+    """
 
-    username: str
-    password: str
+    username: str = Field(
+        ...,
+        description="Username for authentication",
+        example="physician1",
+        min_length=1,
+        max_length=100,
+    )
+    password: str = Field(
+        ...,
+        description="User password for authentication",
+        example="secure_password",
+        min_length=1,
+    )
 
 
 class MessageIn(BaseModel):
-    """Incoming WebSocket message from the UI."""
+    """Incoming WebSocket message model for diagnostic interactions.
+    
+    This model represents messages sent from the client to the diagnostic system
+    via WebSocket connection. Each message includes an action type and content.
+    """
 
-    action: ActionType = ActionType.QUESTION
-    content: str
+    action: ActionType = Field(
+        default=ActionType.QUESTION,
+        description="Type of diagnostic action to perform",
+        example="QUESTION",
+    )
+    content: str = Field(
+        ...,
+        description="Content of the diagnostic message or query",
+        example="What should I ask about the patient's symptoms?",
+        min_length=1,
+        max_length=10000,
+    )
 
     @classmethod
     def parse_obj(cls, obj: dict) -> "MessageIn":
@@ -213,27 +295,78 @@ class MessageIn(BaseModel):
 
 
 class MessageOut(BaseModel):
-    """Outgoing websocket payload with cost information."""
+    """Outgoing WebSocket message model with diagnostic response and cost tracking.
+    
+    This model represents the response sent from the diagnostic system to the client.
+    It includes the AI response, completion status, and budget tracking information.
+    """
 
-    reply: str
-    done: bool
-    cost: float | None = None
-    total_spent: float | None = None
-    remaining_budget: float | None = None
-    ordered_tests: list[str] | None = None
+    reply: str = Field(
+        ...,
+        description="AI-generated diagnostic response or guidance",
+        example="Based on the cough, you should ask about duration and associated symptoms.",
+    )
+    done: bool = Field(
+        ...,
+        description="Whether this is the final chunk of the response",
+        example=True,
+    )
+    cost: float | None = Field(
+        default=None,
+        description="Cost of this specific interaction in dollars",
+        example=0.25,
+        ge=0,
+    )
+    total_spent: float | None = Field(
+        default=None,
+        description="Total amount spent in this session in dollars",
+        example=5.75,
+        ge=0,
+    )
+    remaining_budget: float | None = Field(
+        default=None,
+        description="Remaining budget for this session in dollars",
+        example=94.25,
+        ge=0,
+    )
+    ordered_tests: list[str] | None = Field(
+        default=None,
+        description="List of diagnostic tests that have been ordered",
+        example=["complete blood count", "basic metabolic panel"],
+    )
 
 
 class TokenResponse(BaseModel):
-    """Tokens returned after login or refresh."""
+    """Authentication token response model.
+    
+    This model represents the JWT token pair returned after successful
+    login or token refresh operations.
+    """
 
-    access_token: str
-    refresh_token: str
+    access_token: str = Field(
+        ...,
+        description="JWT access token for API authentication (1 hour TTL)",
+        example="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+    )
+    refresh_token: str = Field(
+        ...,
+        description="Refresh token for obtaining new access tokens",
+        example="a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6...",
+    )
 
 
 class LogoutRequest(BaseModel):
-    """Request body for logout."""
+    """Request model for user logout.
+    
+    This model contains the refresh token that should be invalidated
+    during the logout process.
+    """
 
-    refresh_token: str
+    refresh_token: str = Field(
+        ...,
+        description="Refresh token to invalidate during logout",
+        example="a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6...",
+    )
 
 
 class RefreshRequest(BaseModel):
@@ -299,24 +432,81 @@ async def migrate_store() -> None:
 
 
 @app.on_event("startup")
+async def check_session_backend() -> None:
+    """Verify session backend is healthy at startup."""
+    if not await SESSION_BACKEND.health_check():
+        print(f"Warning: Session backend health check failed for {settings.session_backend}")
+    else:
+        print(f"Session backend {settings.session_backend} is healthy")
+
+
+@app.on_event("startup")
 async def start_cleanup() -> None:
     """Spawn a background task to purge expired sessions."""
     async def _loop() -> None:
         while True:
+            # Clean up both old and new session stores
             SESSION_STORE.cleanup()
-            await asyncio.sleep(SESSION_TTL)
+            await SESSION_BACKEND.cleanup_expired_sessions(SESSION_TTL)
+            await asyncio.sleep(settings.session_cleanup_interval)
 
     asyncio.create_task(_loop())
 
 
-@app.get("/api/v1", response_class=HTMLResponse)
+@app.get(
+    "/api/v1",
+    response_class=HTMLResponse,
+    tags=["interface"],
+    summary="Get web interface",
+    description="""Returns the main React-based web interface for the Dx0 diagnostic system.
+    
+    This endpoint serves the complete single-page application that provides:
+    - Interactive diagnostic conversations
+    - User authentication and session management
+    - Real-time chat interface with the diagnostic AI
+    - Budget tracking and cost visualization
+    
+    The interface connects to the WebSocket endpoint for real-time communication.
+    """,
+)
 async def index() -> HTMLResponse:
     """Return the React chat application."""
     with tracer.start_as_current_span("index"):
         return HTMLResponse(HTML)
 
 
-@app.get("/api/v1/case", response_model=CaseSummary)
+@app.get(
+    "/api/v1/case",
+    response_model=CaseSummary,
+    tags=["diagnostic"],
+    summary="Get current case summary",
+    description="""Retrieve the summary of the current diagnostic case.
+    
+    This endpoint returns a brief description of the patient case that will be used
+    for the diagnostic conversation. The case summary provides initial context for
+    the AI diagnostic system.
+    
+    **Example Response:**
+    ```json
+    {
+        "summary": "A 30 year old with cough"
+    }
+    ```
+    
+    **Note:** Currently returns a demo case. In production, this would return
+    the active case for the authenticated user's session.
+    """,
+    responses={
+        200: {
+            "description": "Case summary retrieved successfully",
+            "content": {
+                "application/json": {
+                    "example": {"summary": "A 30 year old with cough"}
+                }
+            },
+        }
+    },
+)
 async def get_case() -> CaseSummary:
     """Return the demo case summary."""
     with tracer.start_as_current_span("get_case"):
@@ -324,14 +514,106 @@ async def get_case() -> CaseSummary:
         return CaseSummary(summary=case.summary)
 
 
-@app.get("/api/v1/tests", response_model=TestList)
+@app.get(
+    "/api/v1/tests",
+    response_model=TestList,
+    tags=["diagnostic"],
+    summary="Get available diagnostic tests",
+    description="""Retrieve the list of available diagnostic tests with cost information.
+    
+    This endpoint returns all diagnostic tests that can be ordered through the system,
+    along with their associated CPT codes and pricing. These tests can be referenced
+    during diagnostic conversations.
+    
+    **Example Response:**
+    ```json
+    {
+        "tests": [
+            "basic metabolic panel",
+            "complete blood count"
+        ]
+    }
+    ```
+    
+    **Usage in Diagnostic Flow:**
+    - Tests returned by this endpoint can be ordered via WebSocket messages
+    - Each test has associated costs tracked in the budget system
+    - Test results are simulated by the diagnostic AI system
+    """,
+    responses={
+        200: {
+            "description": "Available tests retrieved successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "tests": ["basic metabolic panel", "complete blood count"]
+                    }
+                }
+            },
+        }
+    },
+)
 async def get_tests() -> TestList:
     """Return available test names."""
     with tracer.start_as_current_span("get_tests"):
         return TestList(tests=sorted(cost_table.keys()))
 
 
-@app.post("/api/v1/fhir/transcript", response_model=dict)
+@app.post(
+    "/api/v1/fhir/transcript",
+    response_model=dict,
+    tags=["fhir"],
+    summary="Convert transcript to FHIR Bundle",
+    description="""Convert a diagnostic conversation transcript to a FHIR Bundle.
+    
+    This endpoint transforms a diagnostic conversation into a structured FHIR Bundle
+    containing Communication resources that represent the interaction between
+    physician and patient or diagnostic AI.
+    
+    **Authorization Required:**
+    - Admin group membership required
+    - Valid JWT token with admin privileges
+    
+    **FHIR Compliance:**
+    - Generates FHIR R4 compliant Bundle resource
+    - Creates Communication resources for each transcript entry
+    - Includes proper resource references and metadata
+    
+    **Example Request:**
+    ```json
+    {
+        "transcript": [
+            ["user", "Patient presents with chest pain"],
+            ["assistant", "Can you describe the nature of the pain?"]
+        ],
+        "patient_id": "patient-123"
+    }
+    ```
+    
+    **Use Cases:**
+    - Export diagnostic conversations for EHR integration
+    - Comply with healthcare interoperability standards
+    - Archive conversation data in structured format
+    - Share diagnostic reasoning with other systems
+    """,
+    responses={
+        200: {
+            "description": "FHIR Bundle created successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "resourceType": "Bundle",
+                        "id": "transcript-bundle",
+                        "type": "collection",
+                        "entry": []
+                    }
+                }
+            },
+        },
+        401: {"description": "Authentication required"},
+        403: {"description": "Admin access required"},
+    },
+)
 async def fhir_transcript(
     req: FhirTranscriptRequest,
     _session: str = Depends(require_group("admin")),
@@ -341,7 +623,61 @@ async def fhir_transcript(
         return transcript_to_fhir(req.transcript, patient_id=req.patient_id)
 
 
-@app.post("/api/v1/fhir/tests", response_model=dict)
+@app.post(
+    "/api/v1/fhir/tests",
+    response_model=dict,
+    tags=["fhir"],
+    summary="Convert ordered tests to FHIR Bundle",
+    description="""Convert a list of ordered diagnostic tests to a FHIR Bundle.
+    
+    This endpoint transforms ordered diagnostic tests into a structured FHIR Bundle
+    containing ServiceRequest resources that represent the test orders in a
+    healthcare-standard format.
+    
+    **Authorization Required:**
+    - Admin group membership required
+    - Valid JWT token with admin privileges
+    
+    **FHIR Compliance:**
+    - Generates FHIR R4 compliant Bundle resource
+    - Creates ServiceRequest resources for each ordered test
+    - Includes proper coding and clinical context
+    
+    **Example Request:**
+    ```json
+    {
+        "tests": [
+            "complete blood count",
+            "basic metabolic panel"
+        ],
+        "patient_id": "patient-123"
+    }
+    ```
+    
+    **Use Cases:**
+    - Export test orders to laboratory information systems
+    - Integrate with hospital information systems
+    - Maintain structured records of diagnostic orders
+    - Support clinical decision support systems
+    """,
+    responses={
+        200: {
+            "description": "FHIR Bundle created successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "resourceType": "Bundle",
+                        "id": "tests-bundle",
+                        "type": "collection",
+                        "entry": []
+                    }
+                }
+            },
+        },
+        401: {"description": "Authentication required"},
+        403: {"description": "Admin access required"},
+    },
+)
 async def fhir_tests(
     req: FhirTestsRequest,
     _session: str = Depends(require_group("admin")),
@@ -351,15 +687,81 @@ async def fhir_tests(
         return ordered_tests_to_fhir(req.tests, patient_id=req.patient_id)
 
 
-@app.post("/api/v1/login", response_model=TokenResponse)
+@app.post(
+    "/api/v1/login",
+    response_model=TokenResponse,
+    tags=["authentication"],
+    summary="User login",
+    description="""Authenticate a user and return JWT access and refresh tokens.
+    
+    This endpoint validates user credentials and returns a pair of JWT tokens:
+    - **Access Token**: Short-lived token for API authentication (1 hour TTL)
+    - **Refresh Token**: Long-lived token for obtaining new access tokens
+    
+    **Authentication Flow:**
+    1. Submit username and password
+    2. Receive access and refresh tokens
+    3. Use access token in Authorization header: `Bearer <access_token>`
+    4. Refresh tokens before expiration using `/api/v1/refresh`
+    
+    **Rate Limiting:**
+    - Maximum 5 failed attempts per IP address
+    - 5-minute cooldown after exceeding limit
+    
+    **Example Request:**
+    ```json
+    {
+        "username": "physician1",
+        "password": "secure_password"
+    }
+    ```
+    
+    **Example Response:**
+    ```json
+    {
+        "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+        "refresh_token": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6..."
+    }
+    ```
+    """,
+    responses={
+        200: {
+            "description": "Login successful",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+                        "refresh_token": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6..."
+                    }
+                }
+            },
+        },
+        401: {
+            "description": "Invalid credentials",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Invalid credentials"}
+                }
+            },
+        },
+        429: {
+            "description": "Too many failed login attempts",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Too many failed login attempts"}
+                }
+            },
+        },
+    },
+)
 async def login(request: Request, req: LoginRequest) -> TokenResponse:
     """Authenticate a user and return access and refresh tokens."""
     with tracer.start_as_current_span("login"):
-        now = time.time()
         ip = request.client.host if request.client else "unknown"
-        attempts = FAILED_LOGINS.get(ip, [])
-        attempts = [ts for ts in attempts if now - ts < FAILED_LOGIN_COOLDOWN]
-        if len(attempts) >= FAILED_LOGIN_LIMIT:
+        
+        # Check failed login attempts using session backend
+        failed_count = await SESSION_BACKEND.get_failed_login_count(ip, FAILED_LOGIN_COOLDOWN)
+        if failed_count >= FAILED_LOGIN_LIMIT:
             raise HTTPException(
                 status_code=429, detail="Too many failed login attempts"
             )
@@ -368,13 +770,23 @@ async def login(request: Request, req: LoginRequest) -> TokenResponse:
         if not cred or not bcrypt.checkpw(
             req.password.encode(), cred.password.encode()
         ):
-            attempts.append(now)
-            FAILED_LOGINS[ip] = attempts
+            await SESSION_BACKEND.add_failed_login(ip)
             raise HTTPException(status_code=401, detail="Invalid credentials")
-
-        FAILED_LOGINS.pop(ip, None)
+        # Create new session with session backend
         session_id = secrets.token_hex(16)
         refresh_token = secrets.token_hex(32)
+        
+        session_data = SessionData(
+            session_id=session_id,
+            username=req.username,
+            group_name=cred.group,
+            refresh_token=refresh_token,
+            budget_limit=DEFAULT_BUDGET_LIMIT,
+        )
+        
+        await SESSION_BACKEND.set_session(session_data, SESSION_TTL)
+        
+        # Backward compatibility: also store in old session store
         SESSION_STORE.add(
             session_id,
             req.username,
@@ -387,30 +799,195 @@ async def login(request: Request, req: LoginRequest) -> TokenResponse:
         return TokenResponse(access_token=access, refresh_token=refresh_token)
 
 
-@app.post("/api/v1/logout")
+@app.post(
+    "/api/v1/logout",
+    tags=["authentication"],
+    summary="User logout",
+    description="""Invalidate a refresh token and terminate the user session.
+    
+    This endpoint invalidates the provided refresh token and removes the associated
+    session from the system. After logout, both the access and refresh tokens
+    become invalid and cannot be used for authentication.
+    
+    **Security Note:**
+    Always call this endpoint when a user logs out to ensure proper session cleanup
+    and prevent token reuse.
+    
+    **Example Request:**
+    ```json
+    {
+        "refresh_token": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6..."
+    }
+    ```
+    """,
+    responses={
+        200: {
+            "description": "Logout successful",
+        },
+        401: {
+            "description": "Invalid or expired refresh token",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Invalid token"}
+                }
+            },
+        },
+    },
+)
 async def logout(req: LogoutRequest) -> None:
     """Invalidate a refresh token and its session."""
     with tracer.start_as_current_span("logout"):
+        # Find session by refresh token and delete it
+        session = await SESSION_BACKEND.find_by_refresh_token(req.refresh_token)
+        if session:
+            await SESSION_BACKEND.delete_session(session.session_id)
+        
+        # Backward compatibility: also remove from old session store
         SESSION_STORE.remove(req.refresh_token)
 
 
-@app.post("/api/v1/refresh", response_model=TokenResponse)
+@app.post(
+    "/api/v1/refresh",
+    response_model=TokenResponse,
+    tags=["authentication"],
+    summary="Refresh authentication tokens",
+    description="""Exchange a refresh token for a new access and refresh token pair.
+    
+    This endpoint allows clients to obtain fresh authentication tokens without
+    requiring the user to log in again. The old refresh token is invalidated
+    and a new pair is returned.
+    
+    **Token Rotation:**
+    - Old refresh token becomes invalid immediately
+    - New access token has a fresh 1-hour TTL
+    - New refresh token can be used for future refreshes
+    
+    **Usage Pattern:**
+    1. Monitor access token expiration (check `exp` claim)
+    2. Use refresh token to get new token pair before expiration
+    3. Update stored tokens with the new values
+    4. Continue using the new access token for API calls
+    
+    **Example Request:**
+    ```json
+    {
+        "refresh_token": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6..."
+    }
+    ```
+    
+    **Example Response:**
+    ```json
+    {
+        "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+        "refresh_token": "b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7..."
+    }
+    ```
+    """,
+    responses={
+        200: {
+            "description": "Tokens refreshed successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+                        "refresh_token": "b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7..."
+                    }
+                }
+            },
+        },
+        401: {
+            "description": "Invalid or expired refresh token",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Invalid token"}
+                }
+            },
+        },
+    },
+)
 async def refresh(req: RefreshRequest) -> TokenResponse:
     """Rotate ``req.refresh_token`` and return a new token pair."""
     with tracer.start_as_current_span("refresh"):
-        found = SESSION_STORE.find_by_refresh(req.refresh_token)
-        if not found:
+        # Find session by refresh token using new backend
+        session = await SESSION_BACKEND.find_by_refresh_token(req.refresh_token)
+        if not session:
             raise HTTPException(status_code=401, detail="Invalid token")
-        session_id, username, group_name = found
+        
+        # Generate new refresh token and update session
         new_refresh = secrets.token_hex(32)
-        SESSION_STORE.update_refresh(session_id, new_refresh, time.time())
-        access = create_access_token(username, session_id, group_name)
+        await SESSION_BACKEND.update_refresh_token(session.session_id, new_refresh)
+        
+        # Backward compatibility: also update old session store
+        SESSION_STORE.update_refresh(session.session_id, new_refresh, time.time())
+        
+        access = create_access_token(session.username, session.session_id, session.group_name)
         return TokenResponse(access_token=access, refresh_token=new_refresh)
 
 
 @app.websocket("/api/v1/ws")
 async def websocket_endpoint(ws: WebSocket) -> None:
-    """Handle websocket chat with the Gatekeeper."""
+    """Handle real-time diagnostic conversations via WebSocket.
+    
+    This WebSocket endpoint provides real-time communication between the client
+    and the Dx0 diagnostic orchestrator system. It supports interactive diagnostic
+    conversations with budget tracking and cost estimation.
+    
+    **Connection Parameters:**
+    - `token`: JWT access token (required, passed as query parameter)
+    - `budget`: Optional budget limit override (float, query parameter)
+    
+    **Connection URL Example:**
+    ```
+    ws://localhost:8000/api/v1/ws?token=<access_token>&budget=100.0
+    ```
+    
+    **Message Types (Incoming):**
+    - `QUESTION`: Ask diagnostic questions to the AI
+    - `TEST`: Order specific diagnostic tests
+    - `DIAGNOSIS`: Provide or request final diagnosis
+    
+    **Message Format (Incoming):**
+    ```json
+    {
+        "action": "QUESTION",
+        "content": "What should I ask about the patient's symptoms?"
+    }
+    ```
+    
+    **Message Format (Outgoing):**
+    ```json
+    {
+        "reply": "Based on the cough, you should ask about...",
+        "done": true,
+        "cost": 0.25,
+        "total_spent": 5.75,
+        "remaining_budget": 94.25,
+        "ordered_tests": ["complete blood count"]
+    }
+    ```
+    
+    **Rate Limiting:**
+    - Maximum 30 messages per 60-second window
+    - Rate limit exceeded results in connection closure
+    
+    **Error Responses:**
+    ```json
+    {"error": "Rate limit exceeded"}
+    {"error": "Invalid message format"}
+    ```
+    
+    **Connection States:**
+    1. **Connecting**: Validate token and establish session
+    2. **Connected**: Ready to receive diagnostic messages
+    3. **Processing**: AI is generating response (streaming)
+    4. **Error**: Invalid token, rate limit, or other error
+    5. **Disconnected**: Connection closed
+    
+    **Budget Tracking:**
+    - Each AI interaction incurs costs based on token usage
+    - Budget limits are enforced per session
+    - Costs are returned with each response for transparency
+    """
     with tracer.start_as_current_span("websocket"):
         token = ws.query_params.get("token")
         if not token:
@@ -424,9 +1001,14 @@ async def websocket_endpoint(ws: WebSocket) -> None:
         session_id = payload.get("sid")
         sess = SESSION_STORE.get(session_id) if session_id else None
         if not sess:
-            await ws.close(code=1008)
-            return
-        _, group_name = sess
+            # Try new session backend if old store doesn't have the session
+            session_data = await SESSION_BACKEND.get_session(session_id) if session_id else None
+            if not session_data:
+                await ws.close(code=1008)
+                return
+            group_name = session_data.group_name
+        else:
+            _, group_name = sess
 
         limit_str = ws.query_params.get("budget") or (str(settings.ui_budget_limit) if settings.ui_budget_limit else None)
         limit = None
@@ -457,16 +1039,15 @@ async def websocket_endpoint(ws: WebSocket) -> None:
                 except (ValueError, ValidationError) as err:
                     await ws.send_json({"error": str(err)})
                     continue
-                now = time.time()
-                history = MESSAGE_HISTORY.get(session_id, [])
-                history = [ts for ts in history if now - ts < MESSAGE_RATE_WINDOW]
-                if len(history) >= MESSAGE_RATE_LIMIT:
+                # Check message rate limit using session backend
+                message_count = await SESSION_BACKEND.get_message_count(session_id, MESSAGE_RATE_WINDOW)
+                if message_count >= MESSAGE_RATE_LIMIT:
                     await ws.send_json({"error": "Rate limit exceeded"})
                     await ws.close(code=1013)
-                    MESSAGE_HISTORY[session_id] = history
                     return
-                history.append(now)
-                MESSAGE_HISTORY[session_id] = history
+                
+                # Add message timestamp to session backend
+                await SESSION_BACKEND.add_message_timestamp(session_id)
                 content = msg.content
                 if msg.action == ActionType.TEST:
                     panel.add_action(PanelAction(ActionType.TEST, content))

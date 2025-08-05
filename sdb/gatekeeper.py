@@ -6,7 +6,7 @@ import structlog
 import os
 import re
 from opentelemetry import trace
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 import xmlschema
 
 from .protocol import ActionType

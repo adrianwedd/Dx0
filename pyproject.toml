@@ -61,3 +61,18 @@ faiss = "sdb.retrieval:FaissIndex"
 
 [project.entry-points."dx0.cost_estimators"]
 csv = "sdb.cost_estimator:load_csv_estimator"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+markers = [
+    "asyncio: mark test as async",
+]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+]

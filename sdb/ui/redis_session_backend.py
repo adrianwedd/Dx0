@@ -7,10 +7,10 @@ import time
 from typing import Optional, Dict, Any
 
 try:
-    import aioredis
-    from aioredis import Redis
+    import redis.asyncio as redis
+    Redis = redis.Redis
 except ImportError:
-    aioredis = None
+    redis = None
     Redis = None
 
 from .session_backend import SessionBackend, SessionData
@@ -25,10 +25,10 @@ class RedisSessionBackend(SessionBackend):
         redis_password: Optional[str] = None,
         key_prefix: str = "sdb_session:",
         failed_login_prefix: str = "sdb_login:",
-        pool_size: int = 10,
+        pool_size: int = 20,
     ):
-        if aioredis is None:
-            raise RuntimeError("aioredis is required for Redis session backend")
+        if redis is None:
+            raise RuntimeError("redis is required for Redis session backend")
         
         self.redis_url = redis_url
         self.redis_password = redis_password
@@ -40,7 +40,7 @@ class RedisSessionBackend(SessionBackend):
     async def _get_redis(self) -> Redis:
         """Get Redis connection, initializing if needed."""
         if self._redis is None:
-            self._redis = aioredis.from_url(
+            self._redis = redis.from_url(
                 self.redis_url,
                 password=self.redis_password,
                 max_connections=self.pool_size,
